@@ -24,11 +24,11 @@ The Tourchef Kalender FastAPI application has been successfully deployed using D
 ### Environment Variables Configured
 ```
 MYSQL_DATABASE=bergfuehrer_db
-MYSQL_ROOT_PASSWORD=test_root_password_123
+MYSQL_ROOT_PASSWORD=[TEST_PASSWORD]
 MYSQL_USER=tourchef_app
-MYSQL_PASSWORD=test_app_password_123
+MYSQL_PASSWORD=[TEST_PASSWORD]
 MAIL_USERNAME=test@example.com
-STRIPE_SECRET_KEY=sk_test_4eC39HqLyjWDarhtT657m89w
+STRIPE_SECRET_KEY=[YOUR_STRIPE_SECRET_KEY]
 ```
 
 ---

@@ -1,12 +1,7 @@
 # Stripe Setup - Echte Test-Credentials Configurieren
 
 ## Problem
-Der aktuelle Stripe Key ist ungültig:
-```
-sk_test_4eC39HqLyjWDarhtT657m89w
-```
-
-Das ist ein Dummy-Key. Du brauchst **echte Stripe Test-Keys** zum Testen.
+Der aktuelle Stripe Key ist ungültig. Das ist ein Dummy-Key. Du brauchst **echte Stripe Test-Keys** zum Testen.
 
 ---
 

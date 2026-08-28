@@ -6,12 +6,9 @@
 
 ```
 # Stripe Test-Keys (von https://dashboard.stripe.com/test/apikeys)
-STRIPE_SECRET_KEY=sk_test_4eC39HqLyjWDarhtT657m89w
-STRIPE_WEBHOOK_SECRET=whsec_test_1234567890abcdef
-
-# ODER deine echten Test-Keys:
-STRIPE_SECRET_KEY=sk_test_YOUR_SECRET_KEY_HERE
-STRIPE_WEBHOOK_SECRET=whsec_YOUR_WEBHOOK_SECRET_HERE
+# NOTE: Use your own Stripe test keys from https://dashboard.stripe.com/test/apikeys
+STRIPE_SECRET_KEY=[YOUR_STRIPE_SECRET_KEY]
+STRIPE_WEBHOOK_SECRET=[YOUR_STRIPE_WEBHOOK_SECRET]
 ```
 
 Danach: `docker compose restart web`
