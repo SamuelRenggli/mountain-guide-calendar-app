@@ -1,0 +1,2 @@
+# Files Copilot should never read as context
+.env

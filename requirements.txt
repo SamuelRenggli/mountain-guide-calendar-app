@@ -1,0 +1,13 @@
+fastapi==0.110.0
+uvicorn==0.28.0
+sqlalchemy==2.0.28
+pymysql==1.1.0
+cryptography==42.0.5
+pydantic==2.6.4
+email-validator==2.1.1
+python-dotenv==1.0.1
+jinja2==3.1.4
+icalendar==5.0.13
+requests==2.31.0
+fastapi-mail==1.4.1
+stripe==10.5.0
