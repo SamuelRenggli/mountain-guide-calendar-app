@@ -1,0 +1,47 @@
+# Production-like stack: Postgres, web app and a scheduler for calendar sync + expiry.
+# Put a TLS-terminating reverse proxy (Caddy, Traefik, your host's load balancer) in front of `web`.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-tourchef}
+      POSTGRES_USER: ${POSTGRES_USER:-tourchef}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"  # local access only (development, backups)
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-tourchef}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-tourchef}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-tourchef}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  scheduler:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-tourchef}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-tourchef}
+    command: >
+      sh -c "sleep 30; while true; do
+      python manage.py expire_bookings; python manage.py sync_calendars;
+      sleep ${SCHEDULER_INTERVAL_SECONDS:-3600}; done"
+    depends_on:
+      - web
+
+volumes:
+  pgdata:

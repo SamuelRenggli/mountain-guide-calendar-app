@@ -1,0 +1,19 @@
+{% if bookings %}
+<div class="table-wrap"><table>
+  <thead><tr><th>Datum</th><th>Tour</th><th>Gast</th><th>Pers.</th><th>Preis</th><th>Status</th></tr></thead>
+  <tbody>
+  {% for booking in bookings %}
+    <tr>
+      <td><a href="{% url 'dashboard:booking' booking.pk %}">{{ booking.start_date|date:"D d.m.Y" }}</a>{% if booking.end_date != booking.start_date %}<br><span class="small muted">bis {{ booking.end_date|date:"d.m.Y" }}</span>{% endif %}</td>
+      <td>{{ booking.tour.title }}</td>
+      <td>{{ booking.guest_name }}</td>
+      <td>{{ booking.participants }}</td>
+      <td>CHF {{ booking.price }}</td>
+      <td>{% include "_status.html" %}{% if booking.deadline and show_deadline %}<br><span class="small muted">bis {{ booking.deadline|date:"d.m. H:i" }}</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<p class="empty">{{ empty }}</p>
+{% endif %}

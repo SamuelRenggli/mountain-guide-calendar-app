@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Touren – Tourchef{% endblock %}
+{% block content %}
+<div class="spread"><h1>Touren</h1><a class="btn" href="{% url 'dashboard:tour_new' %}">Neue Tour</a></div>
+<section class="card">
+  {% if tours %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>Titel</th><th>Dauer</th><th>Preis</th><th>Max.</th><th>Im Widget</th><th></th></tr></thead>
+    <tbody>
+    {% for tour in tours %}
+      <tr>
+        <td><a href="{% url 'dashboard:tour_edit' tour.pk %}">{{ tour.title }}</a></td>
+        <td>{{ tour.duration_days }} Tag{{ tour.duration_days|pluralize:"e" }}</td>
+        <td>CHF {{ tour.price }} <span class="small muted">{{ tour.get_price_mode_display }}</span></td>
+        <td>{{ tour.max_participants }}</td>
+        <td>{{ tour.is_active|yesno:"Ja,Nein" }}</td>
+        <td>
+          <form method="post" action="{% url 'dashboard:tour_delete' tour.pk %}" class="inline">{% csrf_token %}
+            <button class="btn btn-danger btn-small" type="submit">Löschen</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}
+  <p class="empty">Noch keine Touren. Gäste können erst buchen, wenn du mindestens eine Tour anlegst.</p>
+  {% endif %}
+</section>
+{% endblock %}

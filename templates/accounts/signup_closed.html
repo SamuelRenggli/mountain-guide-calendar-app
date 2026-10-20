@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+<h1>Registrierung geschlossen</h1>
+<p>Tourchef ist im Testbetrieb. Bitte melde dich bei uns für einen Zugang.</p>
+<p><a href="{% url 'accounts:login' %}">Zur Anmeldung</a></p>
+{% endblock %}

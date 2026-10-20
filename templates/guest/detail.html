@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Deine Buchung – Tourchef{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+<h1>Deine Buchung</h1>
+<section class="card">
+  <div class="spread"><h2>{{ booking.tour.title }}</h2>{% include "_status.html" %}</div>
+  <dl class="facts">
+    <dt>Bergführer</dt><dd>{{ booking.guide.display_name }}</dd>
+    <dt>Datum</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
+    <dt>Teilnehmende</dt><dd>{{ booking.participants }}</dd>
+    <dt>Preis</dt><dd>CHF {{ booking.price }}</dd>
+    {% if booking.deadline %}<dt>Frist</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
+  </dl>
+  {% if booking.guide_message %}<h2>Nachricht von {{ booking.guide.display_name }}</h2><p class="pre">{{ booking.guide_message }}</p>{% endif %}
+</section>
+
+{% if booking.status == "requested" %}
+  <p>Deine Anfrage wartet auf die Antwort von {{ booking.guide.display_name }}. Du erhältst eine E-Mail.</p>
+{% elif booking.status == "offered" %}
+  <section class="card">
+    <h2>Neuer Vorschlag</h2>
+    <p>{{ booking.guide.display_name }} schlägt die oben stehenden Daten vor. Passt das für dich?</p>
+    <div class="row">
+      <form method="post" action="{% url 'guest:action' booking.token 'annehmen' %}" class="inline">{% csrf_token %}
+        <button class="btn" type="submit">Annehmen</button>
+      </form>
+      <form method="post" action="{% url 'guest:action' booking.token 'ablehnen' %}" class="inline">{% csrf_token %}
+        <button class="btn btn-danger" type="submit">Ablehnen</button>
+      </form>
+    </div>
+  </section>
+{% elif booking.status == "awaiting_payment" %}
+  <section class="card">
+    <h2>Bestätigt – bitte bezahlen</h2>
+    {% if returned_from_payment %}
+      <div class="alert info">Danke! Deine Zahlung wird verarbeitet. Diese Seite zeigt «Bezahlt», sobald sie bestätigt ist.</div>
+    {% endif %}
+    {% if can_pay_online %}
+      <form method="post" action="{% url 'guest:pay' booking.token %}">{% csrf_token %}
+        <button class="btn" type="submit">CHF {{ booking.price }} jetzt bezahlen</button>
+      </form>
+    {% else %}
+      <p>{{ booking.guide.display_name }} sendet dir die Zahlungsangaben direkt.</p>
+    {% endif %}
+  </section>
+{% elif booking.status == "paid" %}
+  <div class="alert success">Bezahlt – alles erledigt. Wir wünschen dir eine schöne Tour!</div>
+  <p class="small">Kontakt: {{ booking.guide.display_name }}, <a href="mailto:{{ booking.guide.email|urlencode:'@' }}">{{ booking.guide.email }}</a> {{ booking.guide.phone }}</p>
+{% endif %}
+
+{% if booking.status == "requested" or booking.status == "offered" or booking.status == "awaiting_payment" %}
+  <form method="post" action="{% url 'guest:action' booking.token 'stornieren' %}">{% csrf_token %}
+    <button class="link-button small" type="submit">Anfrage zurückziehen</button>
+  </form>
+{% endif %}
+{% endblock %}

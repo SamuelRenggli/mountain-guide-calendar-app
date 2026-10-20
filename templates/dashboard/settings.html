@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Einstellungen – Tourchef{% endblock %}
+{% block content %}
+<h1>Einstellungen</h1>
+
+<section class="card">
+  <h2>Widget auf deiner Website</h2>
+  <p class="small muted">Füge diesen Code in deine Website ein (WordPress, Wix, Webflow: Element «HTML» bzw. «Code einbetten»).</p>
+  <code class="embed" id="embed-script">&lt;script src="{{ site_url }}{% static 'js/embed.js' %}" data-tourchef="{{ user.slug }}" async&gt;&lt;/script&gt;</code>
+  <p class="row">
+    <button class="btn btn-secondary btn-small" type="button" data-copy="#embed-script">Code kopieren</button>
+    <a class="small" href="{% url 'widget:show' user.slug %}" target="_blank" rel="noopener">Widget-Vorschau öffnen</a>
+  </p>
+  <p class="small muted">Auf einer englischen Website: <code>data-lang="en"</code> ergänzen, damit Gäste ihre E-Mails auf Englisch erhalten. Ohne Angabe gilt die Browsersprache des Gastes.</p>
+  <p class="small muted">Falls deine Website keine Scripts erlaubt, verwende ein iFrame:</p>
+  <code class="embed" id="embed-iframe">&lt;iframe src="{{ site_url }}{% url 'widget:show' user.slug %}" title="Buchungskalender" width="100%" height="900" frameborder="0"&gt;&lt;/iframe&gt;</code>
+  <p><button class="btn btn-secondary btn-small" type="button" data-copy="#embed-iframe">Code kopieren</button></p>
+</section>
+
+<section class="card">
+  <h2>Online-Zahlungen</h2>
+  {% if user.can_take_card_payments %}
+    <p>✓ Stripe ist verbunden. Gäste bezahlen nach deiner Bestätigung online; das Geld geht direkt auf dein Konto.</p>
+  {% elif stripe_available %}
+    <p>Verbinde dein Stripe-Konto, damit Gäste nach deiner Bestätigung online bezahlen können. Ohne Stripe erfasst du Zahlungen manuell.</p>
+    <a class="btn" href="{% url 'payments:connect' %}">{% if user.stripe_account_id %}Stripe-Einrichtung fortsetzen{% else %}Mit Stripe verbinden{% endif %}</a>
+  {% else %}
+    <p class="muted">Online-Zahlungen sind auf dieser Plattform noch nicht aktiviert. Zahlungen erfasst du manuell.</p>
+  {% endif %}
+</section>
+
+<form method="post" class="card">{% csrf_token %}
+  <h2>Profil</h2>
+  {% include "_form.html" %}
+  <button class="btn" type="submit">Speichern</button>
+  <p class="small"><a href="{% url 'accounts:password_change' %}">Passwort ändern</a></p>
+</form>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/copy.js' %}"></script>{% endblock %}

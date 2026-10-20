@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Registrieren – Tourchef{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+<h1>Als Bergführer registrieren</h1>
+<form method="post" class="card">{% csrf_token %}
+  {% include "_form.html" %}
+  <button class="btn" type="submit">Konto erstellen</button>
+</form>
+<p class="small">Schon registriert? <a href="{% url 'accounts:login' %}">Anmelden</a></p>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Anfragen – Tourchef{% endblock %}
+{% block content %}
+<h1>Hallo {{ user.display_name }}</h1>
+
+{% if not has_tours %}
+<div class="alert info">
+  <strong>Erste Schritte:</strong>
+  1. <a href="{% url 'dashboard:tour_new' %}">Tour anlegen</a> ·
+  2. <a href="{% url 'dashboard:availability' %}">Verfügbarkeit festlegen</a> ·
+  3. <a href="{% url 'dashboard:settings' %}">Widget auf deiner Website einbauen</a>
+</div>
+{% endif %}
+
+<section class="card">
+  <h2>Neue Anfragen – bitte beantworten</h2>
+  {% include "dashboard/_booking_table.html" with bookings=needs_action empty="Keine offenen Anfragen." show_deadline=True %}
+</section>
+
+<section class="card">
+  <h2>Warten auf den Gast</h2>
+  <p class="small muted">Gegenangebote und bestätigte Buchungen, die noch nicht bezahlt sind.</p>
+  {% include "dashboard/_booking_table.html" with bookings=waiting_for_guest empty="Nichts offen." show_deadline=True %}
+</section>
+
+<section class="card">
+  <h2>Kommende Touren</h2>
+  {% include "dashboard/_booking_table.html" with bookings=upcoming empty="Noch keine bezahlten Touren." %}
+</section>
+
+<section class="card">
+  <h2>Verlauf</h2>
+  {% include "dashboard/_booking_table.html" with bookings=history empty="Noch nichts abgeschlossen." %}
+</section>
+{% endblock %}

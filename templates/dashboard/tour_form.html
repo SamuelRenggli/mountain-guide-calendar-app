@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}Tour – Tourchef{% endblock %}
+{% block content %}
+<p class="small"><a href="{% url 'dashboard:tours' %}">← Touren</a></p>
+<h1>{% if tour.pk %}Tour bearbeiten{% else %}Neue Tour{% endif %}</h1>
+<form method="post" class="card">{% csrf_token %}
+  {% include "_form.html" %}
+  <button class="btn" type="submit">Speichern</button>
+</form>
+{% endblock %}

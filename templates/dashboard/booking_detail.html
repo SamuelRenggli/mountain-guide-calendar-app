@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Buchung {{ booking.guest_name }} – Tourchef{% endblock %}
+{% block content %}
+<p class="small"><a href="{% url 'dashboard:home' %}">← Alle Anfragen</a></p>
+<div class="spread">
+  <h1>{{ booking.tour.title }}</h1>
+  {% include "_status.html" %}
+</div>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>Buchung</h2>
+    <dl class="facts">
+      <dt>Datum</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
+      <dt>Teilnehmende</dt><dd>{{ booking.participants }}</dd>
+      <dt>Preis</dt><dd>CHF {{ booking.price }}</dd>
+      {% if booking.deadline %}<dt>Frist</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
+      {% if booking.paid_at %}<dt>Bezahlt</dt><dd>{{ booking.paid_at|date:"d.m.Y H:i" }} ({{ booking.get_payment_method_display }})</dd>{% endif %}
+    </dl>
+  </section>
+  <section class="card">
+    <h2>Gast</h2>
+    <dl class="facts">
+      <dt>Name</dt><dd>{{ booking.guest_name }}</dd>
+      <dt>E-Mail</dt><dd><a href="mailto:{{ booking.guest_email|urlencode:'@' }}">{{ booking.guest_email }}</a></dd>
+      <dt>Telefon</dt><dd>{{ booking.guest_phone|default:"–" }}</dd>
+    </dl>
+    {% if booking.guest_message %}<h2>Nachricht</h2><p class="pre">{{ booking.guest_message }}</p>{% endif %}
+  </section>
+</div>
+
+{% if booking.status == "requested" %}
+<div class="grid-2">
+  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'confirm' %}" class="card">{% csrf_token %}
+    <h2>Bestätigen</h2>
+    <p class="small muted">
+      {% if booking.guide.can_take_card_payments %}Der Gast erhält einen Link zur Online-Zahlung.
+      {% else %}Stripe ist nicht verbunden: Sende dem Gast die Zahlungsangaben selbst und erfasse die Zahlung danach hier.{% endif %}
+    </p>
+    {% include "_form.html" with form=confirm_form %}
+    <button class="btn" type="submit">Anfrage bestätigen</button>
+  </form>
+  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" class="card">{% csrf_token %}
+    <h2>Anderes Datum oder anderen Preis vorschlagen</h2>
+    {% include "_form.html" with form=offer_form %}
+    <button class="btn btn-secondary" type="submit">Gegenangebot senden</button>
+  </form>
+</div>
+{% elif booking.status == "offered" %}
+<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" class="card">{% csrf_token %}
+  <h2>Gegenangebot anpassen</h2>
+  {% include "_form.html" with form=offer_form %}
+  <button class="btn btn-secondary" type="submit">Neues Angebot senden</button>
+</form>
+{% elif booking.status == "awaiting_payment" %}
+<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'paid' %}" class="card">{% csrf_token %}
+  <h2>Zahlung erfassen</h2>
+  <p class="small muted">Nur verwenden, wenn der Gast z. B. per Überweisung oder bar bezahlt hat. Online-Zahlungen werden automatisch erfasst.</p>
+  <button class="btn btn-secondary" type="submit">Zahlung erhalten</button>
+</form>
+{% endif %}
+
+{% if booking.status == "requested" or booking.status == "offered" or booking.status == "awaiting_payment" %}
+<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'reject' %}" class="card">{% csrf_token %}
+  <h2>Ablehnen</h2>
+  {% include "_form.html" with form=reject_form %}
+  <button class="btn btn-danger" type="submit">Anfrage ablehnen</button>
+</form>
+{% elif booking.status == "paid" %}
+<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'cancel' %}" class="card">{% csrf_token %}
+  <h2>Tour absagen</h2>
+  <p class="small muted">Rückerstattungen machst du im Stripe-Dashboard bzw. direkt an den Gast.</p>
+  {% include "_form.html" with form=cancel_form %}
+  <button class="btn btn-danger" type="submit">Tour absagen</button>
+</form>
+{% endif %}
+
+<section class="card">
+  <h2>Verlauf</h2>
+  <table>
+    {% for event in events %}
+    <tr>
+      <td class="small muted">{{ event.created_at|date:"d.m.Y H:i" }}</td>
+      <td>{{ event.get_actor_display }}</td>
+      <td>{{ event.to_status }} <span class="pre small">{{ event.note }}</span></td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,34 @@
+{% load static %}<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>{% block title %}Tourchef{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/app.css' %}">
+</head>
+<body>
+  <header class="topbar">
+    {% if user.is_authenticated %}<a class="brand" href="{% url 'dashboard:home' %}">Tourchef</a>{% else %}<span class="brand">Tourchef</span>{% endif %}
+    {% if user.is_authenticated %}
+      {% with name=request.resolver_match.url_name %}
+      <nav aria-label="Hauptnavigation">
+        <a href="{% url 'dashboard:home' %}" {% if name == 'home' or name == 'booking' %}class="active"{% endif %}>Anfragen</a>
+        <a href="{% url 'dashboard:calendar' %}" {% if name == 'calendar' %}class="active"{% endif %}>Kalender</a>
+        <a href="{% url 'dashboard:tours' %}" {% if name == 'tours' or name == 'tour_new' or name == 'tour_edit' %}class="active"{% endif %}>Touren</a>
+        <a href="{% url 'dashboard:availability' %}" {% if name == 'availability' %}class="active"{% endif %}>Verfügbarkeit</a>
+        <a href="{% url 'dashboard:settings' %}" {% if name == 'settings' %}class="active"{% endif %}>Einstellungen</a>
+      </nav>
+      {% endwith %}
+      <form method="post" action="{% url 'accounts:logout' %}" class="inline">{% csrf_token %}
+        <button class="link-button" type="submit">Abmelden</button>
+      </form>
+    {% endif %}
+  </header>
+  <main class="container {% block container_class %}{% endblock %}">
+    {% include "_messages.html" %}
+    {% block content %}{% endblock %}
+  </main>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

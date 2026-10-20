@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Verfügbarkeit – Tourchef{% endblock %}
+{% block content %}
+<h1>Verfügbarkeit</h1>
+<p class="muted">Gäste können an allen buchbaren Wochentagen anfragen, ausser an gesperrten oder im Kalender belegten Tagen.</p>
+
+<div class="grid-2">
+  <form method="post" class="card">{% csrf_token %}
+    <input type="hidden" name="form" value="rules">
+    <h2>Regeln</h2>
+    {% include "_form.html" with form=rules_form %}
+    <button class="btn" type="submit">Speichern</button>
+  </form>
+
+  <form method="post" class="card">{% csrf_token %}
+    <input type="hidden" name="form" value="block">
+    <h2>Zeitraum sperren</h2>
+    {% include "_form.html" with form=block_form %}
+    <button class="btn" type="submit">Sperren</button>
+  </form>
+</div>
+
+<section class="card">
+  <h2>Gesperrte Zeiträume</h2>
+  {% if blocks %}
+  <table>
+    {% for block in blocks %}
+    <tr>
+      <td>{{ block.start_date|date:"d.m.Y" }}{% if block.end_date != block.start_date %} – {{ block.end_date|date:"d.m.Y" }}{% endif %}</td>
+      <td>{{ block.note }}</td>
+      <td>
+        <form method="post" action="{% url 'dashboard:block_delete' block.pk %}" class="inline">{% csrf_token %}
+          <button class="btn btn-danger btn-small" type="submit">Entfernen</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="empty">Keine Sperren.</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>Externer Kalender</h2>
+  <form method="post">{% csrf_token %}
+    <input type="hidden" name="form" value="ical">
+    {% include "_form.html" with form=ical_form %}
+    <button class="btn" type="submit">Speichern &amp; abgleichen</button>
+  </form>
+  {% if user.ical_url %}
+  <p class="small muted">
+    {% if user.ical_last_synced_at %}Zuletzt abgeglichen: {{ user.ical_last_synced_at|date:"d.m.Y H:i" }}.{% endif %}
+    Wird stündlich automatisch abgeglichen.
+  </p>
+  {% if user.ical_last_error %}<div class="alert error">Letzter Fehler: {{ user.ical_last_error }}</div>{% endif %}
+  <form method="post" action="{% url 'dashboard:calendar_sync' %}">{% csrf_token %}
+    <button class="btn btn-secondary btn-small" type="submit">Jetzt abgleichen</button>
+  </form>
+  {% endif %}
+</section>
+{% endblock %}
