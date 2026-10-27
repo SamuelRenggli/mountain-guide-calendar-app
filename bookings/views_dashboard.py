@@ -12,8 +12,8 @@ from accounts.forms import AvailabilityForm, CalendarSyncForm, ProfileForm
 from core.ratelimit import allow
 
 from . import availability, calsync, monthgrid, services
-from .forms import BlockedPeriodForm, MessageForm, OfferForm, TourForm
-from .models import BlockedPeriod, Booking, Tour
+from .forms import BlockedPeriodForm, MessageForm, OfferForm, OpenPeriodForm, TourForm
+from .models import BlockedPeriod, Booking, OpenPeriod, Tour
 
 S = Booking.Status
 
@@ -42,7 +42,10 @@ def _detail_context(booking, **forms):
         "confirm_form": MessageForm(prefix="confirm"),
         "reject_form": MessageForm(prefix="reject"),
         "cancel_form": MessageForm(prefix="cancel"),
-        "offer_form": OfferForm(prefix="offer", initial={"start_date": booking.start_date, "price": booking.price}),
+        "offer_form": OfferForm(prefix="offer", own_idea=booking.tour is None, initial={
+            "start_date": booking.start_date, "end_date": booking.end_date,
+            "price": booking.price,
+        }),
     }
     context.update(forms)
     return context
@@ -66,12 +69,12 @@ def booking_action(request, pk, name):
             action = {"confirm": services.confirm, "reject": services.reject, "cancel": services.guide_cancel}[name]
             action(booking, form.cleaned_data["message"])
         elif name == "offer":
-            form = OfferForm(request.POST, prefix="offer")
+            form = OfferForm(request.POST, prefix="offer", own_idea=booking.tour is None)
             if not form.is_valid():
                 return render(request, "dashboard/booking_detail.html", _detail_context(booking, offer_form=form))
             services.counter_offer(
-                booking, start_date=form.cleaned_data["start_date"], price=form.cleaned_data["price"],
-                message=form.cleaned_data["message"],
+                booking, start_date=form.cleaned_data["start_date"], end_date=form.cleaned_data.get("end_date"),
+                price=form.cleaned_data["price"], message=form.cleaned_data["message"],
             )
         elif name == "paid":
             services.mark_paid_manually(booking)
@@ -124,6 +127,7 @@ def availability_view(request):
     guide = request.user
     rules_form = AvailabilityForm(instance=guide, prefix="rules")
     block_form = BlockedPeriodForm(prefix="block")
+    open_form = OpenPeriodForm(prefix="open")
     ical_form = CalendarSyncForm(instance=guide, prefix="ical")
 
     if request.method == "POST":
@@ -142,6 +146,14 @@ def availability_view(request):
                 block.save()
                 messages.success(request, "Zeitraum gesperrt.")
                 return redirect("dashboard:availability")
+        elif which == "open":
+            open_form = OpenPeriodForm(request.POST, prefix="open")
+            if open_form.is_valid():
+                period = open_form.save(commit=False)
+                period.guide = guide
+                period.save()
+                messages.success(request, "Zeitraum freigegeben.")
+                return redirect("dashboard:availability")
         elif which == "ical":
             ical_form = CalendarSyncForm(request.POST, instance=guide, prefix="ical")
             if ical_form.is_valid():
@@ -152,8 +164,10 @@ def availability_view(request):
     return render(request, "dashboard/availability.html", {
         "rules_form": rules_form,
         "block_form": block_form,
+        "open_form": open_form,
         "ical_form": ical_form,
         "blocks": guide.blocked_periods.filter(end_date__gte=timezone.localdate()),
+        "open_periods": guide.open_periods.filter(end_date__gte=timezone.localdate()),
     })
 
 
@@ -162,6 +176,14 @@ def availability_view(request):
 def block_delete(request, pk):
     get_object_or_404(BlockedPeriod, pk=pk, guide=request.user).delete()
     messages.success(request, "Sperre entfernt.")
+    return redirect("dashboard:availability")
+
+
+@login_required
+@require_POST
+def open_delete(request, pk):
+    get_object_or_404(OpenPeriod, pk=pk, guide=request.user).delete()
+    messages.success(request, "Freigabe entfernt.")
     return redirect("dashboard:availability")
 
 
@@ -194,19 +216,24 @@ def calendar_view(request):
     weeks = monthgrid.weeks(month)
     states = availability.day_states(guide, weeks[0][0], weeks[-1][-1])
     bookings = guide.bookings.filter(
-        status__in=Booking.ACTIVE_STATUSES, start_date__lte=weeks[-1][-1], end_date__gte=weeks[0][0]
+        status__in=Booking.ACTIVE_STATUSES, is_window=False, start_date__lte=weeks[-1][-1], end_date__gte=weeks[0][0]
     ).select_related("tour")
     by_day = {}
     for b in bookings:
         for d in availability.days_between(b.start_date, b.end_date):
             by_day.setdefault(d, b)
+    opened = set()
+    for p in guide.open_periods.filter(start_date__lte=weeks[-1][-1], end_date__gte=weeks[0][0]):
+        opened.update(availability.days_between(p.start_date, p.end_date))
     return render(request, "dashboard/calendar.html", {
         "month_label": monthgrid.month_label(month),
         "prev_month": f"{monthgrid.shift_month(month, -1):%Y-%m}",
         "next_month": f"{monthgrid.shift_month(month, 1):%Y-%m}",
         "weekday_names": monthgrid.WEEKDAY_NAMES,
+        "has_open_periods": guide.open_periods.filter(end_date__gte=timezone.localdate()).exists(),
         "weeks": [
-            [{"date": d, "in_month": d.month == month.month, "state": states[d], "booking": by_day.get(d)} for d in week]
+            [{"date": d, "in_month": d.month == month.month, "state": states[d], "booking": by_day.get(d),
+              "open": d in opened} for d in week]
             for week in weeks
         ],
     })

@@ -2,7 +2,10 @@
 {% block title %}Verfügbarkeit – Tourchef{% endblock %}
 {% block content %}
 <h1>Verfügbarkeit</h1>
-<p class="muted">Gäste können an allen buchbaren Wochentagen anfragen, ausser an gesperrten oder im Kalender belegten Tagen.</p>
+<p class="muted">
+  {% if user.only_open_periods %}Gäste können nur in freigegebenen Zeiträumen anfragen, an buchbaren Wochentagen und ausser an gesperrten oder im Kalender belegten Tagen.
+  {% else %}Gäste können an allen buchbaren Wochentagen anfragen, ausser an gesperrten oder im Kalender belegten Tagen.{% endif %}
+</p>
 
 <div class="grid-2">
   <form method="post" class="card">{% csrf_token %}
@@ -38,6 +41,37 @@
   </table>
   {% else %}<p class="empty">Keine Sperren.</p>{% endif %}
 </section>
+
+<div class="grid-2">
+  <form method="post" class="card">{% csrf_token %}
+    <input type="hidden" name="form" value="open">
+    <h2>Zeitraum freigeben</h2>
+    {% if not user.only_open_periods %}
+    <p class="small muted">Wirkt erst, wenn unter «Regeln» «Nur in freigegebenen Zeiträumen buchbar» aktiviert ist.</p>
+    {% endif %}
+    {% include "_form.html" with form=open_form %}
+    <button class="btn" type="submit">Freigeben</button>
+  </form>
+
+  <section class="card">
+    <h2>Freigegebene Zeiträume</h2>
+    {% if open_periods %}
+    <table>
+      {% for period in open_periods %}
+      <tr>
+        <td>{{ period.start_date|date:"d.m.Y" }}{% if period.end_date != period.start_date %} – {{ period.end_date|date:"d.m.Y" }}{% endif %}</td>
+        <td>{{ period.note }}</td>
+        <td>
+          <form method="post" action="{% url 'dashboard:open_delete' period.pk %}" class="inline">{% csrf_token %}
+            <button class="btn btn-danger btn-small" type="submit">Entfernen</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="empty">Keine Freigaben.</p>{% endif %}
+  </section>
+</div>
 
 <section class="card">
   <h2>Externer Kalender</h2>

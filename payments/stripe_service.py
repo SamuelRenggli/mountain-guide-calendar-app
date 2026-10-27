@@ -97,7 +97,7 @@ def create_checkout_url(booking: Booking) -> str:
         "on_behalf_of": guide.stripe_account_id,
         "transfer_data": {"destination": guide.stripe_account_id},
         "metadata": {"booking_id": str(booking.pk)},
-        "description": f"{booking.tour.title} – {booking.start_date:%d.%m.%Y}",
+        "description": f"{booking.title} – {booking.start_date:%d.%m.%Y}",
     }
     if fee:
         payment_intent_data["application_fee_amount"] = fee
@@ -116,7 +116,7 @@ def create_checkout_url(booking: Booking) -> str:
                     "currency": "chf",
                     "unit_amount": amount,
                     "product_data": {
-                        "name": booking.tour.title,
+                        "name": booking.title,
                         "description": f"{dates} · {booking.participants} Pers. · mit {guide.display_name}",
                     },
                 },

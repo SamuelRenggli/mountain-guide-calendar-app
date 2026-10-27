@@ -6,20 +6,27 @@
   <h1>{{ month_label }}</h1>
   <a class="btn btn-secondary btn-small" href="?monat={{ next_month }}" aria-label="Nächster Monat">→</a>
 </div>
+<p class="row" style="justify-content: flex-end">
+  <a class="btn btn-secondary btn-small" href="{% url 'widget:show' user.slug %}" target="_blank" rel="noopener">Kalender-Widget Vorschau Website</a>
+</p>
 <div class="card">
   <div class="cal month">
     {% for name in weekday_names %}<div class="head">{{ name }}</div>{% endfor %}
     {% for week in weeks %}{% for day in week %}
-      <div class="day s-{{ day.state }}{% if not day.in_month %} out{% endif %}">
+      <div class="day s-{{ day.state }}{% if day.open %} open{% endif %}{% if not day.in_month %} out{% endif %}">
         <span class="num">{{ day.date.day }}</span>
         {% if day.booking %}<a href="{% url 'dashboard:booking' day.booking.pk %}" title="{{ day.booking.guest_name }}">{{ day.booking.guest_name }}</a>
         {% elif day.state == "busy" %}<span>Kalender</span>
-        {% elif day.state == "blocked" %}<span>Gesperrt</span>{% endif %}
+        {% elif day.state == "blocked" %}<span>Gesperrt</span>
+        {% elif day.open and day.state == "free" %}<span>Freigegeben</span>{% endif %}
       </div>
     {% endfor %}{% endfor %}
   </div>
   <div class="legend">
-    <span class="l-free">frei</span><span class="l-requested">Anfrage</span><span class="l-booked">bestätigt / bezahlt</span><span class="l-blocked">gesperrt / belegt</span>
+    <span class="l-free">{% if user.only_open_periods %}freigegeben{% else %}frei{% endif %}</span><span class="l-requested">Anfrage</span><span class="l-booked">bestätigt / bezahlt</span><span class="l-blocked">gesperrt / belegt</span>
   </div>
 </div>
+{% if not user.only_open_periods and has_open_periods %}
+<div class="alert">Du hast freigegebene Zeiträume, aber «Nur in freigegebenen Zeiträumen buchbar» ist aus. Gäste können darum an allen freien Tagen anfragen. <a href="{% url 'dashboard:availability' %}">Einstellung ändern</a></div>
+{% endif %}
 {% endblock %}

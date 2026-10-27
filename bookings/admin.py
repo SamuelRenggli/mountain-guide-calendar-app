@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import BlockedPeriod, Booking, BookingEvent, ExternalBusy, Tour
+from .models import BlockedPeriod, Booking, BookingEvent, ExternalBusy, OpenPeriod, Tour
 
 
 @admin.register(Tour)
@@ -27,4 +27,5 @@ class BookingAdmin(admin.ModelAdmin):
 
 
 admin.site.register(BlockedPeriod)
+admin.site.register(OpenPeriod)
 admin.site.register(ExternalBusy)

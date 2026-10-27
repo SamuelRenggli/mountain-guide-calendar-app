@@ -25,8 +25,9 @@ def env_list(name, default=""):
     return [item.strip() for item in env(name, default).split(",") if item.strip()]
 
 
-# Load .env for local development (docker compose passes vars directly).
-_env_file = BASE_DIR / ".env"
+# Load .env for local development (docker compose passes vars directly). On Cloud Run, ENV_FILE
+# points to the config mounted from Secret Manager.
+_env_file = Path(os.environ.get("ENV_FILE", BASE_DIR / ".env"))
 if _env_file.exists():
     for line in _env_file.read_text(encoding="utf-8").splitlines():
         line = line.strip()

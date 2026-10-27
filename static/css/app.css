@@ -115,6 +115,7 @@ code.embed { display: block; padding: .75rem; background: #f0f2f0; border-radius
 .month .day .num { font-weight: 600; }
 .month .day a { font-size: .75rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .month .s-free { background: #fff; }
+.month .s-free.open { background: var(--free); color: var(--free-text); }
 .month .s-requested { background: var(--requested); }
 .month .s-booked { background: var(--booked); }
 .month .s-blocked, .month .s-busy { background: var(--blocked); }
@@ -131,3 +132,13 @@ code.embed { display: block; padding: .75rem; background: #f0f2f0; border-radius
   .month .day { min-height: 3.2rem; }
   .month .day a { display: none; }
 }
+
+/* Widget: time window and tour choice */
+.cal .day.in-range { background: var(--primary); color: #fff; opacity: .45; }
+.tour-choice { border: 0; padding: 0; margin: 0 0 1rem; }
+.tour-choice legend { font-weight: 600; margin-bottom: .4rem; }
+.tour-choice .choice { display: flex; gap: .6rem; align-items: flex-start; padding: .6rem .7rem; border: 1px solid var(--border, #ddd);
+  border-radius: 8px; margin-bottom: .4rem; cursor: pointer; font-weight: normal; }
+.tour-choice .choice:has(input:checked) { border-color: var(--primary); }
+.tour-choice .choice input { margin-top: .25rem; width: auto; }
+.tour-choice .choice > span { display: flex; flex-direction: column; gap: .15rem; }

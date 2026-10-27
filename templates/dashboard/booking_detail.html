@@ -3,7 +3,7 @@
 {% block content %}
 <p class="small"><a href="{% url 'dashboard:home' %}">← Alle Anfragen</a></p>
 <div class="spread">
-  <h1>{{ booking.tour.title }}</h1>
+  <h1>{{ booking.title }}</h1>
   {% include "_status.html" %}
 </div>
 
@@ -11,9 +11,9 @@
   <section class="card">
     <h2>Buchung</h2>
     <dl class="facts">
-      <dt>Datum</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
+      <dt>{% if booking.is_window %}Zeitfenster{% else %}Datum{% endif %}</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
       <dt>Teilnehmende</dt><dd>{{ booking.participants }}</dd>
-      <dt>Preis</dt><dd>CHF {{ booking.price }}</dd>
+      <dt>Preis</dt><dd>{% if booking.is_window and not booking.tour %}nach Absprache{% else %}CHF {{ booking.price }}{% endif %}</dd>
       {% if booking.deadline %}<dt>Frist</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
       {% if booking.paid_at %}<dt>Bezahlt</dt><dd>{{ booking.paid_at|date:"d.m.Y H:i" }} ({{ booking.get_payment_method_display }})</dd>{% endif %}
     </dl>
@@ -29,7 +29,14 @@
   </section>
 </div>
 
-{% if booking.status == "requested" %}
+{% if booking.status == "requested" and booking.is_window %}
+<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" class="card">{% csrf_token %}
+  <h2>Angebot machen</h2>
+  <p class="small muted">Der Gast hat ein Zeitfenster angegeben. Schlage genaue Daten{% if not booking.tour %} und einen Preis{% endif %} vor. Erst dann sind die Tage reserviert.</p>
+  {% include "_form.html" with form=offer_form %}
+  <button class="btn" type="submit">Angebot senden</button>
+</form>
+{% elif booking.status == "requested" %}
 <div class="grid-2">
   <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'confirm' %}" class="card">{% csrf_token %}
     <h2>Bestätigen</h2>

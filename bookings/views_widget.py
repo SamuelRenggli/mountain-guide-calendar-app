@@ -10,7 +10,7 @@ from core.middleware import widget_csp
 from core.ratelimit import allow, client_ip
 
 from . import availability, monthgrid, services
-from .forms import BookingRequestForm
+from .forms import OWN_IDEA, BookingRequestForm
 
 
 def _guide(slug):
@@ -41,46 +41,84 @@ def _framed(response, guide):
     return response
 
 
-def _render(request, guide, *, tour_id=None, month_value=None, date_value=None, form=None, status=200):
-    tours = list(guide.tours.filter(is_active=True))
-    tour = next((t for t in tours if t.pk == tour_id), tours[0] if tours else None)
+def _bookable_days(guide, start, end) -> set:
+    """Days in start..end on which the guide has time and that lie in the booking window."""
     earliest, latest = availability.booking_window(guide)
-    selected = monthgrid.parse_date(date_value)
+    start, end = max(start, earliest), min(end, latest)
+    if start > end:
+        return set()
+    return {d for d, state in availability.day_states(guide, start, end).items() if state == availability.FREE}
 
-    month = monthgrid.parse_month(month_value, selected or earliest)
+
+def _selection(guide, start_value, end_value):
+    """The guest's time window from the URL, or (None, None) / (start, None) if it isn't valid (yet)."""
+    start, end = monthgrid.parse_date(start_value), monthgrid.parse_date(end_value)
+    if not start or start not in _bookable_days(guide, start, start):
+        return None, None
+    if not end or end < start or (end - start).days >= services.MAX_WINDOW_DAYS or end not in _bookable_days(guide, end, end):
+        return start, None
+    return start, end
+
+
+def _render(request, guide, *, start_value=None, end_value=None, month_value=None, tour_id=None, form=None, status=200):
+    tours = list(guide.tours.filter(is_active=True))
+    earliest, latest = availability.booking_window(guide)
+    start, end = _selection(guide, start_value, end_value)
+
     first_month, last_month = timezone.localdate().replace(day=1), latest.replace(day=1)
+    if month_value:
+        month = monthgrid.parse_month(month_value, earliest)
+    elif start:
+        month = start.replace(day=1)
+    else:  # open at the first month the guide has time, not at an empty one
+        month = min(_bookable_days(guide, earliest, latest), default=earliest).replace(day=1)
     month = min(max(month, first_month), last_month)
 
     weeks = monthgrid.weeks(month)
-    startable = availability.startable_days(tour, weeks[0][0], weeks[-1][-1]) if tour else set()
-    notice = form.non_field_errors() if form is not None else None
-    if selected not in startable:
-        selected = None
-        form = None
+    bookable = _bookable_days(guide, weeks[0][0], weeks[-1][-1])
     lang = guest_language(request)
-    if selected and form is None:
-        form = BookingRequestForm(tour=tour, initial={"start_date": selected, "language": lang})
+    notice = form.non_field_errors() if form is not None else None
+
+    def next_selection(d):
+        """Clicking a day starts a new window, or ends the open one if it is within reach."""
+        if start and not end and start < d and (d - start).days < services.MAX_WINDOW_DAYS:
+            return start, d
+        return d, None
+
+    def link(d):
+        s, e = next_selection(d)
+        query = f"?lang={lang}&monat={month:%Y-%m}&von={s:%Y-%m-%d}"
+        query += f"&bis={e:%Y-%m-%d}" if e else ""
+        return query + (f"&tour={tour_id}" if tour_id else "")
+
+    window_end = end or start
+    if start and form is None:
+        form = BookingRequestForm(tours=tours, initial={
+            "start_date": start, "end_date": window_end, "language": lang,
+            "tour": str(tour_id) if tour_id else None,
+        })
 
     context = {
         "guide": guide,
         "tours": tours,
-        "tour": tour,
-        "month": month,
         "month_label": monthgrid.month_label(month),
-        "month_value": f"{month:%Y-%m}",
         "prev_month": f"{monthgrid.shift_month(month, -1):%Y-%m}" if month > first_month else None,
         "next_month": f"{monthgrid.shift_month(month, 1):%Y-%m}" if month < last_month else None,
         "weekday_names": monthgrid.WEEKDAY_NAMES,
         "weeks": [
-            [{"date": d, "in_month": d.month == month.month, "free": d in startable and d.month == month.month,
-              "selected": d == selected} for d in week]
+            [{"date": d, "in_month": d.month == month.month, "free": d in bookable and d.month == month.month,
+              "selected": bool(start) and start <= d <= window_end, "link": link(d) if d in bookable else None}
+             for d in week]
             for week in weeks
         ],
-        "selected": selected,
-        "selected_end": tour.end_date_for(selected) if tour and selected else None,
-        "form": form,
+        "start": start,
+        "end": window_end,
+        "window_open": bool(start) and not end,
+        "max_window_days": services.MAX_WINDOW_DAYS,
         "lang": lang,
-        "notice": notice if form is None else None,  # form errors are shown in the form itself
+        "lang_query": f"?lang={lang}",
+        "form": form if start else None,
+        "notice": notice if not start else None,
     }
     return _framed(render(request, "widget/widget.html", context, status=status), guide)
 
@@ -88,8 +126,8 @@ def _render(request, guide, *, tour_id=None, month_value=None, date_value=None, 
 def widget(request, slug):
     guide = _guide(slug)
     return _render(
-        request, guide, tour_id=_int(request.GET.get("tour")),
-        month_value=request.GET.get("monat"), date_value=request.GET.get("datum"),
+        request, guide, start_value=request.GET.get("von"), end_value=request.GET.get("bis"),
+        month_value=request.GET.get("monat"), tour_id=_int(request.GET.get("tour")),
     )
 
 
@@ -100,9 +138,9 @@ def widget(request, slug):
 @require_POST
 def widget_request(request, slug):
     guide = _guide(slug)
-    tour = get_object_or_404(guide.tours, pk=_int(request.POST.get("tour")), is_active=True)
-    form = BookingRequestForm(request.POST, tour=tour)
-    rerender = {"tour_id": tour.pk, "date_value": request.POST.get("start_date")}
+    tours = list(guide.tours.filter(is_active=True))
+    form = BookingRequestForm(request.POST, tours=tours)
+    rerender = {"start_value": request.POST.get("start_date"), "end_value": request.POST.get("end_date")}
 
     if form.is_valid():
         if form.is_spam():
@@ -111,10 +149,11 @@ def widget_request(request, slug):
             form.add_error(None, "Zu viele Anfragen. Bitte versuche es später erneut.")
             return _render(request, guide, form=form, status=429, **rerender)
         data = form.cleaned_data
+        tour = None if data["tour"] == OWN_IDEA else next(t for t in tours if str(t.pk) == data["tour"])
         try:
             booking = services.create_request(
-                tour=tour, start_date=data["start_date"], participants=data["participants"],
-                guest_name=data["guest_name"], guest_email=data["guest_email"],
+                guide=guide, tour=tour, start_date=data["start_date"], end_date=data["end_date"],
+                participants=data["participants"], guest_name=data["guest_name"], guest_email=data["guest_email"],
                 guest_phone=data["guest_phone"], guest_message=data["guest_message"], language=data["language"],
             )
         except services.BookingError as exc:

@@ -3,12 +3,16 @@
 <h1>Danke für deine Anfrage!</h1>
 <div class="alert success">
   {% if booking %}
-    Deine Anfrage für <strong>{{ booking.tour.title }}</strong> am <strong>{{ booking.start_date|date:"d.m.Y" }}</strong>
+    Deine Anfrage für <strong>{{ booking.title }}</strong>
+    {% if booking.start_date == booking.end_date %}am <strong>{{ booking.start_date|date:"d.m.Y" }}</strong>
+    {% else %}{% if booking.is_window %}im Zeitfenster{% endif %} <strong>{{ booking.start_date|date:"d.m.Y" }} – {{ booking.end_date|date:"d.m.Y" }}</strong>{% endif %}
     ist bei {{ guide.display_name }} eingegangen.
   {% else %}
     Deine Anfrage ist bei {{ guide.display_name }} eingegangen.
   {% endif %}
 </div>
-<p>Du erhältst eine Bestätigung per E-Mail. Sobald {{ guide.display_name }} die Tour bestätigt, bekommst du den Link zur Zahlung.</p>
+<p>Du erhältst eine Bestätigung per E-Mail.
+{% if booking.is_window %}{{ guide.display_name }} meldet sich mit einem konkreten Vorschlag für Daten und Preis.
+{% else %}Sobald {{ guide.display_name }} die Tour bestätigt, bekommst du den Link zur Zahlung.{% endif %}</p>
 <p><a href="{% url 'widget:show' guide.slug %}">Weitere Anfrage stellen</a></p>
 {% endblock %}

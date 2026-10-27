@@ -43,6 +43,10 @@ class User(AbstractUser):
 
     # Availability rules
     available_weekdays = models.CharField(max_length=7, default=ALL_WEEKDAYS)
+    only_open_periods = models.BooleanField(
+        "Nur in freigegebenen Zeiträumen buchbar", default=False,
+        help_text="Gäste können nur an Tagen anfragen, die du unten freigegeben hast.",
+    )
     min_notice_days = models.PositiveSmallIntegerField(
         "Mindestvorlauf (Tage)", default=2, validators=[MaxValueValidator(90)]
     )

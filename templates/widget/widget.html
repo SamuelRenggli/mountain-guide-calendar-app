@@ -1,68 +1,68 @@
 {% extends "widget/base.html" %}
 {% block content %}
-<h1>Tour buchen bei {{ guide.display_name }}</h1>
+<h1>Wann hat {{ guide.display_name }} Zeit?</h1>
+<p class="small muted">
+  Wähle den ersten und den letzten Tag, an dem du Zeit hättest (max. {{ max_window_days }} Tage).
+  Für eine Tagestour reicht ein Tag. {{ guide.display_name }} meldet sich mit einem konkreten Vorschlag.
+</p>
 
-{% if not tour %}
-  <p class="empty">Zurzeit sind keine Touren buchbar.</p>
-{% else %}
-  {% if tours|length > 1 %}
-  <form method="get" class="field">
-    <label for="tour-picker">Tour</label>
-    <div class="row">
-      <select name="tour" id="tour-picker">
-        {% for t in tours %}<option value="{{ t.pk }}"{% if t.pk == tour.pk %} selected{% endif %}>{{ t.title }}</option>{% endfor %}
-      </select>
-      <input type="hidden" name="lang" value="{{ lang }}">
-      <button class="btn btn-secondary btn-small" id="tour-picker-submit" type="submit">Anzeigen</button>
+{% if notice %}<div class="alert error">{{ notice }}</div>{% endif %}
+
+<div class="cal-nav">
+  {% if prev_month %}<a class="btn btn-secondary btn-small" href="?lang={{ lang }}&amp;monat={{ prev_month }}" aria-label="Vorheriger Monat">←</a>{% else %}<span class="disabled">←</span>{% endif %}
+  <strong>{{ month_label }}</strong>
+  {% if next_month %}<a class="btn btn-secondary btn-small" href="?lang={{ lang }}&amp;monat={{ next_month }}" aria-label="Nächster Monat">→</a>{% else %}<span class="disabled">→</span>{% endif %}
+</div>
+
+<div class="cal" role="grid" aria-label="Verfügbare Tage {{ month_label }}">
+  {% for name in weekday_names %}<div class="head">{{ name }}</div>{% endfor %}
+  {% for week in weeks %}{% for day in week %}
+    {% if not day.in_month %}<span class="day out"></span>
+    {% elif day.free %}<a class="day free{% if day.selected %} selected{% endif %}" href="{{ day.link }}" aria-label="{{ day.date|date:'l, j. F Y' }} – frei">{{ day.date.day }}</a>
+    {% else %}<span class="day{% if day.selected %} in-range{% endif %}" aria-label="{{ day.date|date:'j. F' }} – nicht verfügbar">{{ day.date.day }}</span>{% endif %}
+  {% endfor %}{% endfor %}
+</div>
+<div class="legend"><span class="l-free">Zeit – Tag anklicken</span></div>
+
+{% if form %}
+<form method="post" action="{% url 'widget:request' guide.slug %}" class="booking-form" id="booking-form">
+  <h2>
+    {% if start == end %}Anfrage für {{ start|date:"l, d.m.Y" }}
+    {% else %}Anfrage für {{ start|date:"d.m." }} – {{ end|date:"d.m.Y" }}{% endif %}
+  </h2>
+  {% if window_open %}<p class="small muted">Für ein längeres Zeitfenster klicke noch den letzten möglichen Tag an.</p>{% endif %}
+  {{ form.start_date }}{{ form.end_date }}{{ form.ts }}
+  {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
+
+  <fieldset class="field tour-choice{% if form.tour.errors %} has-error{% endif %}">
+    <legend>{{ form.tour.label }} *</legend>
+    {% for t in tours %}
+    <label class="choice">
+      <input type="radio" name="{{ form.tour.html_name }}" value="{{ t.pk }}"{% if form.tour.value == t.pk|stringformat:"s" %} checked{% endif %} required>
+      <span>
+        <strong>{{ t.title }}</strong>
+        <span class="small muted">{{ t.duration_days }} Tag{{ t.duration_days|pluralize:"e" }} · CHF {{ t.price }} {{ t.get_price_mode_display|lower }} · max. {{ t.max_participants }} Personen</span>
+        {% if t.description %}<span class="small pre">{{ t.description }}</span>{% endif %}
+      </span>
+    </label>
+    {% endfor %}
+    <label class="choice">
+      <input type="radio" name="{{ form.tour.html_name }}" value="idee"{% if form.tour.value == "idee" or not tours %} checked{% endif %} required>
+      <span><strong>Eigene Idee</strong><span class="small muted">Beschreibe unten, was du vorhast. Preis nach Absprache.</span></span>
+    </label>
+    {{ form.tour.errors }}
+  </fieldset>
+
+  {% for field in form %}{% if field.name not in "start_date end_date ts website tour" %}
+    <div class="field{% if field.errors %} has-error{% endif %}">
+      <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+      {{ field }}
+      {{ field.errors }}
     </div>
-  </form>
-  {% endif %}
-
-  <div class="tour-info">
-    {% if tours|length == 1 %}<h2>{{ tour.title }}</h2>{% endif %}
-    {% if tour.description %}<p class="pre small">{{ tour.description }}</p>{% endif %}
-    <p class="small muted">
-      {{ tour.duration_days }} Tag{{ tour.duration_days|pluralize:"e" }} ·
-      CHF {{ tour.price }} {{ tour.get_price_mode_display|lower }} ·
-      max. {{ tour.max_participants }} Personen
-    </p>
-  </div>
-
-  {% if notice %}<div class="alert error">{{ notice }}</div>{% endif %}
-
-  <div class="cal-nav">
-    {% if prev_month %}<a class="btn btn-secondary btn-small" href="?tour={{ tour.pk }}&amp;lang={{ lang }}&amp;monat={{ prev_month }}" aria-label="Vorheriger Monat">←</a>{% else %}<span class="disabled">←</span>{% endif %}
-    <strong>{{ month_label }}</strong>
-    {% if next_month %}<a class="btn btn-secondary btn-small" href="?tour={{ tour.pk }}&amp;lang={{ lang }}&amp;monat={{ next_month }}" aria-label="Nächster Monat">→</a>{% else %}<span class="disabled">→</span>{% endif %}
-  </div>
-
-  <div class="cal" role="grid" aria-label="Verfügbare Tage {{ month_label }}">
-    {% for name in weekday_names %}<div class="head">{{ name }}</div>{% endfor %}
-    {% for week in weeks %}{% for day in week %}
-      {% if not day.in_month %}<span class="day out"></span>
-      {% elif day.free %}<a class="day free{% if day.selected %} selected{% endif %}" href="?tour={{ tour.pk }}&amp;lang={{ lang }}&amp;monat={{ month_value }}&amp;datum={{ day.date|date:'Y-m-d' }}" aria-label="{{ day.date|date:'l, j. F Y' }} – frei">{{ day.date.day }}</a>
-      {% else %}<span class="day" aria-label="{{ day.date|date:'j. F' }} – nicht verfügbar">{{ day.date.day }}</span>{% endif %}
-    {% endfor %}{% endfor %}
-  </div>
-  <div class="legend"><span class="l-free">verfügbar – Tag anklicken</span></div>
-
-  {% if form %}
-  <form method="post" action="{% url 'widget:request' guide.slug %}" class="booking-form" id="booking-form">
-    <h2>Anfrage für {{ selected|date:"l, d.m.Y" }}{% if selected_end != selected %} – {{ selected_end|date:"d.m.Y" }}{% endif %}</h2>
-    <input type="hidden" name="tour" value="{{ tour.pk }}">
-    {{ form.start_date }}{{ form.ts }}
-    {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
-    {% for field in form %}{% if field.name != "start_date" and field.name != "ts" and field.name != "website" %}
-      <div class="field{% if field.errors %} has-error{% endif %}">
-        <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
-        {{ field }}
-        {{ field.errors }}
-      </div>
-    {% endif %}{% endfor %}
-    <div class="hp" aria-hidden="true"><label for="{{ form.website.id_for_label }}">Website</label>{{ form.website }}</div>
-    <p class="small muted">Die Anfrage ist unverbindlich. Bezahlt wird erst, wenn {{ guide.display_name }} die Tour bestätigt hat.</p>
-    <button class="btn" type="submit">Anfrage senden</button>
-  </form>
-  {% endif %}
+  {% endif %}{% endfor %}
+  <div class="hp" aria-hidden="true"><label for="{{ form.website.id_for_label }}">Website</label>{{ form.website }}</div>
+  <p class="small muted">Die Anfrage ist unverbindlich. Bezahlt wird erst, wenn du den Vorschlag von {{ guide.display_name }} angenommen hast.</p>
+  <button class="btn" type="submit">Anfrage senden</button>
+</form>
 {% endif %}
 {% endblock %}

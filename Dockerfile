@@ -16,4 +16,5 @@ RUN SECRET_KEY=build-only python manage.py collectstatic --noinput \
 USER app
 
 EXPOSE 8000
-CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py createcachetable && gunicorn config.wsgi --bind 0.0.0.0:8000 --workers 3 --timeout 60 --access-logfile -"]
+# PORT is set by Cloud Run. There, migrations run as a separate job before each deploy (RUN_MIGRATIONS=0).
+CMD ["sh", "-c", "if [ \"${RUN_MIGRATIONS:-1}\" = 1 ]; then python manage.py migrate --noinput && python manage.py createcachetable; fi && exec gunicorn config.wsgi --bind 0.0.0.0:${PORT:-8000} --workers ${WEB_CONCURRENCY:-3} --timeout 60 --access-logfile -"]

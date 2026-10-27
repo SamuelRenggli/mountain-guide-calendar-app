@@ -4,12 +4,12 @@
 {% block content %}
 <h1>Deine Buchung</h1>
 <section class="card">
-  <div class="spread"><h2>{{ booking.tour.title }}</h2>{% include "_status.html" %}</div>
+  <div class="spread"><h2>{{ booking.title }}</h2>{% include "_status.html" %}</div>
   <dl class="facts">
     <dt>Bergführer</dt><dd>{{ booking.guide.display_name }}</dd>
-    <dt>Datum</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
+    <dt>{% if booking.is_window %}Zeitfenster{% else %}Datum{% endif %}</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
     <dt>Teilnehmende</dt><dd>{{ booking.participants }}</dd>
-    <dt>Preis</dt><dd>CHF {{ booking.price }}</dd>
+    <dt>Preis</dt><dd>{% if booking.is_window and not booking.tour %}nach Absprache{% else %}CHF {{ booking.price }}{% endif %}</dd>
     {% if booking.deadline %}<dt>Frist</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
   </dl>
   {% if booking.guide_message %}<h2>Nachricht von {{ booking.guide.display_name }}</h2><p class="pre">{{ booking.guide_message }}</p>{% endif %}

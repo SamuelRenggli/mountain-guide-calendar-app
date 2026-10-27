@@ -4,8 +4,8 @@
   <tbody>
   {% for booking in bookings %}
     <tr>
-      <td><a href="{% url 'dashboard:booking' booking.pk %}">{{ booking.start_date|date:"D d.m.Y" }}</a>{% if booking.end_date != booking.start_date %}<br><span class="small muted">bis {{ booking.end_date|date:"d.m.Y" }}</span>{% endif %}</td>
-      <td>{{ booking.tour.title }}</td>
+      <td><a href="{% url 'dashboard:booking' booking.pk %}">{{ booking.start_date|date:"D d.m.Y" }}</a>{% if booking.end_date != booking.start_date %}<br><span class="small muted">{% if booking.is_window %}flexibel {% endif %}bis {{ booking.end_date|date:"d.m.Y" }}</span>{% endif %}</td>
+      <td>{{ booking.title }}{% if booking.is_window %}<br><span class="small muted">Zeitfenster</span>{% endif %}</td>
       <td>{{ booking.guest_name }}</td>
       <td>{{ booking.participants }}</td>
       <td>CHF {{ booking.price }}</td>

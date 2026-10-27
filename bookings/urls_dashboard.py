@@ -14,6 +14,7 @@ urlpatterns = [
     path("touren/<int:pk>/loeschen/", v.tour_delete, name="tour_delete"),
     path("verfuegbarkeit/", v.availability_view, name="availability"),
     path("verfuegbarkeit/sperre/<int:pk>/loeschen/", v.block_delete, name="block_delete"),
+    path("verfuegbarkeit/freigabe/<int:pk>/loeschen/", v.open_delete, name="open_delete"),
     path("verfuegbarkeit/abgleichen/", v.calendar_sync_now, name="calendar_sync"),
     path("kalender/", v.calendar_view, name="calendar"),
     path("einstellungen/", v.settings_view, name="settings"),

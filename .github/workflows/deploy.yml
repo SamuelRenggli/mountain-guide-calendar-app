@@ -1,0 +1,87 @@
+# Every push and pull request runs the tests. Pushes to main that pass are deployed to Cloud Run.
+# One-time setup: deploy/README.md
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: tourchef
+          POSTGRES_PASSWORD: tourchef
+          POSTGRES_DB: tourchef
+        ports: ["5432:5432"]
+        options: --health-cmd "pg_isready -U tourchef" --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgres://tourchef:tourchef@localhost:5432/tourchef
+      DEBUG: "true"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements-dev.txt
+      - name: Migrations are up to date
+        run: python manage.py makemigrations --check --dry-run
+      - run: pytest -q
+
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write  # keyless login to Google Cloud
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION }}
+      RUN_SA: ${{ vars.GCP_RUN_SA }}
+      SERVICE: tourchef
+    steps:
+      - uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WIF_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SA }}
+      - uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build and push image
+        run: |
+          IMAGE="$REGION-docker.pkg.dev/$PROJECT_ID/$SERVICE/app:$GITHUB_SHA"
+          gcloud auth configure-docker "$REGION-docker.pkg.dev" --quiet
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+          # Settings shared by the app and its jobs: config file from Secret Manager
+          echo "COMMON=--region=$REGION --image=$IMAGE --service-account=$RUN_SA --set-secrets=/secrets/env=tourchef-env:latest" >> "$GITHUB_ENV"
+
+      - name: Migrate database
+        run: |
+          gcloud run jobs deploy "$SERVICE-migrate" $COMMON \
+            --set-env-vars=ENV_FILE=/secrets/env --command=sh --args=deploy/migrate.sh \
+            --max-retries=0 --task-timeout=10m --execute-now --wait
+
+      - name: Deploy app
+        run: |
+          gcloud run deploy "$SERVICE" $COMMON \
+            --set-env-vars=ENV_FILE=/secrets/env,RUN_MIGRATIONS=0,WEB_CONCURRENCY=2 \
+            --allow-unauthenticated --cpu=1 --memory=512Mi --min-instances=0 --max-instances=2
+
+      - name: Update hourly job
+        run: |
+          gcloud run jobs deploy "$SERVICE-hourly" $COMMON \
+            --set-env-vars=ENV_FILE=/secrets/env --command=sh --args=deploy/hourly.sh \
+            --max-retries=0 --task-timeout=10m

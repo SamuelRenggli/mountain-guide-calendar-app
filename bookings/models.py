@@ -63,6 +63,19 @@ class BlockedPeriod(models.Model):
         constraints = [models.CheckConstraint(condition=Q(end_date__gte=F("start_date")), name="blocked_end_after_start")]
 
 
+class OpenPeriod(models.Model):
+    """Days the guide opened for bookings. Only used when the guide is bookable in open periods only."""
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="open_periods")
+    start_date = models.DateField("Von")
+    end_date = models.DateField("Bis")
+    note = models.CharField("Notiz", max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["start_date"]
+        constraints = [models.CheckConstraint(condition=Q(end_date__gte=F("start_date")), name="open_end_after_start")]
+
+
 class ExternalBusy(models.Model):
     """Busy days imported from the guide's iCal feed. Fully replaced on every sync."""
 
@@ -97,9 +110,11 @@ class Booking(models.Model):
         MANUAL = "manual", "Manuell erfasst"
 
     guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="bookings")
-    tour = models.ForeignKey(Tour, on_delete=models.PROTECT, related_name="bookings")
+    tour = models.ForeignKey(Tour, on_delete=models.PROTECT, related_name="bookings", null=True, blank=True)  # empty = guest's own idea
     start_date = models.DateField()
     end_date = models.DateField()
+    # A time window the guest offered: the guide still has to pick exact dates, so it doesn't hold any days.
+    is_window = models.BooleanField(default=False)
     participants = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
     price = models.DecimalField(max_digits=9, decimal_places=2)
 
@@ -131,12 +146,16 @@ class Booking(models.Model):
                     (DateRange("start_date", "end_date", RangeBoundary(inclusive_upper=True)), RangeOperators.OVERLAPS),
                     ("guide", RangeOperators.EQUAL),
                 ],
-                condition=Q(status__in=["requested", "offered", "awaiting_payment", "paid"]),
+                condition=Q(status__in=["requested", "offered", "awaiting_payment", "paid"], is_window=False),
             ),
         ]
 
     def __str__(self):
-        return f"{self.guest_name} – {self.tour} ({self.start_date:%d.%m.%Y})"
+        return f"{self.guest_name} – {self.title} ({self.start_date:%d.%m.%Y})"
+
+    @property
+    def title(self) -> str:
+        return self.tour.title if self.tour else "Eigene Tourenidee"
 
     @property
     def is_active(self) -> bool:

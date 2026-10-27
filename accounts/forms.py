@@ -53,7 +53,7 @@ class AvailabilityForm(forms.ModelForm):
 
     class Meta:
         model = User
-        fields = ("min_notice_days", "max_advance_days")
+        fields = ("only_open_periods", "min_notice_days", "max_advance_days")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

@@ -119,9 +119,12 @@ MESSAGES = {
 }
 
 SUMMARY = {
-    "de": "Tour:          {tour}\nDatum:         {dates}\nTeilnehmende:  {participants}\nPreis:         CHF {price}",
-    "en": "Tour:          {tour}\nDate:          {dates}\nParticipants:  {participants}\nPrice:         CHF {price}",
+    "de": "Tour:          {tour}\nDatum:         {dates}\nTeilnehmende:  {participants}\nPreis:         {price}",
+    "en": "Tour:          {tour}\nDate:          {dates}\nParticipants:  {participants}\nPrice:         {price}",
 }
+OWN_IDEA = {"de": "Eigene Tourenidee", "en": "Own tour idea"}
+WINDOW_NOTE = {"de": " (Zeitfenster, genaue Daten folgen)", "en": " (time window, exact dates to follow)"}
+PRICE_OPEN = {"de": "nach Absprache", "en": "to be agreed"}
 GUEST_CONTACT = {
     "de": "Gast:          {guest}\nE-Mail:        {guest_email}\nTelefon:       {guest_phone}",
     "en": "Guest:         {guest}\nEmail:         {guest_email}\nPhone:         {guest_phone}",
@@ -157,11 +160,11 @@ def _context(b, lang) -> dict:
         "guest_email": b.guest_email,
         "guest_phone": b.guest_phone or "–",
         "guest_message": b.guest_message or "–",
-        "tour": b.tour.title,
-        "dates": _dates(b),
+        "tour": b.tour.title if b.tour else OWN_IDEA[lang],
+        "dates": _dates(b) + (WINDOW_NOTE[lang] if b.is_window else ""),
         "start": f"{b.start_date:%d.%m.%Y}",
         "participants": b.participants,
-        "price": b.price,
+        "price": f"CHF {b.price}" if b.tour or not b.is_window else PRICE_OPEN[lang],
         "deadline": f"{b.deadline:%d.%m.%Y}" if b.deadline else "–",
         "guest_link": b.guest_url,
         "guide_link": f"{settings.SITE_URL}/dashboard/buchungen/{b.pk}/",
