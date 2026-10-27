@@ -16,7 +16,14 @@ Cloud Scheduler (hourly) ─▶ job tourchef-hourly: expire bookings, sync calen
 | Images | Artifact Registry, keeps the 2 newest | free tier |
 | Hourly jobs | Cloud Scheduler + Cloud Run job | free tier |
 
-A budget alert emails the billing admins as soon as anything costs money.
+**Cost cap:** the budget "Tourchef" (10 CHF/month) emails the billing admins at 0.01, 1, 5, 9 and
+10 CHF. At 10 CHF the function `budget-stop` ([budget-stop/](budget-stop/)) detaches billing from
+the project, which stops everything in it. Cost data arrives with a few hours' delay, so the stop
+happens at roughly 10 CHF. The database (Neon), code (GitHub) and config (`.env.cloudrun`) live
+outside the project and are not affected.
+
+To restart after a stop: re-link billing (`gcloud billing projects link tourchef-test-sr
+--billing-account=...`), run `deploy/gcp-setup.sh` again, push to `main`.
 
 ## One-time setup
 

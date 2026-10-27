@@ -5,7 +5,8 @@
 #
 # Creates: project, Artifact Registry (keeps the 2 newest images), service accounts, the config
 # secret, keyless deploy access for GitHub Actions (main branch only), the hourly scheduler and
-# a budget alert. The app itself is deployed by .github/workflows/deploy.yml.
+# a cost cap (email alerts, billing is detached at LIMIT, default 10 in the account's currency).
+# The app itself is deployed by .github/workflows/deploy.yml.
 set -euo pipefail
 
 : "${PROJECT_ID:?set PROJECT_ID}"
@@ -13,6 +14,7 @@ set -euo pipefail
 REGION=${REGION:-europe-west6}
 GITHUB_REPO=${GITHUB_REPO:-SamuelRenggli/mountain-guide-calendar-app}
 SERVICE=tourchef
+LIMIT=${LIMIT:-10}  # monthly cost cap in the billing account currency
 
 exists() { "$@" >/dev/null 2>&1; }
 
@@ -75,12 +77,47 @@ exists gcloud scheduler jobs describe "$SERVICE-hourly" --location="$REGION" ||
     --uri="https://run.googleapis.com/v2/projects/$PROJECT_ID/locations/$REGION/jobs/$SERVICE-hourly:run" \
     --oauth-service-account-email="$SCHEDULER_SA"
 
-echo "== Budget alert"
+echo "== Cost cap: emails from 0.01, everything stops at $LIMIT"
+gcloud services enable cloudbilling.googleapis.com pubsub.googleapis.com cloudfunctions.googleapis.com \
+  cloudbuild.googleapis.com eventarc.googleapis.com
+exists gcloud pubsub topics describe budget-stop || gcloud pubsub topics create budget-stop
+exists gcloud iam service-accounts describe "$(sa budget-stop)" || gcloud iam service-accounts create budget-stop
+# Allowed to detach billing from this project, nothing else
+bind_project "$(sa budget-stop)" roles/billing.projectManager
+gcloud functions deploy budget-stop --gen2 --region="$REGION" --runtime=python312 --source=deploy/budget-stop \
+  --entry-point=stop_billing --trigger-topic=budget-stop --service-account="$(sa budget-stop)" \
+  --trigger-service-account="$(sa budget-stop)" \
+  --set-env-vars="PROJECT_ID=$PROJECT_ID,LIMIT=$LIMIT" --max-instances=1 --memory=256Mi --quiet >/dev/null
+# The trigger delivers budget messages as budget-stop, which must be allowed to call the function.
+gcloud run services add-iam-policy-binding budget-stop --region="$REGION" \
+  --member="serviceAccount:$(sa budget-stop)" --role=roles/run.invoker >/dev/null
+exists gcloud artifacts repositories describe gcf-artifacts --location="$REGION" &&
+  gcloud artifacts repositories set-cleanup-policies gcf-artifacts --location="$REGION" \
+    --policy=deploy/ar-cleanup.json --no-dry-run >/dev/null
+
+# Emails at 0.01, 1, 5, 9 and 10; the topic (and with it budget-stop) gets every cost update.
+# Uses the API directly: `gcloud billing budgets update` crashes with threshold rules from a file.
 CURRENCY=$(gcloud billing accounts describe "$BILLING_ACCOUNT" --format='value(currencyCode)')
-if ! gcloud billing budgets list --billing-account="$BILLING_ACCOUNT" --format='value(displayName)' | grep -qx Tourchef; then
-  gcloud billing budgets create --billing-account="$BILLING_ACCOUNT" --display-name=Tourchef \
-    --budget-amount="1${CURRENCY}" --filter-projects="projects/$PROJECT_ID" \
-    --threshold-rule=percent=0.01 --threshold-rule=percent=1.0
+BUDGET=$(gcloud billing budgets list --billing-account="$BILLING_ACCOUNT" --filter=displayName=Tourchef --format='value(name)')
+BODY=$(cat <<JSON
+{
+  "displayName": "Tourchef",
+  "budgetFilter": {"projects": ["projects/$PROJECT_NUMBER"]},
+  "amount": {"specifiedAmount": {"currencyCode": "$CURRENCY", "units": "$LIMIT"}},
+  "thresholdRules": $(cat deploy/budget-thresholds.json),
+  "notificationsRule": {"pubsubTopic": "projects/$PROJECT_ID/topics/budget-stop", "schemaVersion": "1.0"}
+}
+JSON
+)
+budget_api() {
+  curl -sSf -X "$1" "https://billingbudgets.googleapis.com/v1/$2" -d "$BODY" -o /dev/null \
+    -H "Authorization: Bearer $(gcloud auth print-access-token)" -H "x-goog-user-project: $PROJECT_ID" \
+    -H "Content-Type: application/json"
+}
+if [ -z "$BUDGET" ]; then
+  budget_api POST "billingAccounts/$BILLING_ACCOUNT/budgets"
+else
+  budget_api PATCH "$BUDGET?updateMask=amount,thresholdRules,notificationsRule"
 fi
 
 cat <<EOF
