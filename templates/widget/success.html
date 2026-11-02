@@ -12,7 +12,8 @@
   {% endif %}
 </div>
 <p>Du erhältst eine Bestätigung per E-Mail.
-{% if booking.is_window %}{{ guide.display_name }} meldet sich mit einem konkreten Vorschlag für Daten und Preis.
-{% else %}Sobald {{ guide.display_name }} die Tour bestätigt, bekommst du den Link zur Zahlung.{% endif %}</p>
+{% if booking.is_window %}{{ guide.display_name }} meldet sich mit einem konkreten Vorschlag für die Daten.
+{% else %}{{ guide.display_name }} meldet sich, sobald die Tour bestätigt ist.{% endif %}
+Die Rechnung bekommst du nach der Tour.</p>
 <p><a href="{% url 'widget:show' guide.slug %}">Weitere Anfrage stellen</a></p>
 {% endblock %}

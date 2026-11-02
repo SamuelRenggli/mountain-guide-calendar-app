@@ -1,0 +1,9 @@
+<div class="table-wrap"><table class="invoice">
+  <thead><tr><th>Posten</th><th class="num">CHF</th></tr></thead>
+  <tbody>
+  {% for line in lines %}
+    <tr><td>{{ line.description }}</td><td class="num">{{ line.amount }}</td></tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr><td>Total</td><td class="num">{{ booking.price }}</td></tr></tfoot>
+</table></div>

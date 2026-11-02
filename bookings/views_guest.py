@@ -20,6 +20,7 @@ def detail(request, token):
     booking = _booking(token)
     response = render(request, "guest/detail.html", {
         "booking": booking,
+        "invoice_lines": booking.invoice_lines.all(),
         "can_pay_online": booking.status == Booking.Status.AWAITING_PAYMENT and booking.guide.can_take_card_payments,
         "returned_from_payment": request.GET.get("bezahlt") == "1",
     })

@@ -9,7 +9,7 @@
     <dt>Bergführer</dt><dd>{{ booking.guide.display_name }}</dd>
     <dt>{% if booking.is_window %}Zeitfenster{% else %}Datum{% endif %}</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
     <dt>Teilnehmende</dt><dd>{{ booking.participants }}</dd>
-    <dt>Preis</dt><dd>{% if booking.is_window and not booking.tour %}nach Absprache{% else %}CHF {{ booking.price }}{% endif %}</dd>
+    <dt>Preis</dt><dd>{% include "_price.html" with guest_view=True %}{% if not booking.is_invoiced %}<br><span class="small muted">Abrechnung nach der Tour</span>{% endif %}</dd>
     {% if booking.deadline %}<dt>Frist</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
   </dl>
   {% if booking.guide_message %}<h2>Nachricht von {{ booking.guide.display_name }}</h2><p class="pre">{{ booking.guide_message }}</p>{% endif %}
@@ -30,28 +30,45 @@
       </form>
     </div>
   </section>
-{% elif booking.status == "awaiting_payment" %}
-  <section class="card">
-    <h2>Bestätigt – bitte bezahlen</h2>
-    {% if returned_from_payment %}
-      <div class="alert info">Danke! Deine Zahlung wird verarbeitet. Diese Seite zeigt «Bezahlt», sobald sie bestätigt ist.</div>
-    {% endif %}
-    {% if can_pay_online %}
-      <form method="post" action="{% url 'guest:pay' booking.token %}">{% csrf_token %}
-        <button class="btn" type="submit">CHF {{ booking.price }} jetzt bezahlen</button>
-      </form>
-    {% else %}
-      <p>{{ booking.guide.display_name }} sendet dir die Zahlungsangaben direkt.</p>
-    {% endif %}
-  </section>
-{% elif booking.status == "paid" %}
-  <div class="alert success">Bezahlt – alles erledigt. Wir wünschen dir eine schöne Tour!</div>
+{% elif booking.status == "confirmed" %}
+  <div class="alert success">Bestätigt – die Tage sind für dich reserviert. Nach der Tour erhältst du die Rechnung per E-Mail.</div>
   <p class="small">Kontakt: {{ booking.guide.display_name }}, <a href="mailto:{{ booking.guide.email|urlencode:'@' }}">{{ booking.guide.email }}</a> {{ booking.guide.phone }}</p>
 {% endif %}
 
-{% if booking.status == "requested" or booking.status == "offered" or booking.status == "awaiting_payment" %}
+{% if booking.is_invoiced %}
+  <section class="card">
+    <h2>Rechnung</h2>
+    <p class="small muted">Von {{ booking.guide.display_name }}, {{ booking.invoiced_at|date:"d.m.Y" }}</p>
+    {% include "_invoice.html" with lines=invoice_lines %}
+    {% if booking.status == "awaiting_payment" %}
+      {% if returned_from_payment %}
+        <div class="alert info">Danke! Deine Zahlung wird verarbeitet. Diese Seite zeigt «Bezahlt», sobald sie bestätigt ist.</div>
+      {% endif %}
+      {% if can_pay_online %}
+        <form method="post" action="{% url 'guest:pay' booking.token %}">{% csrf_token %}
+          <button class="btn" type="submit">CHF {{ booking.price }} online bezahlen</button>
+        </form>
+      {% endif %}
+      {% if booking.guide.iban %}
+        <h3>{% if can_pay_online %}Oder per Überweisung{% else %}Zahlung per Überweisung{% endif %}</h3>
+        <dl class="facts">
+          <dt>Empfänger</dt><dd>{{ booking.guide.display_name }}</dd>
+          <dt>IBAN</dt><dd>{{ booking.guide.iban }}</dd>
+          <dt>Betrag</dt><dd>CHF {{ booking.price }}</dd>
+          <dt>Mitteilung</dt><dd>Tour {{ booking.start_date|date:"d.m.Y" }}, {{ booking.guest_name }}</dd>
+        </dl>
+      {% elif not can_pay_online %}
+        <p>{{ booking.guide.display_name }} sendet dir die Zahlungsangaben direkt.</p>
+      {% endif %}
+    {% elif booking.status == "paid" %}
+      <div class="alert success">Bezahlt – vielen Dank!</div>
+    {% endif %}
+  </section>
+{% endif %}
+
+{% if booking.status == "requested" or booking.status == "offered" or booking.status == "confirmed" %}
   <form method="post" action="{% url 'guest:action' booking.token 'stornieren' %}">{% csrf_token %}
-    <button class="link-button small" type="submit">Anfrage zurückziehen</button>
+    <button class="link-button small" type="submit">{% if booking.status == "confirmed" %}Buchung stornieren{% else %}Anfrage zurückziehen{% endif %}</button>
   </form>
 {% endif %}
 {% endblock %}

@@ -8,7 +8,7 @@
       <td>{{ booking.title }}{% if booking.is_window %}<br><span class="small muted">Zeitfenster</span>{% endif %}</td>
       <td>{{ booking.guest_name }}</td>
       <td>{{ booking.participants }}</td>
-      <td>CHF {{ booking.price }}</td>
+      <td>{% if booking.has_price %}CHF {{ booking.price }}{% else %}<span class="muted">offen</span>{% endif %}</td>
       <td>{% include "_status.html" %}{% if booking.deadline and show_deadline %}<br><span class="small muted">bis {{ booking.deadline|date:"d.m. H:i" }}</span>{% endif %}</td>
     </tr>
   {% endfor %}

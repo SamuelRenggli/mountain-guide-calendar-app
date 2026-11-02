@@ -10,15 +10,11 @@ from core.middleware import widget_csp
 from core.ratelimit import allow, client_ip
 
 from . import availability, monthgrid, services
-from .forms import OWN_IDEA, BookingRequestForm
+from .forms import BookingRequestForm
 
 
 def _guide(slug):
     return get_object_or_404(get_user_model(), slug=slug, is_active=True)
-
-
-def _int(value):
-    return int(value) if value and str(value).isdigit() else None
 
 
 def guest_language(request) -> str:
@@ -60,8 +56,7 @@ def _selection(guide, start_value, end_value):
     return start, end
 
 
-def _render(request, guide, *, start_value=None, end_value=None, month_value=None, tour_id=None, form=None, status=200):
-    tours = list(guide.tours.filter(is_active=True))
+def _render(request, guide, *, start_value=None, end_value=None, month_value=None, form=None, status=200):
     earliest, latest = availability.booking_window(guide)
     start, end = _selection(guide, start_value, end_value)
 
@@ -88,19 +83,14 @@ def _render(request, guide, *, start_value=None, end_value=None, month_value=Non
     def link(d):
         s, e = next_selection(d)
         query = f"?lang={lang}&monat={month:%Y-%m}&von={s:%Y-%m-%d}"
-        query += f"&bis={e:%Y-%m-%d}" if e else ""
-        return query + (f"&tour={tour_id}" if tour_id else "")
+        return query + (f"&bis={e:%Y-%m-%d}" if e else "")
 
     window_end = end or start
     if start and form is None:
-        form = BookingRequestForm(tours=tours, initial={
-            "start_date": start, "end_date": window_end, "language": lang,
-            "tour": str(tour_id) if tour_id else None,
-        })
+        form = BookingRequestForm(initial={"start_date": start, "end_date": window_end, "language": lang})
 
     context = {
         "guide": guide,
-        "tours": tours,
         "month_label": monthgrid.month_label(month),
         "prev_month": f"{monthgrid.shift_month(month, -1):%Y-%m}" if month > first_month else None,
         "next_month": f"{monthgrid.shift_month(month, 1):%Y-%m}" if month < last_month else None,
@@ -127,7 +117,7 @@ def widget(request, slug):
     guide = _guide(slug)
     return _render(
         request, guide, start_value=request.GET.get("von"), end_value=request.GET.get("bis"),
-        month_value=request.GET.get("monat"), tour_id=_int(request.GET.get("tour")),
+        month_value=request.GET.get("monat"),
     )
 
 
@@ -138,8 +128,7 @@ def widget(request, slug):
 @require_POST
 def widget_request(request, slug):
     guide = _guide(slug)
-    tours = list(guide.tours.filter(is_active=True))
-    form = BookingRequestForm(request.POST, tours=tours)
+    form = BookingRequestForm(request.POST)
     rerender = {"start_value": request.POST.get("start_date"), "end_value": request.POST.get("end_date")}
 
     if form.is_valid():
@@ -149,10 +138,9 @@ def widget_request(request, slug):
             form.add_error(None, "Zu viele Anfragen. Bitte versuche es später erneut.")
             return _render(request, guide, form=form, status=429, **rerender)
         data = form.cleaned_data
-        tour = None if data["tour"] == OWN_IDEA else next(t for t in tours if str(t.pk) == data["tour"])
         try:
             booking = services.create_request(
-                guide=guide, tour=tour, start_date=data["start_date"], end_date=data["end_date"],
+                guide=guide, tour=None, start_date=data["start_date"], end_date=data["end_date"],
                 participants=data["participants"], guest_name=data["guest_name"], guest_email=data["guest_email"],
                 guest_phone=data["guest_phone"], guest_message=data["guest_message"], language=data["language"],
             )

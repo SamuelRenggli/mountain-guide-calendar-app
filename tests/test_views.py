@@ -1,3 +1,4 @@
+from decimal import Decimal
 import time
 from unittest import mock
 
@@ -19,9 +20,9 @@ def aged_token(seconds=10):
 
 def widget_post(client, tour_, start, end=None, **extra):
     data = {
-        "tour": tour_.pk, "start_date": start.isoformat(), "end_date": (end or tour_.end_date_for(start)).isoformat(),
+        "start_date": start.isoformat(), "end_date": (end or tour_.end_date_for(start)).isoformat(),
         "participants": 2, "guest_name": "Gina Gast",
-        "guest_email": "gina@example.com", "guest_phone": "", "guest_message": "", "website": "", "ts": aged_token(), "language": "de",
+        "guest_email": "gina@example.com", "guest_phone": "", "guest_message": "Biancograt", "website": "", "ts": aged_token(), "language": "de",
     }
     data.update(extra)
     return client.post(reverse("widget:request", args=[tour_.guide.slug]), data)
@@ -79,10 +80,10 @@ def test_guide_confirms_own_booking(client, tour, make_booking, mailoutbox, djan
     booking = make_booking(tour, in_days(10))
     client.force_login(tour.guide)
     with django_capture_on_commit_callbacks(execute=True):
-        response = client.post(reverse("dashboard:booking_action", args=[booking.pk, "confirm"]), {"confirm-message": "Bis bald"})
+        response = client.post(reverse("dashboard:booking_action", args=[booking.pk, "confirm"]), {"confirm-price": "750", "confirm-message": "Bis bald"})
     assert response.status_code == 302
     booking.refresh_from_db()
-    assert booking.status == S.AWAITING_PAYMENT
+    assert booking.status == S.CONFIRMED
     assert mailoutbox[-1].to == ["gast@example.com"]
 
 
@@ -131,10 +132,10 @@ def test_widget_framing_restricted_to_guide_sites(client, tour):
 
 def test_widget_shows_free_days_and_form(client, tour):
     day = in_days(10)
-    response = client.get(reverse("widget:show", args=[tour.guide.slug]), {"tour": tour.pk, "von": day.isoformat()})
+    response = client.get(reverse("widget:show", args=[tour.guide.slug]), {"von": day.isoformat()})
     html = response.content.decode()
-    assert "Piz Palü" in html
     assert 'id="booking-form"' in html
+    assert "Piz Palü" not in html, "guests describe their plan instead of picking a tour"
 
 
 def test_widget_ignores_unavailable_date(client, tour, make_booking):
@@ -205,7 +206,7 @@ def test_guest_accepts_offer(client, tour, make_booking):
     booking = make_booking(tour, in_days(10), status=S.OFFERED)
     client.post(reverse("guest:action", args=[booking.token, "annehmen"]))
     booking.refresh_from_db()
-    assert booking.status == S.AWAITING_PAYMENT
+    assert booking.status == S.CONFIRMED
 
 
 def test_guest_cannot_pay_unconfirmed_booking(client, tour, make_booking):
@@ -254,23 +255,18 @@ def test_widget_request_in_english(client, tour, mailoutbox, django_capture_on_c
     assert guide_mail.subject.startswith("Neue Buchungsanfrage")  # guide's profile language is German
 
 
-def test_widget_window_request_for_tour_holds_no_days(client, tour):
-    response = widget_post(client, tour, in_days(10), in_days(14), guest_message="Flexibel")
+def test_widget_window_request_holds_no_days(client, tour):
+    response = widget_post(client, tour, in_days(10), in_days(14))
     assert response.status_code == 200
     booking = Booking.objects.get()
+    assert booking.tour is None and booking.price == 0
     assert booking.is_window and (booking.start_date, booking.end_date) == (in_days(10), in_days(14))
     assert widget_post(client, tour, in_days(12)).status_code == 200, "the window holds no days"
 
 
-def test_widget_own_idea_request(client, tour):
-    response = widget_post(client, tour, in_days(10), in_days(12), **{"tour": "idee", "guest_message": "Biancograt"})
-    assert response.status_code == 200
-    booking = Booking.objects.get()
-    assert booking.tour is None and booking.is_window and booking.price == 0
-
-
-def test_widget_own_idea_needs_description(client, tour):
-    assert widget_post(client, tour, in_days(10), **{"tour": "idee"}).status_code == 400
+@pytest.mark.parametrize("message", ["", "x" * 251])
+def test_widget_request_needs_short_description(client, tour, message):
+    assert widget_post(client, tour, in_days(10), guest_message=message).status_code == 400
     assert not Booking.objects.exists()
 
 
@@ -283,7 +279,7 @@ def test_widget_shows_window_selection(client, tour):
     url = reverse("widget:show", args=[tour.guide.slug])
     html = client.get(url, {"von": in_days(10).isoformat(), "bis": in_days(13).isoformat()}).content.decode()
     assert 'id="booking-form"' in html
-    assert "Eigene Idee" in html and "Piz Palü" in html
+    assert "Beschreibe in 2–3 Sätzen" in html and 'maxlength="250"' in html
     assert html.count("day free selected") == 4
 
 
@@ -291,10 +287,88 @@ def test_guide_offers_dates_for_window(client, tour, make_booking):
     booking = make_booking(tour, in_days(10), end_date=in_days(14), is_window=True)
     client.force_login(tour.guide)
     confirm = reverse("dashboard:booking_action", args=[booking.pk, "confirm"])
-    client.post(confirm, {"confirm-message": ""})
+    client.post(confirm, {"confirm-price": "750", "confirm-message": ""})
     booking.refresh_from_db()
     assert booking.status == S.REQUESTED, "a window can't be confirmed without exact dates"
     offer = reverse("dashboard:booking_action", args=[booking.pk, "offer"])
-    client.post(offer, {"offer-start_date": in_days(11).isoformat(), "offer-price": "600", "offer-message": "Passt"})
+    client.post(offer, {"offer-start_date": in_days(11).isoformat(), "offer-price": "820", "offer-message": "Passt"})
     booking.refresh_from_db()
     assert (booking.status, booking.is_window, booking.start_date, booking.end_date) == (S.OFFERED, False, in_days(11), in_days(11))
+
+
+# --- Billing -----------------------------------------------------------------
+
+
+def test_guide_bills_after_tour(client, tour, make_booking, mailoutbox, django_capture_on_commit_callbacks):
+    booking = make_booking(tour, in_days(-3), end_date=in_days(-2), status=S.CONFIRMED, price=Decimal("2000"))
+    client.force_login(tour.guide)
+    url = reverse("dashboard:invoice", args=[booking.pk])
+    html = client.get(url).content.decode()
+    assert 'name="price" value="2000.00"' in html, "starts from the offered price"
+    assert "Preisrechner" in html and 'value="750.00" data-calc-rate' in html
+    data = {
+        "price": "2100", "message": "",
+        "spesen-TOTAL_FORMS": "2", "spesen-INITIAL_FORMS": "0", "spesen-MIN_NUM_FORMS": "0", "spesen-MAX_NUM_FORMS": "20",
+        "spesen-0-description": "Hütte", "spesen-0-amount": "120", "spesen-1-description": "", "spesen-1-amount": "",
+    }
+    with django_capture_on_commit_callbacks(execute=True):
+        assert client.post(url, data).status_code == 302
+    booking.refresh_from_db()
+    assert (booking.status, str(booking.price)) == (S.AWAITING_PAYMENT, "2220.00")
+    assert [line.kind for line in booking.invoice_lines.all()] == ["tour", "expense"]
+    assert mailoutbox[-1].to == ["gast@example.com"]
+    html = client.get(url).content.decode()
+    assert 'name="price" value="2100.00"' in html and 'value="Hütte"' in html, "correction starts from the bill"
+    guest_html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
+    assert "2220,00" in guest_html and "Hütte" in guest_html
+
+
+def test_booking_page_has_price_calculator(client, tour, make_booking):
+    booking = make_booking(tour, in_days(10))
+    client.force_login(tour.guide)
+    html = client.get(reverse("dashboard:booking", args=[booking.pk])).content.decode()
+    assert "Preisrechner" in html and 'value="500.00" data-calc-aspirant-rate' in html
+    assert html.count("data-price") == 2, "confirm and offer price fields can be filled from it"
+
+
+def test_expense_needs_description(client, tour, make_booking):
+    booking = make_booking(tour, in_days(-1), status=S.CONFIRMED)
+    client.force_login(tour.guide)
+    data = {
+        "price": "750",
+        "spesen-TOTAL_FORMS": "1", "spesen-INITIAL_FORMS": "0", "spesen-0-description": "", "spesen-0-amount": "50",
+    }
+    assert client.post(reverse("dashboard:invoice", args=[booking.pk]), data).status_code == 200
+    booking.refresh_from_db()
+    assert booking.status == S.CONFIRMED
+
+
+def test_other_guide_cannot_bill(client, tour, other_guide, make_booking):
+    booking = make_booking(tour, in_days(-1), status=S.CONFIRMED)
+    client.force_login(other_guide)
+    assert client.get(reverse("dashboard:invoice", args=[booking.pk])).status_code == 404
+
+
+def test_widget_shows_day_rate(client, tour):
+    tour.guide.day_rate = 820
+    tour.guide.save()
+    html = client.get(reverse("widget:show", args=[tour.guide.slug])).content.decode()
+    assert "Basispreis CHF 820 pro Tag" in html
+
+
+def test_settings_normalises_iban(client, guide):
+    client.force_login(guide)
+    data = {"display_name": guide.display_name, "email": guide.email, "phone": "", "language": "de", "slug": guide.slug,
+            "widget_allowed_origins": "", "day_rate": "780", "aspirant_day_rate": "520", "iban": "ch9300762011623852957"}
+    assert client.post(reverse("dashboard:settings"), data).status_code == 302
+    guide.refresh_from_db()
+    assert (guide.day_rate, guide.iban) == (780, "CH93 0076 2011 6238 5295 7")
+
+
+def test_offer_form_prefills_requested_dates(client, tour, make_booking):
+    booking = make_booking(tour, in_days(10), end_date=in_days(14), is_window=True, price=0)
+    Booking.objects.filter(pk=booking.pk).update(tour=None)  # the guest's own idea: the guide also sets the end
+    client.force_login(tour.guide)
+    html = client.get(reverse("dashboard:booking", args=[booking.pk])).content.decode()
+    assert f'name="offer-start_date" value="{in_days(10).isoformat()}"' in html
+    assert f'name="offer-end_date" value="{in_days(14).isoformat()}"' in html

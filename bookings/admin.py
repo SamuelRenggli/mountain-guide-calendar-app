@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import BlockedPeriod, Booking, BookingEvent, ExternalBusy, OpenPeriod, Tour
+from .models import BlockedPeriod, Booking, BookingEvent, ExternalBusy, InvoiceLine, OpenPeriod, Tour
 
 
 @admin.register(Tour)
@@ -17,13 +17,20 @@ class BookingEventInline(admin.TabularInline):
     can_delete = False
 
 
+class InvoiceLineInline(admin.TabularInline):
+    model = InvoiceLine
+    extra = 0
+    readonly_fields = ("position", "kind", "description", "quantity", "unit_price")
+    can_delete = False
+
+
 @admin.register(Booking)
 class BookingAdmin(admin.ModelAdmin):
     list_display = ("id", "guide", "tour", "start_date", "end_date", "guest_name", "status", "price")
     list_filter = ("status",)
     search_fields = ("guest_name", "guest_email", "guide__display_name")
-    readonly_fields = ("token", "created_at", "updated_at", "paid_at", "stripe_checkout_session_id")
-    inlines = [BookingEventInline]
+    readonly_fields = ("token", "created_at", "updated_at", "invoiced_at", "paid_at", "stripe_checkout_session_id")
+    inlines = [InvoiceLineInline, BookingEventInline]
 
 
 admin.site.register(BlockedPeriod)

@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.utils import timezone
 from django.utils.text import slugify
 
 ALL_WEEKDAYS = "0123456"  # Monday = 0
@@ -43,15 +44,25 @@ class User(AbstractUser):
 
     # Availability rules
     available_weekdays = models.CharField(max_length=7, default=ALL_WEEKDAYS)
-    only_open_periods = models.BooleanField(
-        "Nur in freigegebenen Zeiträumen buchbar", default=False,
-        help_text="Gäste können nur an Tagen anfragen, die du unten freigegeben hast.",
-    )
     min_notice_days = models.PositiveSmallIntegerField(
         "Mindestvorlauf (Tage)", default=2, validators=[MaxValueValidator(90)]
     )
     max_advance_days = models.PositiveSmallIntegerField(
         "Buchbar im Voraus (Tage)", default=365, validators=[MinValueValidator(7), MaxValueValidator(730)]
+    )
+
+    # Billing: the guest sees the day rate up front, the guide bills after the tour
+    day_rate = models.DecimalField(
+        "Tagesansatz Bergführer (CHF)", max_digits=7, decimal_places=2, default=750, validators=[MinValueValidator(0)],
+        help_text="Basispreis pro Tag, den Gäste im Widget sehen. Vorgabe im Preisrechner, auch für einen zweiten Bergführer.",
+    )
+    aspirant_day_rate = models.DecimalField(
+        "Tagesansatz Aspirant (CHF)", max_digits=7, decimal_places=2, default=500, validators=[MinValueValidator(0)],
+        help_text="Vorgabe im Preisrechner.",
+    )
+    iban = models.CharField(
+        "IBAN für Überweisungen", max_length=42, blank=True,  # stored in groups of four
+        help_text="Steht auf der Rechnung, damit Gäste überweisen können.",
     )
 
     # External calendar (iCal/ICS) — the URL is a secret, never shown publicly
@@ -95,6 +106,11 @@ class User(AbstractUser):
     @property
     def weekday_set(self) -> set[int]:
         return {int(c) for c in self.available_weekdays}
+
+    @property
+    def uses_open_periods(self) -> bool:
+        """Once the guide has opened periods that aren't over yet, guests can only book inside them."""
+        return self.open_periods.filter(end_date__gte=timezone.localdate()).exists()
 
     @property
     def can_take_card_payments(self) -> bool:

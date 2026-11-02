@@ -3,27 +3,19 @@
 {% block content %}
 <h1>Verfügbarkeit</h1>
 <p class="muted">
-  {% if user.only_open_periods %}Gäste können nur in freigegebenen Zeiträumen anfragen, an buchbaren Wochentagen und ausser an gesperrten oder im Kalender belegten Tagen.
-  {% else %}Gäste können an allen buchbaren Wochentagen anfragen, ausser an gesperrten oder im Kalender belegten Tagen.{% endif %}
+  {% if open_periods %}Gäste können nur in deinen freigegebenen Zeiträumen anfragen, ausser an gesperrten oder im Kalender belegten Tagen.
+  {% else %}Gäste können an allen Tagen anfragen, ausser an gesperrten oder im Kalender belegten Tagen. Sobald du Zeiträume freigibst, sind nur noch diese buchbar.{% endif %}
 </p>
 
 <div class="grid-2">
-  <form method="post" class="card">{% csrf_token %}
-    <input type="hidden" name="form" value="rules">
-    <h2>Regeln</h2>
-    {% include "_form.html" with form=rules_form %}
-    <button class="btn" type="submit">Speichern</button>
-  </form>
-
   <form method="post" class="card">{% csrf_token %}
     <input type="hidden" name="form" value="block">
     <h2>Zeitraum sperren</h2>
     {% include "_form.html" with form=block_form %}
     <button class="btn" type="submit">Sperren</button>
   </form>
-</div>
 
-<section class="card">
+  <section class="card">
   <h2>Gesperrte Zeiträume</h2>
   {% if blocks %}
   <table>
@@ -40,15 +32,14 @@
     {% endfor %}
   </table>
   {% else %}<p class="empty">Keine Sperren.</p>{% endif %}
-</section>
+  </section>
+</div>
 
 <div class="grid-2">
   <form method="post" class="card">{% csrf_token %}
     <input type="hidden" name="form" value="open">
     <h2>Zeitraum freigeben</h2>
-    {% if not user.only_open_periods %}
-    <p class="small muted">Wirkt erst, wenn unter «Regeln» «Nur in freigegebenen Zeiträumen buchbar» aktiviert ist.</p>
-    {% endif %}
+    <p class="small muted">Optional. Sobald ein Zeitraum freigegeben ist, können Gäste nur noch darin anfragen.</p>
     {% include "_form.html" with form=open_form %}
     <button class="btn" type="submit">Freigeben</button>
   </form>

@@ -1,19 +1,20 @@
 """Booking state machine. All status changes go through here.
 
-    requested ──confirm──────────────▶ awaiting_payment ──pay──▶ paid
-        │  └──counter_offer──▶ offered ──guest accepts──┘
+    requested ──confirm─────────────▶ confirmed ──invoice (after the tour)──▶ awaiting_payment ──pay──▶ paid
+        │  └──counter_offer──▶ offered ──guest accepts──┘                      └─invoice again (correction)
         │                        └──guest declines──▶ declined
-        └── reject / cancel / expire (any open state) ──▶ rejected / cancelled / expired
+        └── reject / cancel / expire (before the tour) ──▶ rejected / cancelled / expired
 """
 
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from . import availability, emails
-from .models import Booking, BookingEvent, Tour
+from .models import Booking, BookingEvent, InvoiceLine, Tour
 
 S = Booking.Status
 Actor = BookingEvent.Actor
@@ -35,11 +36,6 @@ class InvalidTransition(BookingError):
 
 def _deadline(days: int):
     return timezone.now() + timedelta(days=days)
-
-
-def _payment_deadline(booking: Booking):
-    # Manual payment (bank transfer) can take a while, so only online payment gets a deadline.
-    return _deadline(settings.GUEST_RESPONSE_DAYS) if booking.guide.can_take_card_payments else None
 
 
 def _save_holding_dates(booking: Booking, **save_kwargs):
@@ -133,12 +129,13 @@ def _log(booking, actor, from_status, to_status, note=""):
 # --- Guide actions ---------------------------------------------------------
 
 
-def confirm(booking: Booking, message: str = "") -> Booking:
+def confirm(booking: Booking, message: str = "", *, price) -> Booking:
+    """Confirm the requested days at the price the guide quotes (expenses are billed after the tour)."""
     if booking.is_window:
-        raise BookingError("Die Anfrage hat ein Zeitfenster: Bitte schlage genaue Daten und einen Preis vor.")
+        raise BookingError("Die Anfrage hat ein Zeitfenster: Bitte schlage genaue Daten vor.")
     booking = _transition(
-        booking, {S.REQUESTED}, S.AWAITING_PAYMENT, Actor.GUIDE, message,
-        guide_message=message, deadline=_payment_deadline(booking),
+        booking, {S.REQUESTED}, S.CONFIRMED, Actor.GUIDE, f"Preis CHF {price}. {message}".strip(),
+        price=price, guide_message=message, deadline=None,
     )
     transaction.on_commit(lambda: emails.confirmed(booking))
     return booking
@@ -163,17 +160,37 @@ def counter_offer(booking: Booking, *, start_date: date, price, message: str, en
 
 def reject(booking: Booking, message: str = "") -> Booking:
     booking = _transition(
-        booking, {S.REQUESTED, S.OFFERED, S.AWAITING_PAYMENT}, S.REJECTED, Actor.GUIDE, message,
-        guide_message=message, deadline=None,
+        booking, {S.REQUESTED, S.OFFERED}, S.REJECTED, Actor.GUIDE, message, guide_message=message, deadline=None,
     )
     transaction.on_commit(lambda: emails.rejected(booking))
     return booking
 
 
 def guide_cancel(booking: Booking, message: str = "") -> Booking:
-    """Cancel a paid booking. Refunds are made in the Stripe dashboard."""
-    booking = _transition(booking, {S.PAID}, S.CANCELLED, Actor.GUIDE, message, guide_message=message, deadline=None)
+    """Call off a confirmed tour before it is billed."""
+    booking = _transition(booking, {S.CONFIRMED}, S.CANCELLED, Actor.GUIDE, message, guide_message=message, deadline=None)
     transaction.on_commit(lambda: emails.cancelled_by_guide(booking))
+    return booking
+
+
+def invoice(booking: Booking, lines: list[InvoiceLine], message: str = "") -> Booking:
+    """Bill the guest after the tour (lines are unsaved). Can be repeated to correct the bill until it is paid."""
+    if booking.start_date > timezone.localdate():
+        raise BookingError("Abrechnen kannst du erst ab dem ersten Tourentag.")
+    if not lines:
+        raise BookingError("Die Rechnung hat keine Posten.")
+    total = sum((line.amount for line in lines), Decimal("0.00"))
+    with transaction.atomic():
+        booking = _transition(
+            booking, {S.CONFIRMED, S.AWAITING_PAYMENT}, S.AWAITING_PAYMENT, Actor.GUIDE,
+            f"Rechnung über CHF {total}. {message}".strip(),
+            price=total, invoiced_at=timezone.now(), guide_message=message, deadline=None,
+        )
+        booking.invoice_lines.all().delete()
+        for i, line in enumerate(lines):
+            line.booking, line.position = booking, i
+        InvoiceLine.objects.bulk_create(lines)
+    transaction.on_commit(lambda: emails.invoice_sent(booking))
     return booking
 
 
@@ -190,9 +207,7 @@ def mark_paid_manually(booking: Booking) -> Booking:
 
 
 def accept_offer(booking: Booking) -> Booking:
-    booking = _transition(
-        booking, {S.OFFERED}, S.AWAITING_PAYMENT, Actor.GUEST, deadline=_payment_deadline(booking)
-    )
+    booking = _transition(booking, {S.OFFERED}, S.CONFIRMED, Actor.GUEST, deadline=None)
     transaction.on_commit(lambda: emails.offer_accepted(booking))
     return booking
 
@@ -204,7 +219,7 @@ def decline_offer(booking: Booking) -> Booking:
 
 
 def guest_cancel(booking: Booking) -> Booking:
-    booking = _transition(booking, {S.REQUESTED, S.OFFERED, S.AWAITING_PAYMENT}, S.CANCELLED, Actor.GUEST, deadline=None)
+    booking = _transition(booking, {S.REQUESTED, S.OFFERED, S.CONFIRMED}, S.CANCELLED, Actor.GUEST, deadline=None)
     transaction.on_commit(lambda: emails.cancelled_by_guest(booking))
     return booking
 
@@ -223,14 +238,12 @@ def mark_paid_by_stripe(booking: Booking, session_id: str) -> Booking:
 
 
 def expire_overdue() -> int:
-    overdue = Booking.objects.filter(
-        status__in=[S.REQUESTED, S.OFFERED, S.AWAITING_PAYMENT], deadline__lt=timezone.now()
-    )
+    overdue = Booking.objects.filter(status__in=[S.REQUESTED, S.OFFERED], deadline__lt=timezone.now())
     count = 0
     for booking in overdue:
         try:
             expired = _transition(
-                booking, {S.REQUESTED, S.OFFERED, S.AWAITING_PAYMENT}, S.EXPIRED, Actor.SYSTEM, "Frist abgelaufen",
+                booking, {S.REQUESTED, S.OFFERED}, S.EXPIRED, Actor.SYSTEM, "Frist abgelaufen",
                 deadline=None,
             )
         except InvalidTransition:

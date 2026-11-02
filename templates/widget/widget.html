@@ -5,6 +5,7 @@
   Wähle den ersten und den letzten Tag, an dem du Zeit hättest (max. {{ max_window_days }} Tage).
   Für eine Tagestour reicht ein Tag. {{ guide.display_name }} meldet sich mit einem konkreten Vorschlag.
 </p>
+<p class="price-note"><strong>Basispreis CHF {{ guide.day_rate|floatformat:"-2" }} pro Tag</strong>, zuzüglich Spesen (z. B. Hütte, Bahn). Abgerechnet wird nach der Tour.</p>
 
 {% if notice %}<div class="alert error">{{ notice }}</div>{% endif %}
 
@@ -34,34 +35,16 @@
   {{ form.start_date }}{{ form.end_date }}{{ form.ts }}
   {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
 
-  <fieldset class="field tour-choice{% if form.tour.errors %} has-error{% endif %}">
-    <legend>{{ form.tour.label }} *</legend>
-    {% for t in tours %}
-    <label class="choice">
-      <input type="radio" name="{{ form.tour.html_name }}" value="{{ t.pk }}"{% if form.tour.value == t.pk|stringformat:"s" %} checked{% endif %} required>
-      <span>
-        <strong>{{ t.title }}</strong>
-        <span class="small muted">{{ t.duration_days }} Tag{{ t.duration_days|pluralize:"e" }} · CHF {{ t.price }} {{ t.get_price_mode_display|lower }} · max. {{ t.max_participants }} Personen</span>
-        {% if t.description %}<span class="small pre">{{ t.description }}</span>{% endif %}
-      </span>
-    </label>
-    {% endfor %}
-    <label class="choice">
-      <input type="radio" name="{{ form.tour.html_name }}" value="idee"{% if form.tour.value == "idee" or not tours %} checked{% endif %} required>
-      <span><strong>Eigene Idee</strong><span class="small muted">Beschreibe unten, was du vorhast. Preis nach Absprache.</span></span>
-    </label>
-    {{ form.tour.errors }}
-  </fieldset>
-
-  {% for field in form %}{% if field.name not in "start_date end_date ts website tour" %}
+  {% for field in form %}{% if field.name not in "start_date end_date ts website" %}
     <div class="field{% if field.errors %} has-error{% endif %}">
       <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
+      {% if field.help_text %}<p class="small muted">{{ field.help_text }} (max. {{ field.field.max_length }} Zeichen)</p>{% endif %}
       {{ field }}
       {{ field.errors }}
     </div>
   {% endif %}{% endfor %}
   <div class="hp" aria-hidden="true"><label for="{{ form.website.id_for_label }}">Website</label>{{ form.website }}</div>
-  <p class="small muted">Die Anfrage ist unverbindlich. Bezahlt wird erst, wenn du den Vorschlag von {{ guide.display_name }} angenommen hast.</p>
+  <p class="small muted">Die Anfrage ist unverbindlich. Bezahlt wird nach der Tour: CHF {{ guide.day_rate|floatformat:"-2" }} pro Tag plus Spesen.</p>
   <button class="btn" type="submit">Anfrage senden</button>
 </form>
 {% endif %}

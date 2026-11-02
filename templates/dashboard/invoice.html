@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Abrechnen {{ booking.guest_name }} – Tourchef{% endblock %}
+{% block content %}
+<p class="small"><a href="{% url 'dashboard:booking' booking.pk %}">← Buchung</a></p>
+<h1>{% if booking.is_invoiced %}Rechnung korrigieren{% else %}Abrechnen{% endif %}</h1>
+<p class="muted">
+  {{ booking.guest_name }} · {{ booking.start_date|date:"d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"d.m.Y" }}{% endif %}
+  · {{ booking.participants }} Person{{ booking.participants|pluralize:"en" }}
+</p>
+
+<form method="post" class="card invoice-form" id="invoice-form">{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
+  <h2>Führung</h2>
+  <div class="field{% if form.price.errors %} has-error{% endif %}">
+    <label for="{{ form.price.id_for_label }}">{{ form.price.label }}</label>
+    {{ form.price }}
+    <small class="help">{% if booking.has_price and not booking.is_invoiced %}Aus deinem Angebot (CHF {{ booking.price }}). {% endif %}Anpassen, falls nötig – der Preisrechner unten hilft.</small>
+    {{ form.price.errors }}
+  </div>
+
+  <h2>Spesen</h2>
+  {{ expense_forms.management_form }}
+  {% if expense_forms.non_form_errors %}<div class="alert error">{{ expense_forms.non_form_errors }}</div>{% endif %}
+  <div class="expense-rows">
+    {% for f in expense_forms %}
+    <div class="expense-row">
+      <div class="field{% if f.description.errors %} has-error{% endif %}">
+        <label for="{{ f.description.id_for_label }}" class="{% if not forloop.first %}sr-only{% endif %}">{{ f.description.label }}</label>
+        {{ f.description }}{{ f.description.errors }}
+      </div>
+      <div class="field{% if f.amount.errors %} has-error{% endif %}">
+        <label for="{{ f.amount.id_for_label }}" class="{% if not forloop.first %}sr-only{% endif %}">{{ f.amount.label }}</label>
+        {{ f.amount }}{{ f.amount.errors }}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="small muted">Leere Zeilen werden ignoriert. Für mehr Zeilen speichern und «Rechnung korrigieren» wählen.</p>
+
+  <div class="invoice-total" aria-live="polite">
+    <span>Total</span><strong>CHF <span id="invoice-total">–</span></strong>
+  </div>
+
+  <div class="field">
+    <label for="{{ form.message.id_for_label }}">{{ form.message.label }}</label>
+    {{ form.message }}{{ form.message.errors }}
+  </div>
+  <p class="small muted">Der Gast erhält eine E-Mail mit der Rechnung und einem Link zur Zahlung{% if booking.guide.iban %} (online oder per Überweisung){% endif %}.</p>
+  <button class="btn" type="submit">{% if booking.is_invoiced %}Korrigierte Rechnung senden{% else %}Rechnung senden{% endif %}</button>
+</form>
+
+{% include "dashboard/_price_calculator.html" %}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/pricing.js' %}"></script>{% endblock %}

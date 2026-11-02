@@ -8,11 +8,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
-from accounts.forms import AvailabilityForm, CalendarSyncForm, ProfileForm
+from accounts.forms import CalendarSyncForm, ProfileForm
 from core.ratelimit import allow
 
 from . import availability, calsync, monthgrid, services
-from .forms import BlockedPeriodForm, MessageForm, OfferForm, OpenPeriodForm, TourForm
+from .forms import (
+    BlockedPeriodForm, ConfirmForm, ExpenseFormSet, InvoiceForm, MessageForm, OfferForm, OpenPeriodForm, TourForm,
+)
 from .models import BlockedPeriod, Booking, OpenPeriod, Tour
 
 S = Booking.Status
@@ -24,10 +26,12 @@ def home(request):
     today = timezone.localdate()
     return render(request, "dashboard/home.html", {
         "needs_action": bookings.filter(status=S.REQUESTED).order_by("deadline"),
+        "to_invoice": bookings.filter(status=S.CONFIRMED, start_date__lte=today),
+        "upcoming": bookings.filter(status=S.CONFIRMED, start_date__gt=today),
         "waiting_for_guest": bookings.filter(status__in=[S.OFFERED, S.AWAITING_PAYMENT]),
-        "upcoming": bookings.filter(status=S.PAID, end_date__gte=today),
-        "history": bookings.exclude(status__in=Booking.ACTIVE_STATUSES).order_by("-updated_at")[:20],
-        "has_tours": request.user.tours.exists(),
+        "history": bookings.exclude(status__in=[S.REQUESTED, S.OFFERED, S.CONFIRMED, S.AWAITING_PAYMENT])
+        .order_by("-updated_at")[:20],
+        "is_new": not bookings.exists(),
     })
 
 
@@ -39,13 +43,14 @@ def _detail_context(booking, **forms):
     context = {
         "booking": booking,
         "events": booking.events.all(),
-        "confirm_form": MessageForm(prefix="confirm"),
+        "confirm_form": ConfirmForm(prefix="confirm", initial={"price": booking.price or None}),
         "reject_form": MessageForm(prefix="reject"),
         "cancel_form": MessageForm(prefix="cancel"),
         "offer_form": OfferForm(prefix="offer", own_idea=booking.tour is None, initial={
-            "start_date": booking.start_date, "end_date": booking.end_date,
-            "price": booking.price,
+            "start_date": booking.start_date, "end_date": booking.end_date, "price": booking.price or None,
         }),
+        "invoice_lines": booking.invoice_lines.all(),
+        "today": timezone.localdate(),
     }
     context.update(forms)
     return context
@@ -62,11 +67,16 @@ def booking_detail(request, pk):
 def booking_action(request, pk, name):
     booking = _own_booking(request, pk)
     try:
-        if name in ("confirm", "reject", "cancel"):
+        if name == "confirm":
+            form = ConfirmForm(request.POST, prefix=name)
+            if not form.is_valid():
+                return render(request, "dashboard/booking_detail.html", _detail_context(booking, confirm_form=form))
+            services.confirm(booking, form.cleaned_data["message"], price=form.cleaned_data["price"])
+        elif name in ("reject", "cancel"):
             form = MessageForm(request.POST, prefix=name)
             if not form.is_valid():
                 return render(request, "dashboard/booking_detail.html", _detail_context(booking, **{f"{name}_form": form}))
-            action = {"confirm": services.confirm, "reject": services.reject, "cancel": services.guide_cancel}[name]
+            action = {"reject": services.reject, "cancel": services.guide_cancel}[name]
             action(booking, form.cleaned_data["message"])
         elif name == "offer":
             form = OfferForm(request.POST, prefix="offer", own_idea=booking.tour is None)
@@ -84,6 +94,34 @@ def booking_action(request, pk, name):
     except services.BookingError as exc:
         messages.error(request, str(exc))
     return redirect("dashboard:booking", pk=pk)
+
+
+@login_required
+def invoice(request, pk):
+    booking = _own_booking(request, pk)
+    if booking.status not in (S.CONFIRMED, S.AWAITING_PAYMENT):
+        messages.error(request, "Diese Buchung kann nicht abgerechnet werden.")
+        return redirect("dashboard:booking", pk=pk)
+    # Start from the offered price, or from the existing bill when correcting it.
+    lines = list(booking.invoice_lines.all())
+    initial = {"price": booking.price or None}
+    if lines:
+        tour_total = sum(line.amount for line in lines if line.kind == line.Kind.TOUR)
+        initial = {"price": tour_total, "message": booking.guide_message}
+    expenses = [{"description": line.description, "amount": line.unit_price}
+                for line in lines if line.kind == line.Kind.EXPENSE]
+    form = InvoiceForm(request.POST or None, initial=initial)
+    expense_forms = ExpenseFormSet(request.POST or None, initial=expenses, prefix="spesen")
+    if request.method == "POST" and form.is_valid() and expense_forms.is_valid():
+        lines = [form.tour_line()] + [line for f in expense_forms if (line := f.line())]
+        try:
+            services.invoice(booking, lines, form.cleaned_data["message"])
+        except services.BookingError as exc:
+            messages.error(request, str(exc))
+        else:
+            messages.success(request, "Rechnung gesendet. Der Gast hat einen Link zur Zahlung erhalten.")
+            return redirect("dashboard:booking", pk=pk)
+    return render(request, "dashboard/invoice.html", {"booking": booking, "form": form, "expense_forms": expense_forms})
 
 
 # --- Tours -----------------------------------------------------------------
@@ -125,20 +163,13 @@ def tour_delete(request, pk):
 @login_required
 def availability_view(request):
     guide = request.user
-    rules_form = AvailabilityForm(instance=guide, prefix="rules")
     block_form = BlockedPeriodForm(prefix="block")
     open_form = OpenPeriodForm(prefix="open")
     ical_form = CalendarSyncForm(instance=guide, prefix="ical")
 
     if request.method == "POST":
         which = request.POST.get("form")
-        if which == "rules":
-            rules_form = AvailabilityForm(request.POST, instance=guide, prefix="rules")
-            if rules_form.is_valid():
-                rules_form.save()
-                messages.success(request, "Verfügbarkeit gespeichert.")
-                return redirect("dashboard:availability")
-        elif which == "block":
+        if which == "block":
             block_form = BlockedPeriodForm(request.POST, prefix="block")
             if block_form.is_valid():
                 block = block_form.save(commit=False)
@@ -162,7 +193,6 @@ def availability_view(request):
                 return redirect("dashboard:availability")
 
     return render(request, "dashboard/availability.html", {
-        "rules_form": rules_form,
         "block_form": block_form,
         "open_form": open_form,
         "ical_form": ical_form,

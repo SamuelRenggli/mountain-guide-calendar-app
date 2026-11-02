@@ -1,4 +1,7 @@
+from decimal import Decimal
+
 import pytest
+from django.utils import timezone
 
 from bookings import emails
 from bookings.models import Booking
@@ -33,12 +36,17 @@ def test_guest_and_guide_languages_are_independent(tour, make_booking, mailoutbo
     assert by_recipient["gast@example.com"].subject.startswith("Deine Anfrage")
 
 
-def test_payment_hint_depends_on_stripe(tour, make_booking, mailoutbox, settings):
-    booking = make_booking(tour, in_days(10), status=Booking.Status.AWAITING_PAYMENT, language="en")
-    emails.confirmed(booking)
+def test_invoice_payment_options(tour, make_booking, mailoutbox, settings):
+    booking = make_booking(tour, in_days(-1), status=Booking.Status.AWAITING_PAYMENT, language="en",
+                           invoiced_at=timezone.now(), price=Decimal("750.00"))
+    booking.invoice_lines.create(position=0, kind="tour", description="Tourenpreis", quantity=1, unit_price=750)
+    emails.invoice_sent(booking)
     assert "payment details directly" in mailoutbox[-1].body
+    assert "750.00" in mailoutbox[-1].body
     settings.STRIPE_SECRET_KEY = "sk_test_x"
-    tour.guide.stripe_account_id, tour.guide.stripe_charges_enabled = "acct_1", True
-    tour.guide.save()
-    emails.confirmed(booking)
-    assert "complete your booking by paying" in mailoutbox[-1].body
+    guide = tour.guide
+    guide.stripe_account_id, guide.stripe_charges_enabled, guide.iban = "acct_1", True, "CH93 0076 2011 6238 5295 7"
+    guide.save()
+    emails.invoice_sent(booking)
+    assert "Pay online: " in mailoutbox[-1].body
+    assert "IBAN CH93 0076 2011 6238 5295 7" in mailoutbox[-1].body

@@ -1,7 +1,7 @@
 """Which days can a guest book? Computed from rules, never stored per day.
 
-A day is free when it is a bookable weekday (and, if the guide only opens
-selected periods, inside one of them) and not covered by a manual block,
+A day is free when it is a bookable weekday (and, as soon as the guide has
+opened any current periods, inside one of them) and not covered by a manual block,
 an external calendar event or an active booking. The booking window
 (min notice / max advance) applies to the start date of a tour.
 """
@@ -41,7 +41,7 @@ def day_states(guide, start: date, end: date) -> dict[date, str]:
                 states[d] = state
 
     overlapping = {"guide": guide, "start_date__lte": end, "end_date__gte": start}
-    if guide.only_open_periods:
+    if guide.uses_open_periods:
         opened = set()
         for s, e in OpenPeriod.objects.filter(**overlapping).values_list("start_date", "end_date"):
             opened.update(days_between(max(s, start), min(e, end)))
@@ -56,7 +56,7 @@ def day_states(guide, start: date, end: date) -> dict[date, str]:
     for s, e, status in Booking.objects.filter(status__in=Booking.ACTIVE_STATUSES, is_window=False, **overlapping).values_list(
         "start_date", "end_date", "status"
     ):
-        held = BOOKED if status in (Booking.Status.AWAITING_PAYMENT, Booking.Status.PAID) else REQUESTED
+        held = BOOKED if status in Booking.BOOKED_STATUSES else REQUESTED
         mark(s, e, held)
     return states
 

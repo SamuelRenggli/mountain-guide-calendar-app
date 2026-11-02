@@ -21,17 +21,17 @@
 <section class="card">
   <h2>Online-Zahlungen</h2>
   {% if user.can_take_card_payments %}
-    <p>✓ Stripe ist verbunden. Gäste bezahlen nach deiner Bestätigung online; das Geld geht direkt auf dein Konto.</p>
+    <p>✓ Stripe ist verbunden. Gäste können deine Rechnung nach der Tour online bezahlen; das Geld geht direkt auf dein Konto.</p>
   {% elif stripe_available %}
-    <p>Verbinde dein Stripe-Konto, damit Gäste nach deiner Bestätigung online bezahlen können. Ohne Stripe erfasst du Zahlungen manuell.</p>
+    <p>Verbinde dein Stripe-Konto, damit Gäste deine Rechnung online bezahlen können. Ohne Stripe überweisen Gäste auf deine IBAN und du erfasst die Zahlung manuell.</p>
     <a class="btn" href="{% url 'payments:connect' %}">{% if user.stripe_account_id %}Stripe-Einrichtung fortsetzen{% else %}Mit Stripe verbinden{% endif %}</a>
   {% else %}
-    <p class="muted">Online-Zahlungen sind auf dieser Plattform noch nicht aktiviert. Zahlungen erfasst du manuell.</p>
+    <p class="muted">Online-Zahlungen sind auf dieser Plattform noch nicht aktiviert. Gäste überweisen auf deine IBAN; Zahlungen erfasst du manuell.</p>
   {% endif %}
 </section>
 
 <form method="post" class="card">{% csrf_token %}
-  <h2>Profil</h2>
+  <h2>Profil, Preise &amp; Abrechnung</h2>
   {% include "_form.html" %}
   <button class="btn" type="submit">Speichern</button>
   <p class="small"><a href="{% url 'accounts:password_change' %}">Passwort ändern</a></p>

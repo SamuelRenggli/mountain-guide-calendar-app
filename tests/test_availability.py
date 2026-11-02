@@ -70,12 +70,13 @@ def test_day_states_priority(tour, make_booking):
     assert states[in_days(22)] == availability.FREE
 
 
-def test_open_periods_only_apply_when_enabled(tour):
-    OpenPeriod.objects.create(guide=tour.guide, start_date=in_days(10), end_date=in_days(12))
-    assert availability.can_start_on(tour, in_days(20)), "periods are ignored while the setting is off"
+def test_open_periods_apply_once_there_is_one(tour):
+    assert availability.can_start_on(tour, in_days(20)), "without open periods every day is bookable"
+    OpenPeriod.objects.create(guide=tour.guide, start_date=in_days(-10), end_date=in_days(-5))
+    assert availability.can_start_on(tour, in_days(20)), "periods that are over don't count"
 
-    tour.guide.only_open_periods = True
-    tour.guide.save()
+    OpenPeriod.objects.create(guide=tour.guide, start_date=in_days(10), end_date=in_days(12))
+    assert not availability.can_start_on(tour, in_days(20))
     assert availability.can_start_on(tour, in_days(10))
     assert availability.can_start_on(tour, in_days(12))
     assert not availability.can_start_on(tour, in_days(9))
@@ -83,8 +84,6 @@ def test_open_periods_only_apply_when_enabled(tour):
 
 
 def test_open_periods_still_respect_blocks_and_weekdays(guide):
-    guide.only_open_periods = True
-    guide.save()
     tour = Tour.objects.create(guide=guide, title="Haute Route", price=1500, duration_days=3)
     OpenPeriod.objects.create(guide=guide, start_date=in_days(10), end_date=in_days(20))
     BlockedPeriod.objects.create(guide=guide, start_date=in_days(15), end_date=in_days(15))
@@ -95,9 +94,3 @@ def test_open_periods_still_respect_blocks_and_weekdays(guide):
     assert in_days(18) in startable  # 18, 19, 20
     assert in_days(19) not in startable  # would end after the open period
 
-
-def test_no_open_periods_means_nothing_bookable(guide):
-    guide.only_open_periods = True
-    guide.save()
-    states = availability.day_states(guide, in_days(1), in_days(30))
-    assert availability.FREE not in states.values()

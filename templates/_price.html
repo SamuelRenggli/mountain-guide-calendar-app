@@ -1,0 +1,1 @@
+{% if booking.is_invoiced %}CHF {{ booking.price }}{% if not guest_view %} (abgerechnet){% endif %}{% elif booking.has_price %}CHF {{ booking.price }} + Spesen{% else %}CHF {{ booking.guide.day_rate|floatformat:"-2" }} pro Tag + Spesen{% endif %}

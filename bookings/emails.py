@@ -7,6 +7,7 @@ are plain text, so there are no HTML escaping issues. Guest input is only ever p
 """
 
 import logging
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.mail import send_mail
@@ -38,9 +39,9 @@ MESSAGES = {
     },
     "confirmed": {
         "de": ("Deine Tour am {start} ist bestätigt",
-               "Hallo {guest}\n\n{guide} hat deine Anfrage bestätigt:\n\n{summary}\n{guide_note}\n{payment_hint}"),
+               "Hallo {guest}\n\n{guide} hat deine Anfrage bestätigt:\n\n{summary}\n{guide_note}\n{billing_hint}"),
         "en": ("Your tour on {start} is confirmed",
-               "Hello {guest}\n\n{guide} has confirmed your request:\n\n{summary}\n{guide_note}\n{payment_hint}"),
+               "Hello {guest}\n\n{guide} has confirmed your request:\n\n{summary}\n{guide_note}\n{billing_hint}"),
     },
     "offer_sent": {
         "de": ("Neuer Vorschlag von {guide}",
@@ -58,9 +59,9 @@ MESSAGES = {
     },
     "offer_accepted_guest": {
         "de": ("Deine Tour am {start} ist bestätigt",
-               "Hallo {guest}\n\nDanke! Deine Buchung ist bestätigt:\n\n{summary}\n\n{payment_hint}"),
+               "Hallo {guest}\n\nDanke! Deine Buchung ist bestätigt:\n\n{summary}\n\n{billing_hint}"),
         "en": ("Your tour on {start} is confirmed",
-               "Hello {guest}\n\nThank you! Your booking is confirmed:\n\n{summary}\n\n{payment_hint}"),
+               "Hello {guest}\n\nThank you! Your booking is confirmed:\n\n{summary}\n\n{billing_hint}"),
     },
     "offer_declined": {
         "de": ("Gegenangebot abgelehnt",
@@ -83,16 +84,24 @@ MESSAGES = {
     "cancelled_by_guide": {
         "de": ("Deine Tour am {start} wurde abgesagt",
                "Hallo {guest}\n\n{guide} musste die Tour leider absagen.\n\n{summary}\n{guide_note}\n"
-               "Bereits bezahlte Beträge werden dir zurückerstattet. Bei Fragen: {guide_email}"),
+               "Bei Fragen: {guide_email}"),
         "en": ("Your tour on {start} has been cancelled",
                "Hello {guest}\n\nUnfortunately {guide} had to cancel the tour.\n\n{summary}\n{guide_note}\n"
-               "Any amount you have already paid will be refunded. Questions: {guide_email}"),
+               "Questions: {guide_email}"),
+    },
+    "invoice": {
+        "de": ("Rechnung für deine Tour vom {start}",
+               "Hallo {guest}\n\nVielen Dank für die Tour! Hier ist die Abrechnung von {guide}:\n\n{invoice}\n{guide_note}\n"
+               "{payment_instructions}"),
+        "en": ("Invoice for your tour on {start}",
+               "Hello {guest}\n\nThank you for the tour! Here is the invoice from {guide}:\n\n{invoice}\n{guide_note}\n"
+               "{payment_instructions}"),
     },
     "paid_guest": {
-        "de": ("Zahlung erhalten – deine Buchung ist komplett",
+        "de": ("Zahlung erhalten – vielen Dank",
                "Hallo {guest}\n\nVielen Dank, deine Zahlung ist eingegangen.\n\n{summary}\n\n"
                "Kontakt Bergführer: {guide}, {guide_email} {guide_phone}\n\n{guest_link}"),
-        "en": ("Payment received – your booking is complete",
+        "en": ("Payment received – thank you",
                "Hello {guest}\n\nThank you, we have received your payment.\n\n{summary}\n\n"
                "Your mountain guide: {guide}, {guide_email} {guide_phone}\n\n{guest_link}"),
     },
@@ -124,19 +133,26 @@ SUMMARY = {
 }
 OWN_IDEA = {"de": "Eigene Tourenidee", "en": "Own tour idea"}
 WINDOW_NOTE = {"de": " (Zeitfenster, genaue Daten folgen)", "en": " (time window, exact dates to follow)"}
-PRICE_OPEN = {"de": "nach Absprache", "en": "to be agreed"}
+PRICE_BASE = {"de": "CHF {rate} pro Tag + Spesen", "en": "CHF {rate} per day + expenses"}
+BILLING_HINT = {
+    "de": "Nach der Tour erhältst du die Rechnung per E-Mail.\nDetails zu deiner Buchung: {guest_link}",
+    "en": "You will receive the invoice by email after the tour.\nYour booking: {guest_link}",
+}
+PRICE_QUOTED = {"de": "CHF {price} + Spesen", "en": "CHF {price} + expenses"}
+TOTAL = {"de": "Total", "en": "Total"}
+PAY_ONLINE = {"de": "Online bezahlen: {guest_link}", "en": "Pay online: {guest_link}"}
+PAY_TRANSFER = {
+    "de": "Überweisung an:\n{guide}\nIBAN {iban}\nMitteilung: Tour {start}, {guest}",
+    "en": "Bank transfer to:\n{guide}\nIBAN {iban}\nReference: Tour {start}, {guest}",
+}
 GUEST_CONTACT = {
     "de": "Gast:          {guest}\nE-Mail:        {guest_email}\nTelefon:       {guest_phone}",
     "en": "Guest:         {guest}\nEmail:         {guest_email}\nPhone:         {guest_phone}",
 }
 GUIDE_NOTE = {"de": "\nNachricht von {guide}:\n{message}\n", "en": "\nMessage from {guide}:\n{message}\n"}
-PAYMENT_ONLINE = {
-    "de": "Bitte schliesse die Buchung mit der Zahlung ab:\n{guest_link}",
-    "en": "Please complete your booking by paying here:\n{guest_link}",
-}
 PAYMENT_MANUAL = {
-    "de": "{guide} sendet dir die Zahlungsangaben direkt.\nDetails zu deiner Buchung: {guest_link}",
-    "en": "{guide} will send you the payment details directly.\nYour booking: {guest_link}",
+    "de": "{guide} sendet dir die Zahlungsangaben direkt.\nRechnung online: {guest_link}",
+    "en": "{guide} will send you the payment details directly.\nInvoice online: {guest_link}",
 }
 
 
@@ -164,7 +180,7 @@ def _context(b, lang) -> dict:
         "dates": _dates(b) + (WINDOW_NOTE[lang] if b.is_window else ""),
         "start": f"{b.start_date:%d.%m.%Y}",
         "participants": b.participants,
-        "price": f"CHF {b.price}" if b.tour or not b.is_window else PRICE_OPEN[lang],
+        "price": _price(b, lang),
         "deadline": f"{b.deadline:%d.%m.%Y}" if b.deadline else "–",
         "guest_link": b.guest_url,
         "guide_link": f"{settings.SITE_URL}/dashboard/buchungen/{b.pk}/",
@@ -172,9 +188,40 @@ def _context(b, lang) -> dict:
     ctx["summary"] = SUMMARY[lang].format(**ctx)
     ctx["guest_contact"] = GUEST_CONTACT[lang].format(**ctx)
     ctx["guide_note"] = GUIDE_NOTE[lang].format(guide=ctx["guide"], message=b.guide_message) if b.guide_message else ""
-    hint = PAYMENT_ONLINE if guide.can_take_card_payments else PAYMENT_MANUAL
-    ctx["payment_hint"] = hint[lang].format(**ctx)
+    ctx["billing_hint"] = BILLING_HINT[lang].format(**ctx)
+    ctx["invoice"] = _invoice(b, lang)
+    ctx["payment_instructions"] = _payment_instructions(b, lang, ctx)
     return ctx
+
+
+def _amount(value) -> str:
+    """750 rather than 750.00, but 82.50 stays."""
+    value = Decimal(value)
+    return f"{value:.0f}" if value == value.to_integral_value() else f"{value:.2f}"
+
+
+def _price(b, lang) -> str:
+    if b.is_invoiced:
+        return f"CHF {Decimal(b.price):.2f}"
+    if b.has_price:
+        return PRICE_QUOTED[lang].format(price=f"{Decimal(b.price):.2f}")
+    return PRICE_BASE[lang].format(rate=_amount(b.guide.day_rate))
+
+
+def _invoice(b, lang) -> str:
+    rows = [f"{line.description:<48} {line.amount:>10}" for line in b.invoice_lines.all()]
+    rows.append(f"{TOTAL[lang] + ' CHF':<48} {b.price:>10}")
+    return "\n".join(rows)
+
+
+def _payment_instructions(b, lang, ctx) -> str:
+    guide = b.guide
+    parts = []
+    if guide.can_take_card_payments:
+        parts.append(PAY_ONLINE[lang].format(**ctx))
+    if guide.iban:
+        parts.append(PAY_TRANSFER[lang].format(**ctx, iban=guide.iban))
+    return "\n\n".join(parts) or PAYMENT_MANUAL[lang].format(**ctx)
 
 
 def _send(key, b, *, to_guest: bool):
@@ -220,6 +267,10 @@ def cancelled_by_guest(b):
 
 def cancelled_by_guide(b):
     _send("cancelled_by_guide", b, to_guest=True)
+
+
+def invoice_sent(b):
+    _send("invoice", b, to_guest=True)
 
 
 def paid(b):

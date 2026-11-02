@@ -95,7 +95,8 @@ class Booking(models.Model):
     class Status(models.TextChoices):
         REQUESTED = "requested", "Anfrage offen"
         OFFERED = "offered", "Gegenangebot gesendet"
-        AWAITING_PAYMENT = "awaiting_payment", "Bestätigt – Zahlung offen"
+        CONFIRMED = "confirmed", "Bestätigt"
+        AWAITING_PAYMENT = "awaiting_payment", "Abgerechnet – Zahlung offen"
         PAID = "paid", "Bezahlt"
         DECLINED = "declined", "Vom Gast abgelehnt"
         REJECTED = "rejected", "Abgelehnt"
@@ -103,7 +104,9 @@ class Booking(models.Model):
         EXPIRED = "expired", "Abgelaufen"
 
     # Bookings in these states hold their dates; overlapping ones are rejected by the database.
-    ACTIVE_STATUSES = (Status.REQUESTED, Status.OFFERED, Status.AWAITING_PAYMENT, Status.PAID)
+    ACTIVE_STATUSES = (Status.REQUESTED, Status.OFFERED, Status.CONFIRMED, Status.AWAITING_PAYMENT, Status.PAID)
+    # Agreed with the guest: the days are taken for sure.
+    BOOKED_STATUSES = (Status.CONFIRMED, Status.AWAITING_PAYMENT, Status.PAID)
 
     class PaymentMethod(models.TextChoices):
         STRIPE = "stripe", "Online (Stripe)"
@@ -116,7 +119,8 @@ class Booking(models.Model):
     # A time window the guest offered: the guide still has to pick exact dates, so it doesn't hold any days.
     is_window = models.BooleanField(default=False)
     participants = models.PositiveSmallIntegerField(validators=[MinValueValidator(1)])
-    price = models.DecimalField(max_digits=9, decimal_places=2)
+    price = models.DecimalField(max_digits=9, decimal_places=2)  # invoice total once invoiced
+    invoiced_at = models.DateTimeField(null=True, blank=True)
 
     guest_name = models.CharField(max_length=100)
     guest_email = models.EmailField()
@@ -146,7 +150,7 @@ class Booking(models.Model):
                     (DateRange("start_date", "end_date", RangeBoundary(inclusive_upper=True)), RangeOperators.OVERLAPS),
                     ("guide", RangeOperators.EQUAL),
                 ],
-                condition=Q(status__in=["requested", "offered", "awaiting_payment", "paid"], is_window=False),
+                condition=Q(status__in=["requested", "offered", "confirmed", "awaiting_payment", "paid"], is_window=False),
             ),
         ]
 
@@ -162,12 +166,47 @@ class Booking(models.Model):
         return self.status in self.ACTIVE_STATUSES
 
     @property
+    def is_invoiced(self) -> bool:
+        return self.invoiced_at is not None
+
+    @property
+    def has_price(self) -> bool:
+        """The guide has quoted a price (when confirming or offering); before that only the day rate applies."""
+        return self.price > 0
+
+    @property
+    def days(self) -> int:
+        return (self.end_date - self.start_date).days + 1
+
+    @property
     def guest_url(self) -> str:
         return f"{settings.SITE_URL}/b/{self.token}/"
 
     @property
     def amount_cents(self) -> int:
         return int((self.price * 100).to_integral_value(rounding=ROUND_HALF_UP))
+
+
+class InvoiceLine(models.Model):
+    """One line of the bill the guide sends after the tour: the tour price or an expense."""
+
+    class Kind(models.TextChoices):
+        TOUR = "tour", "Tourenpreis"
+        EXPENSE = "expense", "Spesen"
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="invoice_lines")
+    position = models.PositiveSmallIntegerField()
+    kind = models.CharField(max_length=12, choices=Kind.choices)
+    description = models.CharField(max_length=200)
+    quantity = models.DecimalField(max_digits=6, decimal_places=1)
+    unit_price = models.DecimalField(max_digits=9, decimal_places=2)
+
+    class Meta:
+        ordering = ["position"]
+
+    @property
+    def amount(self) -> Decimal:
+        return (self.quantity * self.unit_price).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
 class BookingEvent(models.Model):

@@ -7,6 +7,7 @@ app_name = "dashboard"
 urlpatterns = [
     path("", v.home, name="home"),
     path("buchungen/<int:pk>/", v.booking_detail, name="booking"),
+    path("buchungen/<int:pk>/abrechnen/", v.invoice, name="invoice"),
     path("buchungen/<int:pk>/<slug:name>/", v.booking_action, name="booking_action"),
     path("touren/", v.tours, name="tours"),
     path("touren/neu/", v.tour_edit, name="tour_new"),

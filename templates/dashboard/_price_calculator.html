@@ -1,0 +1,20 @@
+<section class="card calc" data-calc>
+  <h2>Preisrechner</h2>
+  <p class="small muted">Nur eine Hilfe: Der Preis, den der Gast sieht, ist der Betrag, den du im Preisfeld einträgst. Spesen kommen nach der Tour dazu.</p>
+  <div class="invoice-grid">
+    <div class="field"><label for="calc-days">Tage</label>
+      <input id="calc-days" type="number" min="0" step="0.5" value="{{ booking.days }}" data-calc-days></div>
+    <div class="field"><label for="calc-rate">Tagesansatz Bergführer (CHF)</label>
+      <input id="calc-rate" type="number" min="0" step="10" value="{{ booking.guide.day_rate|stringformat:'s' }}" data-calc-rate></div>
+    <div class="field"><label for="calc-extra">Zusätzliche Bergführer</label>
+      <input id="calc-extra" type="number" min="0" max="9" step="1" value="0" data-calc-extra>
+      <small class="help">Zum gleichen Tagesansatz.</small></div>
+    <div class="field"><label for="calc-aspirants">Aspiranten</label>
+      <input id="calc-aspirants" type="number" min="0" max="9" step="1" value="0" data-calc-aspirants></div>
+    <div class="field"><label for="calc-aspirant-rate">Tagesansatz Aspirant (CHF)</label>
+      <input id="calc-aspirant-rate" type="number" min="0" step="10" value="{{ booking.guide.aspirant_day_rate|stringformat:'s' }}" data-calc-aspirant-rate></div>
+  </div>
+  <div class="invoice-total" aria-live="polite"><span>Vorschlag</span><strong>CHF <span data-calc-result>–</span></strong></div>
+  <button class="btn btn-secondary" type="button" data-calc-apply>Als Preis übernehmen</button>
+  <p class="small muted">Ansätze ändern: <a href="{% url 'dashboard:settings' %}">Einstellungen</a></p>
+</section>

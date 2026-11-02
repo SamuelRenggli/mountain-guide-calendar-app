@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}Buchung {{ booking.guest_name }} – Tourchef{% endblock %}
 {% block content %}
 <p class="small"><a href="{% url 'dashboard:home' %}">← Alle Anfragen</a></p>
@@ -13,7 +14,7 @@
     <dl class="facts">
       <dt>{% if booking.is_window %}Zeitfenster{% else %}Datum{% endif %}</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
       <dt>Teilnehmende</dt><dd>{{ booking.participants }}</dd>
-      <dt>Preis</dt><dd>{% if booking.is_window and not booking.tour %}nach Absprache{% else %}CHF {{ booking.price }}{% endif %}</dd>
+      <dt>Preis</dt><dd>{% include "_price.html" %}</dd>
       {% if booking.deadline %}<dt>Frist</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
       {% if booking.paid_at %}<dt>Bezahlt</dt><dd>{{ booking.paid_at|date:"d.m.Y H:i" }} ({{ booking.get_payment_method_display }})</dd>{% endif %}
     </dl>
@@ -29,10 +30,14 @@
   </section>
 </div>
 
+{% if booking.status == "requested" or booking.status == "offered" %}
+{% include "dashboard/_price_calculator.html" %}
+{% endif %}
+
 {% if booking.status == "requested" and booking.is_window %}
 <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" class="card">{% csrf_token %}
   <h2>Angebot machen</h2>
-  <p class="small muted">Der Gast hat ein Zeitfenster angegeben. Schlage genaue Daten{% if not booking.tour %} und einen Preis{% endif %} vor. Erst dann sind die Tage reserviert.</p>
+  <p class="small muted">Der Gast hat ein Zeitfenster angegeben. Schlage genaue Daten und einen Preis vor. Erst wenn der Gast annimmt, sind die Tage reserviert.</p>
   {% include "_form.html" with form=offer_form %}
   <button class="btn" type="submit">Angebot senden</button>
 </form>
@@ -40,10 +45,7 @@
 <div class="grid-2">
   <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'confirm' %}" class="card">{% csrf_token %}
     <h2>Bestätigen</h2>
-    <p class="small muted">
-      {% if booking.guide.can_take_card_payments %}Der Gast erhält einen Link zur Online-Zahlung.
-      {% else %}Stripe ist nicht verbunden: Sende dem Gast die Zahlungsangaben selbst und erfasse die Zahlung danach hier.{% endif %}
-    </p>
+    <p class="small muted">Die Tage sind dann reserviert. Der Gast sieht deinen Preis, Spesen rechnest du nach der Tour ab.</p>
     {% include "_form.html" with form=confirm_form %}
     <button class="btn" type="submit">Anfrage bestätigen</button>
   </form>
@@ -59,24 +61,43 @@
   {% include "_form.html" with form=offer_form %}
   <button class="btn btn-secondary" type="submit">Neues Angebot senden</button>
 </form>
-{% elif booking.status == "awaiting_payment" %}
-<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'paid' %}" class="card">{% csrf_token %}
-  <h2>Zahlung erfassen</h2>
-  <p class="small muted">Nur verwenden, wenn der Gast z. B. per Überweisung oder bar bezahlt hat. Online-Zahlungen werden automatisch erfasst.</p>
-  <button class="btn btn-secondary" type="submit">Zahlung erhalten</button>
-</form>
+{% elif booking.status == "confirmed" %}
+<section class="card">
+  <h2>Abrechnen</h2>
+  {% if booking.start_date <= today %}
+    <p class="small muted">Trage Tage, Begleitung und Spesen ein. Der Gast bekommt die Rechnung per E-Mail.</p>
+    <a class="btn" href="{% url 'dashboard:invoice' booking.pk %}">Abrechnen</a>
+  {% else %}
+    <p class="small muted">Ab dem ersten Tourentag ({{ booking.start_date|date:"d.m.Y" }}) kannst du hier die Rechnung stellen.</p>
+  {% endif %}
+</section>
 {% endif %}
 
-{% if booking.status == "requested" or booking.status == "offered" or booking.status == "awaiting_payment" %}
+{% if booking.is_invoiced %}
+<section class="card">
+  <div class="spread"><h2>Rechnung</h2><span class="small muted">gesendet {{ booking.invoiced_at|date:"d.m.Y" }}</span></div>
+  {% include "_invoice.html" with lines=invoice_lines %}
+  {% if booking.status == "awaiting_payment" %}
+  <div class="row">
+    <a class="btn btn-secondary" href="{% url 'dashboard:invoice' booking.pk %}">Rechnung korrigieren</a>
+    <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'paid' %}" class="inline">{% csrf_token %}
+      <button class="btn" type="submit">Zahlung erhalten</button>
+    </form>
+  </div>
+  <p class="small muted">«Zahlung erhalten» nur bei Überweisung oder Barzahlung. Online-Zahlungen werden automatisch erfasst.</p>
+  {% endif %}
+</section>
+{% endif %}
+
+{% if booking.status == "requested" or booking.status == "offered" %}
 <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'reject' %}" class="card">{% csrf_token %}
   <h2>Ablehnen</h2>
   {% include "_form.html" with form=reject_form %}
   <button class="btn btn-danger" type="submit">Anfrage ablehnen</button>
 </form>
-{% elif booking.status == "paid" %}
+{% elif booking.status == "confirmed" %}
 <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'cancel' %}" class="card">{% csrf_token %}
   <h2>Tour absagen</h2>
-  <p class="small muted">Rückerstattungen machst du im Stripe-Dashboard bzw. direkt an den Gast.</p>
   {% include "_form.html" with form=cancel_form %}
   <button class="btn btn-danger" type="submit">Tour absagen</button>
 </form>
@@ -95,3 +116,4 @@
   </table>
 </section>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/pricing.js' %}"></script>{% endblock %}

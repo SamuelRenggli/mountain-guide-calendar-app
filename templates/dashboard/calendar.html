@@ -23,10 +23,7 @@
     {% endfor %}{% endfor %}
   </div>
   <div class="legend">
-    <span class="l-free">{% if user.only_open_periods %}freigegeben{% else %}frei{% endif %}</span><span class="l-requested">Anfrage</span><span class="l-booked">bestätigt / bezahlt</span><span class="l-blocked">gesperrt / belegt</span>
+    <span class="l-free">{% if has_open_periods %}freigegeben{% else %}frei{% endif %}</span><span class="l-requested">Anfrage</span><span class="l-booked">bestätigt / bezahlt</span><span class="l-blocked">gesperrt / belegt</span>
   </div>
 </div>
-{% if not user.only_open_periods and has_open_periods %}
-<div class="alert">Du hast freigegebene Zeiträume, aber «Nur in freigegebenen Zeiträumen buchbar» ist aus. Gäste können darum an allen freien Tagen anfragen. <a href="{% url 'dashboard:availability' %}">Einstellung ändern</a></div>
-{% endif %}
 {% endblock %}

@@ -1,4 +1,5 @@
 import hmac
+import re
 from urllib.parse import urlsplit
 
 from django import forms
@@ -6,9 +7,6 @@ from django.conf import settings
 from django.contrib.auth.forms import UserCreationForm
 
 from .models import User
-
-WEEKDAY_CHOICES = [(str(i), name) for i, name in enumerate(["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"])]
-
 
 class SignupForm(UserCreationForm):
     invite_code = forms.CharField(label="Einladungscode", strip=True)
@@ -28,7 +26,8 @@ class SignupForm(UserCreationForm):
 class ProfileForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ("display_name", "email", "phone", "language", "slug", "widget_allowed_origins")
+        fields = ("display_name", "email", "phone", "language", "slug", "widget_allowed_origins",
+                  "day_rate", "aspirant_day_rate", "iban")
         help_texts = {
             "slug": "Erscheint in der Widget-Adresse. Nur Kleinbuchstaben, Zahlen und Bindestriche.",
             "widget_allowed_origins": "Websites, auf denen dein Widget eingebettet werden darf, "
@@ -45,23 +44,11 @@ class ProfileForm(forms.ModelForm):
             origins.append(f"{parts.scheme}://{parts.netloc}".lower())
         return "\n".join(origins)
 
-
-class AvailabilityForm(forms.ModelForm):
-    weekdays = forms.MultipleChoiceField(
-        label="Buchbare Wochentage", choices=WEEKDAY_CHOICES, widget=forms.CheckboxSelectMultiple, required=False
-    )
-
-    class Meta:
-        model = User
-        fields = ("only_open_periods", "min_notice_days", "max_advance_days")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["weekdays"].initial = list(self.instance.available_weekdays)
-
-    def save(self, commit=True):
-        self.instance.available_weekdays = "".join(sorted(self.cleaned_data["weekdays"]))
-        return super().save(commit)
+    def clean_iban(self):
+        iban = re.sub(r"\s", "", self.cleaned_data["iban"]).upper()
+        if iban and not re.fullmatch(r"[A-Z]{2}\d{2}[A-Z0-9]{10,30}", iban):
+            raise forms.ValidationError("Ungültige IBAN (Beispiel: CH93 0076 2011 6238 5295 7).")
+        return " ".join(iban[i:i + 4] for i in range(0, len(iban), 4))
 
 
 class CalendarSyncForm(forms.ModelForm):
