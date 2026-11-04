@@ -68,7 +68,9 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "core.middleware.LanguageMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "core.middleware.TwoFactorMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "core.middleware.ContentSecurityPolicyMiddleware",
 ]
@@ -86,6 +88,8 @@ TEMPLATES = [
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
                 "django.contrib.messages.context_processors.messages",
+                "django.template.context_processors.i18n",
+                "core.context_processors.site",
             ],
         },
     },
@@ -121,7 +125,12 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-LANGUAGE_CODE = "de-ch"
+LANGUAGE_CODE = "de"
+LANGUAGES = [("de", "Deutsch"), ("fr", "Français"), ("it", "Italiano"), ("en", "English")]
+LOCALE_PATHS = [BASE_DIR / "locale"]
+LANGUAGE_COOKIE_NAME = "tourchef_lang"
+LANGUAGE_COOKIE_SECURE = not DEBUG
+LANGUAGE_COOKIE_SAMESITE = "Lax"
 TIME_ZONE = "Europe/Zurich"
 USE_I18N = True
 USE_TZ = True
@@ -168,19 +177,43 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SECURE_HSTS_SECONDS = env_int("SECURE_HSTS_SECONDS", 60 * 60 * 24 * 30)
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
+# Deliberate: the app runs on a shared *.run.app host, so HSTS can't cover subdomains or be preloaded.
+SILENCED_SYSTEM_CHECKS = ["security.W005", "security.W021"]
+
+# Phone, emergency contact and experience of guests are encrypted in the database (12-datenschutz.md, level B).
+# Comma-separated Fernet keys, newest first; older keys only decrypt (rotation). Lives in Secret Manager,
+# apart from the database. Generate: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+FIELD_ENCRYPTION_KEYS = env_list("FIELD_ENCRYPTION_KEYS")
+if not FIELD_ENCRYPTION_KEYS and not DEBUG:
+    raise ImproperlyConfigured("FIELD_ENCRYPTION_KEYS must be set when DEBUG is off.")
+
+# Two-factor login (TOTP app). Staff always need it; guides too unless this is switched off.
+REQUIRE_GUIDE_2FA = env_bool("REQUIRE_GUIDE_2FA", True)
+REAUTH_SECONDS = 10 * 60  # how long a re-entered password / code unlocks exports
 
 ADMIN_URL = env("ADMIN_URL", "admin/")
 GUIDE_SIGNUP_CODE = env("GUIDE_SIGNUP_CODE", "")  # empty = signup closed
 
 # --- Booking rules ---
 REQUEST_RESPONSE_DAYS = env_int("REQUEST_RESPONSE_DAYS", 5)  # guide must answer within
-GUEST_RESPONSE_DAYS = env_int("GUEST_RESPONSE_DAYS", 5)  # guest must accept offer / pay within
+GUEST_RESPONSE_DAYS = env_int("GUEST_RESPONSE_DAYS", 5)  # guest must accept offer / new date within
+MAX_REQUEST_DAYS = env_int("MAX_REQUEST_DAYS", 14)  # longest tour a guest can request in the widget
+CHECKOUT_HOLD_MINUTES = 35  # seats are held while the guest pays (Stripe Checkout lives 30 min)
+DECISION_REMINDER_HOURS = env_int("DECISION_REMINDER_HOURS", 3)  # remind the guide before the decision deadline
+GUEST_LINK_VALID_DAYS = env_int("GUEST_LINK_VALID_DAYS", 365)  # guest page closes this long after a finished tour
+
+# Operator of the platform (Impressum, privacy policy)
+OPERATOR_NAME = env("OPERATOR_NAME", "Samuel Renggli")
+OPERATOR_ADDRESS = env("OPERATOR_ADDRESS", "[Adresse eintragen]")
+PRIVACY_EMAIL = env("PRIVACY_EMAIL", "[datenschutz@…]")
 
 # --- Stripe (Connect, destination charges) ---
 STRIPE_SECRET_KEY = env("STRIPE_SECRET_KEY", "")
 STRIPE_WEBHOOK_SECRET = env("STRIPE_WEBHOOK_SECRET", "")
 STRIPE_CONNECT_WEBHOOK_SECRET = env("STRIPE_CONNECT_WEBHOOK_SECRET", "")
 PLATFORM_FEE_PERCENT = env("PLATFORM_FEE_PERCENT", "0")
+# Card and TWINT only, no bank transfer (decision 37). Drop "twint" if the Stripe account can't offer it.
+STRIPE_PAYMENT_METHODS = env_list("STRIPE_PAYMENT_METHODS", "card,twint")
 
 LOGGING = {
     "version": 1,

@@ -1,0 +1,18 @@
+{% load i18n %}{% if departures %}
+<div class="table-wrap"><table>
+  <thead><tr><th>{% translate "Datum" %}</th><th>{% translate "Termin" %}</th><th>{% translate "Angemeldet" %}</th><th>{% translate "Entscheid bis" %}</th><th>{% translate "Status" %}</th></tr></thead>
+  <tbody>
+  {% for d in departures %}
+    <tr>
+      <td><a href="{% url 'dashboard:departure' d.pk %}">{{ d.start_date|date:"D d.m.Y" }}</a>{% if d.end_date != d.start_date %}<br><span class="small muted">{% blocktranslate with day=d.end_date|date:"d.m.Y" trimmed %}bis {{ day }}{% endblocktranslate %}</span>{% endif %}</td>
+      <td>{{ d.title }}</td>
+      <td>{% with n=d.seats_confirmed %}{{ n }} / {{ d.max_participants }}{% if n < d.min_participants %} <span class="small muted">({% blocktranslate with lo=d.min_participants trimmed %}min. {{ lo }}{% endblocktranslate %})</span>{% endif %}{% endwith %}</td>
+      <td class="small">{% if d.status == "open" %}{{ d.decision_deadline|date:"d.m. H:i" }}{% else %}–{% endif %}</td>
+      <td><span class="badge badge-d-{{ d.status }}">{{ d.get_status_display }}</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<p class="empty">{{ empty }}</p>
+{% endif %}

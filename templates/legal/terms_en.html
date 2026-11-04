@@ -1,0 +1,47 @@
+{% extends "legal/_base.html" %}
+{% block title %}Terms of use – Tourchef{% endblock %}
+{% block legal %}
+<h1>Terms of use for mountain guides</h1>
+<p class="small muted">As of 4 November 2026 · between {{ operator_name }} ("Tourchef") and you as a mountain guide ("guide")</p>
+
+<h2>1. Subject</h2>
+<p>Tourchef gives you a tool to receive requests and sign-ups for your tours, publish scheduled dates, bill guests and handle payments via Stripe. Tourchef is neither a marketplace nor a tour operator.</p>
+
+<h2>2. Pilot</h2>
+<p>Tourchef is free during the pilot. Features may change. We will tell you about any pricing after the pilot in good time; it only applies once you agree.</p>
+
+<h2>3. Your obligations</h2>
+<ul>
+  <li>You are your guests' contractual partner and are responsible for your offers, prices, terms, running the tours and safety.</li>
+  <li>You hold the required qualifications and permits (e.g. mountain guide with federal certificate, permit under the Swiss Risk Activities Act) and professional liability insurance.</li>
+  <li>Your information is correct; you keep availability and dates up to date and answer requests in time.</li>
+  <li>Taxes and social security contributions on your income are your responsibility, as is VAT if you are liable.</li>
+  <li>You protect your account (strong password, two-factor login) and do not share it.</li>
+</ul>
+
+<h2>4. Payments</h2>
+<p>Guests pay via Stripe Connect directly into your Stripe account; Stripe's terms apply as well. During the pilot Tourchef pays Stripe's fees, including on refunds. Refunds under your cancellation terms, after cancellations and at your request (goodwill) are taken back from your Stripe account automatically.</p>
+
+<h2>5. Data processing agreement</h2>
+<p>You are the controller of your guests' data; Tourchef processes it on your behalf (Art. 9 Swiss FADP, Art. 28 GDPR). Accordingly:</p>
+<ul>
+  <li>Tourchef processes guest data only to provide Tourchef's features to you, never for its own purposes.</li>
+  <li>Everyone at Tourchef with access to the data is bound to confidentiality.</li>
+  <li>Technical and organisational measures: encrypted connections and sensitive fields, separate key management, two-factor login, access log, data separated per guide, regular security updates.</li>
+  <li>Sub-processors: Google Cloud (Switzerland), Neon (EU), Stripe (Ireland/USA), email delivery [provider]. We tell you about new sub-processors in advance; you can object and end the contract.</li>
+  <li>Tourchef helps you answer guests' requests (access, deletion) and reports data breaches to you as soon as possible.</li>
+  <li>When the contract ends we delete the guest data or hand it over to you, unless we are required to keep it.</li>
+</ul>
+
+<h2>6. Availability and liability</h2>
+<p>We aim for reliable operation but cannot guarantee uninterrupted availability. Tourchef is only liable for damage caused intentionally or by gross negligence, as far as the law allows. Tourchef is not liable for the tours or your relationship with your guests.</p>
+
+<h2>7. Term and termination</h2>
+<p>You can terminate at any time. Tourchef can terminate with 30 days' notice, or immediately for serious breaches. Ongoing bookings are completed properly.</p>
+
+<h2>8. Changes</h2>
+<p>We announce changes to these terms at least 30 days in advance. If you keep using Tourchef afterwards, they are deemed accepted.</p>
+
+<h2>9. Governing law and jurisdiction</h2>
+<p>Swiss law applies. Place of jurisdiction is the operator's registered address.</p>
+{% endblock %}

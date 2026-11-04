@@ -1,9 +1,19 @@
 import calendar
 from datetime import date
 
-MONTH_NAMES = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August",
-               "September", "Oktober", "November", "Dezember"]
-WEEKDAY_NAMES = ["Mo", "Di", "Mi", "Do", "Fr", "Sa", "So"]
+from django.utils.dates import MONTHS
+from django.utils.translation import pgettext_lazy
+
+# Two-letter weekday names, Monday first
+WEEKDAY_NAMES = [
+    pgettext_lazy("weekday", "Mo"), pgettext_lazy("weekday", "Di"), pgettext_lazy("weekday", "Mi"),
+    pgettext_lazy("weekday", "Do"), pgettext_lazy("weekday", "Fr"), pgettext_lazy("weekday", "Sa"),
+    pgettext_lazy("weekday", "So"),
+]
+
+
+def weekday_names() -> list[str]:
+    return [str(name) for name in WEEKDAY_NAMES]
 
 
 def parse_month(value: str | None, default: date) -> date:
@@ -18,7 +28,7 @@ def parse_month(value: str | None, default: date) -> date:
 def parse_date(value: str | None) -> date | None:
     try:
         return date.fromisoformat(value) if value else None
-    except ValueError:
+    except (TypeError, ValueError):
         return None
 
 
@@ -33,4 +43,4 @@ def weeks(month: date) -> list[list[date]]:
 
 
 def month_label(month: date) -> str:
-    return f"{MONTH_NAMES[month.month - 1]} {month.year}"
+    return f"{MONTHS[month.month]} {month.year}"  # Django's translated month names

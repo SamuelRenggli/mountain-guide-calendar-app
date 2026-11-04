@@ -1,0 +1,64 @@
+{% extends "widget/base.html" %}
+{% load i18n static %}
+{% block title %}{{ departure.title }} – {{ guide.display_name }}{% endblock %}
+{% block heading %}<p class="small"><a href="{% url 'widget:show' guide.slug %}">← {% blocktranslate with name=guide.display_name trimmed %}Alle Angebote von {{ name }}{% endblocktranslate %}</a></p>{% endblock %}
+{% block content %}
+<h1>{{ departure.title }}</h1>
+{% if cancelled_payment %}<div class="alert info">{% translate "Die Zahlung wurde abgebrochen. Deine Plätze sind nicht reserviert." %}</div>{% endif %}
+{% if joined %}<div class="alert success">{% translate "Du bist auf der Warteliste. Wird ein Platz frei, erhältst du eine E-Mail – wer zuerst bucht, erhält ihn." %}</div>{% endif %}
+{% if departure.status == "cancelled" %}<div class="alert error">{% translate "Dieser Termin ist abgesagt." %}</div>{% endif %}
+
+<section class="card">
+  <dl class="facts">
+    <dt>{% translate "Datum" %}</dt><dd>{{ departure.start_date|date:"l, d.m.Y" }}{% if departure.end_date != departure.start_date %} – {{ departure.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
+    {% if departure.location %}<dt>{% translate "Ort / Gebiet" %}</dt><dd>{{ departure.location }}</dd>{% endif %}
+    <dt>{% translate "Treffpunkt" %}</dt><dd>{{ departure.meeting_point }}{% if departure.meeting_time %}, {{ departure.meeting_time|time:"H:i" }}{% endif %}</dd>
+    <dt>{% translate "Preis" %}</dt><dd><strong>{% blocktranslate with price=departure.price_per_person|floatformat:"-2" trimmed %}CHF {{ price }} pro Person{% endblocktranslate %}</strong>{% if guide.charges_vat %} <span class="small muted">{% translate "inkl. MWST" %}</span>{% endif %}</dd>
+    <dt>{% translate "Gruppe" %}</dt><dd>{% blocktranslate with lo=departure.min_participants hi=departure.max_participants trimmed %}{{ lo }} bis {{ hi }} Personen{% endblocktranslate %}</dd>
+    <dt>{% translate "Freie Plätze" %}</dt><dd>{{ seats_free }}</dd>
+    <dt>{% translate "Anmeldeschluss" %}</dt><dd>{{ departure.signup_deadline|date:"d.m.Y H:i" }}</dd>
+    <dt>{% translate "Entscheid" %}</dt><dd>{% blocktranslate with day=departure.decision_deadline|date:"d.m.Y H:i" name=guide.display_name trimmed %}{{ name }} entscheidet bis {{ day }}, ob die Tour stattfindet. Fällt sie aus, erhältst du den vollen Betrag zurück.{% endblocktranslate %}{% if departure.status == "confirmed" %} <strong>{% translate "Die Tour findet statt." %}</strong>{% endif %}</dd>
+  </dl>
+  {% if departure.description %}<p class="pre">{{ departure.description }}</p>{% endif %}
+  {% if departure.requirements %}<h3>{% translate "Anforderungen" %}</h3><p class="pre">{{ departure.requirements }}</p>{% endif %}
+  {% if departure.equipment %}<h3>{% translate "Ausrüstung" %}</h3><p class="pre">{{ departure.equipment }}</p>{% endif %}
+  {% if departure.included %}<h3>{% translate "Inbegriffen" %}</h3><p class="pre">{{ departure.included }}</p>{% endif %}
+</section>
+
+{% if departure.signup_open and seats_free and can_pay %}
+<form method="post" action="{% url 'widget:departure_signup' departure.public_id %}" class="card booking-form" target="_top" id="booking-form">
+  <h2>{% translate "Anmelden" context "signup" %}</h2>
+  {{ form.ts }}{{ form.language }}
+  {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
+  {% for field in form %}{% if field.name in "seats guest_name guest_email guest_phone emergency_contact experience" %}
+    <div class="field{% if field.errors %} has-error{% endif %}">
+      <label for="{{ field.id_for_label }}">{{ field.label }} *</label>
+      {% if field.help_text %}<p class="small muted">{{ field.help_text }}</p>{% endif %}
+      {{ field }}{{ field.errors }}
+    </div>
+  {% endif %}{% endfor %}
+  <p class="small" data-seat-total data-price="{{ departure.price_per_person|stringformat:'s' }}" data-template="{% translate 'Total: CHF {total}' %}"></p>
+  <div class="field{% if form.accept_terms.errors %} has-error{% endif %}">
+    <label class="check">{{ form.accept_terms }}
+      {% url 'widget:terms' guide.slug as terms_url %}{% url 'legal' 'datenschutz' as privacy_url %}
+      {% blocktranslate trimmed %}Ich akzeptiere die <a href="{{ terms_url }}" target="_blank" rel="noopener">Bedingungen</a> (inkl. Storno) und habe die <a href="{{ privacy_url }}" target="_blank" rel="noopener">Datenschutzerklärung</a> gelesen.{% endblocktranslate %} *
+    </label>
+    {{ form.accept_terms.errors }}
+  </div>
+  <div class="hp" aria-hidden="true"><label for="{{ form.website.id_for_label }}">Website</label>{{ form.website }}</div>
+  <p class="small muted">{% translate "Die Anmeldung ist verbindlich. Du bezahlst jetzt mit Karte oder TWINT; die Plätze sind reserviert, sobald die Zahlung durch ist." %}</p>
+  <button class="btn" type="submit">{% translate "Weiter zur Zahlung" %}</button>
+</form>
+{% elif departure.signup_open and not seats_free %}
+<form method="post" action="{% url 'widget:departure_waitlist' departure.public_id %}" class="card">
+  <h2>{% translate "Ausgebucht – auf die Warteliste" %}</h2>
+  <p class="small muted">{% translate "Wird ein Platz frei, erhalten alle auf der Warteliste gleichzeitig eine E-Mail. Wer zuerst bucht und bezahlt, erhält den Platz." %}</p>
+  {% include "_form.html" with form=waitlist_form %}
+  <button class="btn btn-secondary" type="submit">{% translate "Auf die Warteliste" %}</button>
+</form>
+{% elif departure.signup_open and not can_pay %}
+<div class="alert info">{% translate "Online-Anmeldungen sind gerade nicht möglich. Bitte kontaktiere den Bergführer direkt." %}</div>
+{% elif departure.status != "cancelled" %}
+<div class="alert info">{% translate "Für diesen Termin sind keine Anmeldungen mehr möglich." %}</div>
+{% endif %}
+{% endblock %}

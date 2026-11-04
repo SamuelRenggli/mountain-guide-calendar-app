@@ -1,6 +1,6 @@
 /* Tourchef widget loader.
  * Usage: <script src="https://<host>/static/js/embed.js" data-tourchef="<guide-slug>" async></script>
- * Optional data-lang="en" preselects English emails for guests (default: the visitor's browser language).
+ * Optional data-lang="fr" (de, fr, it, en) fixes the language; default: the visitor's browser language.
  * Inserts the booking widget iframe and keeps its height in sync with the content.
  */
 (function () {

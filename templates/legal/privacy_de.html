@@ -1,0 +1,59 @@
+{% extends "legal/_base.html" %}
+{% block title %}Datenschutzerklärung – Tourchef{% endblock %}
+{% block legal %}
+<h1>Datenschutzerklärung</h1>
+<p class="small muted">Stand: 4. November 2026</p>
+
+<h2>1. Wer ist verantwortlich?</h2>
+<p>Tourchef ist ein Buchungswerkzeug für Bergführerinnen und Bergführer. Betreiber ist {{ operator_name }}, {{ operator_address }} («Tourchef», «wir»).</p>
+<ul>
+  <li><strong>Daten von Gästen</strong> (Anfragen, Anmeldungen, Zahlungen): Verantwortlich ist die Bergführerin oder der Bergführer, bei dem du buchst. Tourchef bearbeitet diese Daten in deren Auftrag (Auftragsbearbeitung).</li>
+  <li><strong>Daten von Bergführern</strong> und der Betrieb dieser Website: Verantwortlich ist Tourchef.</li>
+</ul>
+<p>Kontakt für Datenschutzfragen: <a href="mailto:{{ privacy_email }}">{{ privacy_email }}</a></p>
+
+<h2>2. Welche Daten wir bearbeiten</h2>
+<p><strong>Gäste:</strong> Name, E-Mail, Telefon, Anzahl Teilnehmende bzw. Plätze, Tourenwunsch und Nachrichten, gewählte Daten, Sprache, Zeitpunkt der Zustimmung zu den Bedingungen, Zahlungs- und Rückzahlungsstatus. Bei Anmeldungen für ausgeschriebene Termine zusätzlich: Notfallkontakt und eine kurze Angabe zu Erfahrung und Niveau. Kartendaten erhält nur unser Zahlungsdienstleister Stripe, nicht Tourchef und nicht der Bergführer.</p>
+<p><strong>Bergführer:</strong> Login-Daten (E-Mail, Passwort als Hash, Zwei-Faktor-Schlüssel verschlüsselt), Name, Telefon, Tagesansätze, Bedingungen, IBAN, MWST-Nummer, Verfügbarkeiten, die Adresse eines externen Kalenders und die belegten Tage daraus, Stripe-Konto-ID.</p>
+<p><strong>Technisch:</strong> IP-Adresse (kurzzeitig zum Schutz vor Missbrauch, bei Bergführern im Zugriffsprotokoll), Server-Protokolle unseres Hosters (Zeit, aufgerufene Adresse, IP).</p>
+
+<h2>3. Wozu</h2>
+<ul>
+  <li>Anfragen, Buchungen und Anmeldungen abwickeln und dich per E-Mail informieren</li>
+  <li>Zahlungen, Rechnungen, Belege und Rückzahlungen</li>
+  <li>Sicherheit auf Touren: Notfallkontakt und Erfahrung helfen dem Bergführer, die Tour zu planen und im Notfall zu handeln</li>
+  <li>Sicherer Betrieb (Missbrauchsschutz, Fehlersuche) und gesetzliche Pflichten (Buchhaltung)</li>
+</ul>
+<p>Für Gäste aus der EU stützt sich die Bearbeitung auf die Vertragserfüllung (Art. 6 Abs. 1 lit. b DSGVO), auf gesetzliche Pflichten (lit. c) und auf berechtigte Interessen an einem sicheren Betrieb (lit. f).</p>
+
+<h2>4. Wer die Daten erhält</h2>
+<ul>
+  <li>Der Bergführer, bei dem du buchst. Andere Bergführer sehen deine Daten nicht.</li>
+  <li>Google Cloud (Betrieb der Anwendung, Region Zürich, Schweiz)</li>
+  <li>Neon (Datenbank, Region Frankfurt, EU)</li>
+  <li>Stripe Payments Europe Ltd. (Irland) und Stripe, Inc. (USA) für Zahlungen und Rückzahlungen</li>
+  <li>Unser E-Mail-Versanddienst [Anbieter eintragen]</li>
+</ul>
+<p>In die USA werden Daten nur mit geeigneten Garantien übermittelt (EU-/Swiss-US Data Privacy Framework bzw. Standardvertragsklauseln).</p>
+
+<h2>5. Wie lange</h2>
+<ul>
+  <li>Buchungs-, Rechnungs- und Zahlungsdaten: 10 Jahre (gesetzliche Aufbewahrungspflicht)</li>
+  <li>Telefon, Notfallkontakt und Erfahrung: ohne feste Frist, damit der Bergführer dich bei weiteren Touren sicher führen kann und du die Angaben nicht jedes Mal neu machen musst. Auf deinen Wunsch löschen wir sie jederzeit (siehe Ziffer 7); Buchungen und Rechnungen bleiben dabei erhalten.</li>
+  <li>Wartelisten: bis zum Termin</li>
+  <li>Server-Protokolle: in der Regel 30 Tage</li>
+</ul>
+<p>Gelöschte Daten verschwinden nach Ablauf der Backup-Frist auch aus den Sicherungskopien.</p>
+
+<h2>6. Sicherheit</h2>
+<p>Verbindungen sind verschlüsselt (HTTPS). Telefon, Notfallkontakt und Erfahrung sind in der Datenbank zusätzlich verschlüsselt; der Schlüssel liegt getrennt von der Datenbank. Bergführer melden sich mit Passwort und zweitem Faktor an; Zugriffe auf Notfallkontakte und Exporte werden protokolliert. Deine Buchungsseite erreichst du nur über einen geheimen Link.</p>
+
+<h2>7. Deine Rechte</h2>
+<p>Du kannst Auskunft über deine Daten verlangen, sie berichtigen oder löschen lassen und die Herausgabe verlangen. Wende dich an den Bergführer, bei dem du gebucht hast, oder an <a href="mailto:{{ privacy_email }}">{{ privacy_email }}</a>. Wir antworten innert 30 Tagen. Du kannst dich ausserdem beim Eidgenössischen Datenschutz- und Öffentlichkeitsbeauftragten (EDÖB) beschweren, als Gast aus der EU auch bei deiner Aufsichtsbehörde.</p>
+
+<h2>8. Cookies</h2>
+<p>Wir verwenden nur technisch nötige Cookies: ein Sitzungs-Cookie für angemeldete Bergführer und ein Cookie für die gewählte Sprache. Kein Tracking, keine Werbung, keine Analyse-Dienste.</p>
+
+<h2>9. Änderungen</h2>
+<p>Wir passen diese Erklärung an, wenn sich Tourchef ändert. Es gilt die hier veröffentlichte Fassung.</p>
+{% endblock %}

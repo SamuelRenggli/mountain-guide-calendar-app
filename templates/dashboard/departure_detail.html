@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{{ departure.title }} – Tourchef{% endblock %}
+{% block content %}
+<p class="small"><a href="{% url 'dashboard:departures' %}">← {% translate "Termine" %}</a></p>
+<div class="spread">
+  <h1>{{ departure.title }}</h1>
+  <span class="badge badge-d-{{ departure.status }}">{{ departure.get_status_display }}</span>
+</div>
+
+<section class="card">
+  <h2>{% translate "Link zum Teilen" %}</h2>
+  <code class="embed" id="share-url">{{ departure.public_url }}</code>
+  <p class="row">
+    <button class="btn btn-small" type="button" data-share="#share-url" data-share-title="{{ departure.title }}">{% translate "Teilen" %}</button>
+    <button class="btn btn-secondary btn-small" type="button" data-copy="#share-url">{% translate "Link kopieren" %}</button>
+    <a class="small" href="{{ departure.public_url }}" target="_blank" rel="noopener">{% translate "Ansehen" %}</a>
+  </p>
+</section>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>{% translate "Termin" %}</h2>
+    <dl class="facts">
+      <dt>{% translate "Datum" %}</dt><dd>{{ departure.start_date|date:"D d.m.Y" }}{% if departure.end_date != departure.start_date %} – {{ departure.end_date|date:"D d.m.Y" }}{% endif %}</dd>
+      <dt>{% translate "Treffpunkt" %}</dt><dd>{{ departure.meeting_point }}{% if departure.meeting_time %}, {{ departure.meeting_time|time:"H:i" }}{% endif %}</dd>
+      <dt>{% translate "Preis" %}</dt><dd>{% blocktranslate with price=departure.price_per_person|floatformat:"-2" trimmed %}CHF {{ price }} pro Person{% endblocktranslate %}</dd>
+      <dt>{% translate "Anmeldeschluss" %}</dt><dd>{{ departure.signup_deadline|date:"d.m.Y H:i" }}</dd>
+      <dt>{% translate "Entscheid-Frist" %}</dt><dd>{{ departure.decision_deadline|date:"d.m.Y H:i" }}</dd>
+    </dl>
+    {% if departure.is_live %}<p><a class="btn btn-secondary btn-small" href="{% url 'dashboard:departure_edit' departure.pk %}">{% translate "Bearbeiten" %}</a></p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>{% translate "Plätze" %}</h2>
+    <dl class="facts">
+      <dt>{% translate "Angemeldet" %}</dt><dd><strong>{{ seats_taken }}</strong> / {{ departure.max_participants }}</dd>
+      <dt>{% translate "Mindestzahl" %}</dt><dd>{{ departure.min_participants }} {% if seats_taken >= departure.min_participants %}✓{% else %}<span class="muted">({% translate "noch nicht erreicht" %})</span>{% endif %}</dd>
+      <dt>{% translate "Frei" %}</dt><dd>{{ seats_free }}</dd>
+      <dt>{% translate "Warteliste" %}</dt><dd>{{ waitlist|length }}</dd>
+    </dl>
+    {% if departure.status == "open" %}
+    <form method="post" action="{% url 'dashboard:departure_action' departure.pk 'confirm' %}">{% csrf_token %}
+      <button class="btn" type="submit">{% translate "Durchführung bestätigen" %}</button>
+    </form>
+    <p class="small muted">{% blocktranslate with day=departure.decision_deadline|date:"d.m.Y H:i" trimmed %}Ohne Entscheid bis {{ day }} wird der Termin automatisch abgesagt und alle erhalten ihr Geld zurück.{% endblocktranslate %}</p>
+    {% elif departure.status == "confirmed" %}
+    <div class="alert success">{% translate "Findet statt – alle Angemeldeten wurden informiert." %}</div>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card">
+  <h2>{% translate "Teilnehmende" %}</h2>
+  {% if registrations %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{% translate "Name" %}</th><th>{% translate "Plätze" %}</th><th>{% translate "Kontakt" %}</th><th>{% translate "Notfallkontakt" %}</th><th>{% translate "Erfahrung" %}</th><th>{% translate "Zahlung" %}</th></tr></thead>
+    <tbody>
+    {% for b in registrations %}
+      <tr>
+        <td><a href="{% url 'dashboard:booking' b.pk %}">{{ b.guest_name }}</a></td>
+        <td>{{ b.participants }}</td>
+        <td class="small"><a href="mailto:{{ b.guest_email|urlencode:'@' }}">{{ b.guest_email }}</a><br>{{ b.guest_phone|default:"–" }}</td>
+        <td class="small">{{ b.emergency_contact|default:"–" }}</td>
+        <td class="small pre">{{ b.experience|default:"–" }}</td>
+        <td>{% include "_status.html" with booking=b %}<br><span class="small muted">CHF {{ b.amount_paid }}{% if b.refunded_amount %} · {% blocktranslate with r=b.refunded_amount trimmed %}zurück {{ r }}{% endblocktranslate %}{% endif %}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="empty">{% translate "Noch keine Anmeldungen." %}</p>{% endif %}
+</section>
+
+{% if waitlist %}
+<section class="card">
+  <h2>{% translate "Warteliste" %}</h2>
+  <table>
+    {% for w in waitlist %}<tr><td>{{ w.name }}</td><td class="small"><a href="mailto:{{ w.email|urlencode:'@' }}">{{ w.email }}</a></td><td>{% blocktranslate count n=w.seats trimmed %}{{ n }} Platz{% plural %}{{ n }} Plätze{% endblocktranslate %}</td><td class="small muted">{% if w.notified_at %}{% blocktranslate with day=w.notified_at|date:"d.m. H:i" trimmed %}informiert {{ day }}{% endblocktranslate %}{% endif %}</td></tr>{% endfor %}
+  </table>
+</section>
+{% endif %}
+
+{% if departure.is_live %}
+<div class="grid-2">
+  <form method="post" action="{% url 'dashboard:departure_action' departure.pk 'move' %}" class="card">{% csrf_token %}
+    <h2>{% translate "Wetter: Ersatzdatum anbieten" %}</h2>
+    <p class="small muted">{% translate "Alle Angemeldeten sagen zu oder stornieren kostenlos mit voller Rückzahlung. Wer nicht innert Frist antwortet, wird kostenlos storniert." %}</p>
+    {% include "_form.html" with form=move_form %}
+    <button class="btn btn-secondary" type="submit">{% translate "Ersatzdatum senden" %}</button>
+  </form>
+  <form method="post" action="{% url 'dashboard:departure_action' departure.pk 'cancel' %}" class="card">{% csrf_token %}
+    <h2>{% translate "Termin absagen" %}</h2>
+    <p class="small muted">{% translate "Alle Angemeldeten erhalten den vollen Betrag automatisch zurück und werden per E-Mail informiert." %}</p>
+    {% include "_form.html" with form=cancel_form %}
+    <button class="btn btn-danger" type="submit">{% translate "Termin absagen" %}</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/copy.js' %}"></script>{% endblock %}

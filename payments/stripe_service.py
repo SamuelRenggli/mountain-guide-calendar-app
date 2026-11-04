@@ -1,6 +1,8 @@
 """Stripe Connect (Express accounts, destination charges on behalf of the guide).
 
-The guest pays the guide's connected account; the platform keeps PLATFORM_FEE_PERCENT.
+The guest pays the guide's connected account; the platform keeps PLATFORM_FEE_PERCENT. With destination
+charges the platform pays Stripe's fees, and Stripe keeps them on refunds — so refunds cost the guest
+and the guide nothing; Tourchef carries the fee (R-146, decision 33).
 """
 
 import logging
@@ -12,9 +14,10 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.mail import mail_admins
 from django.db import transaction
+from django.utils.translation import gettext as _
 
-from bookings import services
-from bookings.models import Booking, BookingEvent
+from bookings import departures, services
+from bookings.models import Booking, BookingEvent, cents, money
 
 from .models import StripeEvent
 
@@ -42,7 +45,8 @@ def onboarding_url(guide) -> str:
             type="express",
             country="CH",
             email=guide.email,
-            capabilities={"card_payments": {"requested": True}, "transfers": {"requested": True}},
+            capabilities={"card_payments": {"requested": True}, "transfers": {"requested": True},
+                          "twint_payments": {"requested": True}},
             business_profile={"product_description": "Bergführer-Touren"},
             metadata={"guide_id": str(guide.pk)},
             **_key(),
@@ -75,22 +79,30 @@ def platform_fee_cents(amount_cents: int) -> int:
     return int(fee.to_integral_value(rounding=ROUND_HALF_UP))
 
 
-def create_checkout_url(booking: Booking) -> str:
-    """Checkout for a confirmed booking. Any older open session is expired so the guest can't pay twice."""
-    if booking.status != Booking.Status.AWAITING_PAYMENT:
-        raise PaymentError("Diese Buchung kann nicht bezahlt werden.")
+def _dates(booking) -> str:
+    return f"{booking.start_date:%d.%m.%Y}" + (
+        f" – {booking.end_date:%d.%m.%Y}" if booking.end_date != booking.start_date else ""
+    )
+
+
+def _expire_old_session(booking):
+    """Any older open session is expired so the guest can't pay twice."""
+    if not booking.stripe_checkout_session_id:
+        return
+    try:
+        old = stripe.checkout.Session.retrieve(booking.stripe_checkout_session_id, **_key())
+        if old.status == "open":
+            stripe.checkout.Session.expire(old.id, **_key())
+    except stripe.StripeError:
+        logger.warning("Could not expire old checkout session for booking %s", booking.pk)
+
+
+def _checkout(booking: Booking, *, success_url: str, cancel_url: str, expires_minutes: int, quantity=1,
+              unit_amount=None) -> str:
     guide = booking.guide
     if not (is_configured() and guide.can_take_card_payments):
-        raise PaymentError("Online-Zahlung ist für diesen Bergführer nicht verfügbar.")
-
-    if booking.stripe_checkout_session_id:
-        try:
-            old = stripe.checkout.Session.retrieve(booking.stripe_checkout_session_id, **_key())
-            if old.status == "open":
-                stripe.checkout.Session.expire(old.id, **_key())
-        except stripe.StripeError:
-            logger.warning("Could not expire old checkout session for booking %s", booking.pk)
-
+        raise PaymentError(_("Online-Zahlung ist für diesen Bergführer nicht verfügbar."))
+    _expire_old_session(booking)
     amount = booking.amount_cents
     fee = platform_fee_cents(amount)
     payment_intent_data = {
@@ -101,38 +113,96 @@ def create_checkout_url(booking: Booking) -> str:
     }
     if fee:
         payment_intent_data["application_fee_amount"] = fee
-    dates = f"{booking.start_date:%d.%m.%Y}" + (
-        f" – {booking.end_date:%d.%m.%Y}" if booking.end_date != booking.start_date else ""
-    )
     try:
         session = stripe.checkout.Session.create(
             mode="payment",
             customer_email=booking.guest_email,
             client_reference_id=str(booking.pk),
             metadata={"booking_id": str(booking.pk)},
+            payment_method_types=settings.STRIPE_PAYMENT_METHODS,
+            locale=booking.language if booking.language in ("de", "fr", "it", "en") else "auto",
             line_items=[{
-                "quantity": 1,
+                "quantity": quantity,
                 "price_data": {
                     "currency": "chf",
-                    "unit_amount": amount,
+                    "unit_amount": unit_amount if unit_amount is not None else amount,
                     "product_data": {
                         "name": booking.title,
-                        "description": f"{dates} · {booking.participants} Pers. · mit {guide.display_name}",
+                        "description": f"{_dates(booking)} · {guide.display_name}",
                     },
                 },
             }],
             payment_intent_data=payment_intent_data,
-            success_url=f"{booking.guest_url}?bezahlt=1",
-            cancel_url=booking.guest_url,
-            expires_at=int(time.time()) + 60 * 60,
+            success_url=success_url,
+            cancel_url=cancel_url,
+            expires_at=int(time.time()) + 60 * expires_minutes,
             **_key(),
         )
     except stripe.StripeError as exc:
         logger.exception("Checkout creation failed for booking %s", booking.pk)
-        raise PaymentError("Die Zahlung konnte nicht gestartet werden. Bitte später erneut versuchen.") from exc
+        raise PaymentError(_("Die Zahlung konnte nicht gestartet werden. Bitte später erneut versuchen.")) from exc
 
     Booking.objects.filter(pk=booking.pk).update(stripe_checkout_session_id=session.id)
     return session.url
+
+
+def create_checkout_url(booking: Booking) -> str:
+    """Pay the guide's invoice after a custom tour."""
+    if booking.status != Booking.Status.AWAITING_PAYMENT:
+        raise PaymentError(_("Diese Buchung kann nicht bezahlt werden."))
+    return _checkout(booking, success_url=f"{booking.guest_url}?bezahlt=1", cancel_url=booking.guest_url,
+                     expires_minutes=60)
+
+
+def create_registration_checkout(booking: Booking) -> str:
+    """Pay the seats of a registration right away (R-121). The session lives as long as the seats are held."""
+    if booking.status != Booking.Status.PAYMENT_PENDING:
+        raise PaymentError(_("Diese Anmeldung kann nicht bezahlt werden."))
+    per_seat = cents(booking.departure.price_per_person)
+    return _checkout(
+        booking, success_url=f"{booking.guest_url}?bezahlt=1", cancel_url=f"{booking.departure.public_url}?abgebrochen=1",
+        expires_minutes=30, quantity=booking.participants, unit_amount=per_seat,
+    )
+
+
+# --- Refunds ---------------------------------------------------------------
+
+
+def process_refund(booking_id: int) -> bool:
+    """Send what is due back to the guest. Idempotent; the hourly job retries failures."""
+    with transaction.atomic():
+        booking = Booking.objects.select_for_update().filter(pk=booking_id).first()
+        if booking is None or booking.refund_due <= 0:
+            return True
+        amount = booking.refund_due
+        if not (is_configured() and booking.stripe_payment_intent_id):
+            logger.warning("Refund for booking %s waits: Stripe not configured or no payment", booking.pk)
+            return False
+        try:
+            stripe.Refund.create(
+                payment_intent=booking.stripe_payment_intent_id,
+                amount=cents(amount),
+                reverse_transfer=True,  # take it back from the guide's account
+                refund_application_fee=True,
+                metadata={"booking_id": str(booking.pk)},
+                idempotency_key=f"refund-{booking.pk}-{cents(booking.refunded_amount)}-{cents(amount)}",
+                **_key(),
+            )
+        except stripe.StripeError as exc:
+            logger.exception("Refund failed for booking %s", booking.pk)
+            BookingEvent.objects.create(booking=booking, actor=BookingEvent.Actor.STRIPE,
+                                        note=f"Rückzahlung CHF {amount} fehlgeschlagen, wird wiederholt: {exc.user_message or ''}")
+            mail_admins(f"Rückzahlung fehlgeschlagen Buchung {booking.pk}", f"CHF {amount}\n{exc}")
+            return False
+        booking.refunded_amount = money(booking.refunded_amount + amount)
+        booking.refund_due = Decimal(0)
+        booking.save(update_fields=["refunded_amount", "refund_due", "updated_at"])
+        BookingEvent.objects.create(booking=booking, actor=BookingEvent.Actor.STRIPE, note=f"CHF {amount} zurückbezahlt")
+    return True
+
+
+def retry_refunds() -> int:
+    return sum(1 for pk in Booking.objects.filter(refund_due__gt=0).values_list("pk", flat=True) if process_refund(pk))
 
 
 # --- Webhooks --------------------------------------------------------------
@@ -160,26 +230,43 @@ def handle_event(event) -> None:
         if event["type"] in ("checkout.session.completed", "checkout.session.async_payment_succeeded"):
             if obj.get("payment_status") == "paid":
                 _session_paid(obj)
+        elif event["type"] in ("checkout.session.expired", "checkout.session.async_payment_failed"):
+            _session_failed(obj)
         elif event["type"] == "account.updated":
             get_user_model().objects.filter(stripe_account_id=obj["id"]).update(
                 stripe_charges_enabled=bool(obj.get("charges_enabled"))
             )
 
 
-def _session_paid(session) -> None:
+def _booking_for(session):
     booking_id = (session.get("metadata") or {}).get("booking_id")
-    booking = Booking.objects.select_related("guide", "tour").filter(pk=booking_id).first()
+    return Booking.objects.select_related("guide", "tour", "departure").filter(pk=booking_id).first(), booking_id
+
+
+def _session_paid(session) -> None:
+    booking, booking_id = _booking_for(session)
     if booking is None:
         logger.error("Paid checkout %s for unknown booking %r", session["id"], booking_id)
         return
     if session.get("currency") != "chf" or session.get("amount_total") != booking.amount_cents:
         _alert(booking, f"Betrag stimmt nicht: {session.get('amount_total')} {session.get('currency')}", session)
         return
+    payment_intent = session.get("payment_intent") or ""
+    if booking.is_registration:
+        departures.registration_paid(booking, session_id=session["id"], payment_intent=payment_intent,
+                                     amount_cents=session["amount_total"])
+        return
     try:
-        services.mark_paid_by_stripe(booking, session["id"])
+        services.mark_paid_by_stripe(booking, session["id"], payment_intent)
     except services.InvalidTransition:
         # Paid although no longer awaiting payment (e.g. cancelled meanwhile) — needs a manual refund.
         _alert(booking, f"Zahlung eingegangen, aber Status ist «{booking.get_status_display()}»", session)
+
+
+def _session_failed(session) -> None:
+    booking, _booking_id = _booking_for(session)
+    if booking is not None and booking.is_registration and booking.stripe_checkout_session_id == session["id"]:
+        departures.payment_failed(booking)
 
 
 def _alert(booking, problem, session):

@@ -1,22 +1,23 @@
 {% extends "base.html" %}
-{% block title %}Verfügbarkeit – Tourchef{% endblock %}
+{% load i18n %}
+{% block title %}{% translate "Verfügbarkeit" %} – Tourchef{% endblock %}
 {% block content %}
-<h1>Verfügbarkeit</h1>
+<h1>{% translate "Verfügbarkeit" %}</h1>
 <p class="muted">
-  {% if open_periods %}Gäste können nur in deinen freigegebenen Zeiträumen anfragen, ausser an gesperrten oder im Kalender belegten Tagen.
-  {% else %}Gäste können an allen Tagen anfragen, ausser an gesperrten oder im Kalender belegten Tagen. Sobald du Zeiträume freigibst, sind nur noch diese buchbar.{% endif %}
+  {% if open_periods %}{% translate "Gäste können nur in deinen freigegebenen Zeiträumen anfragen, ausser an gesperrten, im Kalender belegten oder mit Terminen belegten Tagen." %}
+  {% else %}{% translate "Gäste können an allen Tagen anfragen, ausser an gesperrten, im Kalender belegten oder mit Terminen belegten Tagen. Sobald du Zeiträume freigibst, sind nur noch diese buchbar." %}{% endif %}
 </p>
 
 <div class="grid-2">
   <form method="post" class="card">{% csrf_token %}
     <input type="hidden" name="form" value="block">
-    <h2>Zeitraum sperren</h2>
+    <h2>{% translate "Zeitraum sperren" %}</h2>
     {% include "_form.html" with form=block_form %}
-    <button class="btn" type="submit">Sperren</button>
+    <button class="btn" type="submit">{% translate "Sperren" %}</button>
   </form>
 
   <section class="card">
-  <h2>Gesperrte Zeiträume</h2>
+  <h2>{% translate "Gesperrte Zeiträume" %}</h2>
   {% if blocks %}
   <table>
     {% for block in blocks %}
@@ -25,27 +26,27 @@
       <td>{{ block.note }}</td>
       <td>
         <form method="post" action="{% url 'dashboard:block_delete' block.pk %}" class="inline">{% csrf_token %}
-          <button class="btn btn-danger btn-small" type="submit">Entfernen</button>
+          <button class="btn btn-danger btn-small" type="submit">{% translate "Entfernen" %}</button>
         </form>
       </td>
     </tr>
     {% endfor %}
   </table>
-  {% else %}<p class="empty">Keine Sperren.</p>{% endif %}
+  {% else %}<p class="empty">{% translate "Keine Sperren." %}</p>{% endif %}
   </section>
 </div>
 
 <div class="grid-2">
   <form method="post" class="card">{% csrf_token %}
     <input type="hidden" name="form" value="open">
-    <h2>Zeitraum freigeben</h2>
-    <p class="small muted">Optional. Sobald ein Zeitraum freigegeben ist, können Gäste nur noch darin anfragen.</p>
+    <h2>{% translate "Zeitraum freigeben" %}</h2>
+    <p class="small muted">{% translate "Optional. Sobald ein Zeitraum freigegeben ist, können Gäste nur noch darin anfragen." %}</p>
     {% include "_form.html" with form=open_form %}
-    <button class="btn" type="submit">Freigeben</button>
+    <button class="btn" type="submit">{% translate "Freigeben" %}</button>
   </form>
 
   <section class="card">
-    <h2>Freigegebene Zeiträume</h2>
+    <h2>{% translate "Freigegebene Zeiträume" %}</h2>
     {% if open_periods %}
     <table>
       {% for period in open_periods %}
@@ -54,31 +55,31 @@
         <td>{{ period.note }}</td>
         <td>
           <form method="post" action="{% url 'dashboard:open_delete' period.pk %}" class="inline">{% csrf_token %}
-            <button class="btn btn-danger btn-small" type="submit">Entfernen</button>
+            <button class="btn btn-danger btn-small" type="submit">{% translate "Entfernen" %}</button>
           </form>
         </td>
       </tr>
       {% endfor %}
     </table>
-    {% else %}<p class="empty">Keine Freigaben.</p>{% endif %}
+    {% else %}<p class="empty">{% translate "Keine Freigaben." %}</p>{% endif %}
   </section>
 </div>
 
 <section class="card">
-  <h2>Externer Kalender</h2>
+  <h2>{% translate "Externer Kalender" %}</h2>
   <form method="post">{% csrf_token %}
     <input type="hidden" name="form" value="ical">
     {% include "_form.html" with form=ical_form %}
-    <button class="btn" type="submit">Speichern &amp; abgleichen</button>
+    <button class="btn" type="submit">{% translate "Speichern & abgleichen" %}</button>
   </form>
   {% if user.ical_url %}
   <p class="small muted">
-    {% if user.ical_last_synced_at %}Zuletzt abgeglichen: {{ user.ical_last_synced_at|date:"d.m.Y H:i" }}.{% endif %}
-    Wird stündlich automatisch abgeglichen.
+    {% if user.ical_last_synced_at %}{% blocktranslate with day=user.ical_last_synced_at|date:"d.m.Y H:i" trimmed %}Zuletzt abgeglichen: {{ day }}.{% endblocktranslate %}{% endif %}
+    {% translate "Wird stündlich automatisch abgeglichen." %}
   </p>
-  {% if user.ical_last_error %}<div class="alert error">Letzter Fehler: {{ user.ical_last_error }}</div>{% endif %}
+  {% if user.ical_last_error %}<div class="alert error">{% translate "Letzter Fehler" %}: {{ user.ical_last_error }}</div>{% endif %}
   <form method="post" action="{% url 'dashboard:calendar_sync' %}">{% csrf_token %}
-    <button class="btn btn-secondary btn-small" type="submit">Jetzt abgleichen</button>
+    <button class="btn btn-secondary btn-small" type="submit">{% translate "Jetzt abgleichen" %}</button>
   </form>
   {% endif %}
 </section>

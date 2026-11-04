@@ -1,15 +1,19 @@
-{% load static %}<!doctype html>
-<html lang="de">
+{% load static i18n %}<!doctype html>
+<html lang="{{ CURRENT_LANGUAGE }}">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Buchung – {{ guide.display_name }}</title>
+  <title>{% block title %}{% blocktranslate with name=guide.display_name trimmed %}Buchung – {{ name }}{% endblocktranslate %}{% endblock %}</title>
   <link rel="stylesheet" href="{% static 'css/app.css' %}">
 </head>
 <body>
   <main class="widget">
+    <div class="spread widget-head">{% block heading %}<span></span>{% endblock %}{% include "_lang_switch.html" %}</div>
+    {% include "_messages.html" %}
     {% block content %}{% endblock %}
   </main>
+  {% include "_footer.html" %}
   <script src="{% static 'js/widget.js' %}"></script>
+  {% block scripts %}{% endblock %}
 </body>
 </html>

@@ -1,32 +1,24 @@
-"""Public booking widget, embedded via iframe on guides' websites."""
+"""Public pages for guests: the booking widget (iframe on guides' websites), scheduled dates and the guide's terms."""
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404, render
-from django.utils import timezone
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone, translation
+from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
 from core.middleware import widget_csp
 from core.ratelimit import allow, client_ip
+from payments import stripe_service
 
-from . import availability, monthgrid, services
-from .forms import BookingRequestForm
+from . import availability, departures, monthgrid, services
+from .forms import BookingRequestForm, RegistrationForm, WaitlistForm
+from .models import Departure
 
 
 def _guide(slug):
     return get_object_or_404(get_user_model(), slug=slug, is_active=True)
-
-
-def guest_language(request) -> str:
-    """Explicit ?lang=, else the first German/English entry of the browser's Accept-Language."""
-    requested = request.GET.get("lang") or request.POST.get("language")
-    if requested in ("de", "en"):
-        return requested
-    for part in request.headers.get("Accept-Language", "").split(","):
-        code = part.split(";")[0].strip().lower()[:2]
-        if code in ("de", "en"):
-            return code
-    return "de"
 
 
 def _framed(response, guide):
@@ -47,18 +39,26 @@ def _bookable_days(guide, start, end) -> set:
 
 
 def _selection(guide, start_value, end_value):
-    """The guest's time window from the URL, or (None, None) / (start, None) if it isn't valid (yet)."""
+    """The guest's dates from the URL. A tour needs every day free (R-020); returns (start, end) or (start, None)."""
     start, end = monthgrid.parse_date(start_value), monthgrid.parse_date(end_value)
     if not start or start not in _bookable_days(guide, start, start):
         return None, None
-    if not end or end < start or (end - start).days >= services.MAX_WINDOW_DAYS or end not in _bookable_days(guide, end, end):
+    if not end or end < start or (end - start).days >= settings.MAX_REQUEST_DAYS:
+        return start, None
+    if not availability.range_bookable(guide, start, end):
         return start, None
     return start, end
+
+
+def live_departures(guide):
+    return [d for d in guide.departures.filter(status__in=[Departure.Status.OPEN, Departure.Status.CONFIRMED],
+                                               start_date__gt=timezone.localdate()) if d.signup_open]
 
 
 def _render(request, guide, *, start_value=None, end_value=None, month_value=None, form=None, status=200):
     earliest, latest = availability.booking_window(guide)
     start, end = _selection(guide, start_value, end_value)
+    lang = translation.get_language()
 
     first_month, last_month = timezone.localdate().replace(day=1), latest.replace(day=1)
     if month_value:
@@ -71,42 +71,41 @@ def _render(request, guide, *, start_value=None, end_value=None, month_value=Non
 
     weeks = monthgrid.weeks(month)
     bookable = _bookable_days(guide, weeks[0][0], weeks[-1][-1])
-    lang = guest_language(request)
     notice = form.non_field_errors() if form is not None else None
 
     def next_selection(d):
-        """Clicking a day starts a new window, or ends the open one if it is within reach."""
-        if start and not end and start < d and (d - start).days < services.MAX_WINDOW_DAYS:
+        """Clicking a day starts the tour; the next click on a later day sets its last day."""
+        if start and not end and start < d and (d - start).days < settings.MAX_REQUEST_DAYS:
             return start, d
         return d, None
 
     def link(d):
         s, e = next_selection(d)
-        query = f"?lang={lang}&monat={month:%Y-%m}&von={s:%Y-%m-%d}"
+        query = f"?monat={month:%Y-%m}&von={s:%Y-%m-%d}"
         return query + (f"&bis={e:%Y-%m-%d}" if e else "")
 
-    window_end = end or start
+    tour_end = end or start
     if start and form is None:
-        form = BookingRequestForm(initial={"start_date": start, "end_date": window_end, "language": lang})
+        form = BookingRequestForm(initial={"start_date": start, "end_date": tour_end, "language": lang})
 
     context = {
         "guide": guide,
+        "departures": live_departures(guide),
+        "rate_table": guide.rate_table(),
         "month_label": monthgrid.month_label(month),
         "prev_month": f"{monthgrid.shift_month(month, -1):%Y-%m}" if month > first_month else None,
         "next_month": f"{monthgrid.shift_month(month, 1):%Y-%m}" if month < last_month else None,
-        "weekday_names": monthgrid.WEEKDAY_NAMES,
+        "weekday_names": monthgrid.weekday_names(),
         "weeks": [
             [{"date": d, "in_month": d.month == month.month, "free": d in bookable and d.month == month.month,
-              "selected": bool(start) and start <= d <= window_end, "link": link(d) if d in bookable else None}
+              "selected": bool(start) and start <= d <= tour_end, "link": link(d) if d in bookable else None}
              for d in week]
             for week in weeks
         ],
         "start": start,
-        "end": window_end,
-        "window_open": bool(start) and not end,
-        "max_window_days": services.MAX_WINDOW_DAYS,
-        "lang": lang,
-        "lang_query": f"?lang={lang}",
+        "end": tour_end,
+        "picking_end": bool(start) and not end,
+        "max_request_days": settings.MAX_REQUEST_DAYS,
         "form": form if start else None,
         "notice": notice if not start else None,
     }
@@ -121,7 +120,11 @@ def widget(request, slug):
     )
 
 
-# Public, unauthenticated form inside a third-party iframe, where browsers often block the
+def _rate_limited(request, scope) -> bool:
+    return not allow(f"{scope}:{client_ip(request)}", limit=5, window_seconds=10 * 60)
+
+
+# Public, unauthenticated forms inside a third-party iframe, where browsers often block the
 # CSRF cookie. There's no session to abuse, so CSRF protection is replaced by a honeypot,
 # a signed form timestamp and per-IP rate limiting.
 @csrf_exempt
@@ -134,13 +137,13 @@ def widget_request(request, slug):
     if form.is_valid():
         if form.is_spam():
             return _framed(render(request, "widget/success.html", {"guide": guide, "booking": None}), guide)
-        if not allow(f"widget:{client_ip(request)}", limit=5, window_seconds=10 * 60):
-            form.add_error(None, "Zu viele Anfragen. Bitte versuche es später erneut.")
+        if _rate_limited(request, "widget"):
+            form.add_error(None, _("Zu viele Anfragen. Bitte versuche es später erneut."))
             return _render(request, guide, form=form, status=429, **rerender)
         data = form.cleaned_data
         try:
             booking = services.create_request(
-                guide=guide, tour=None, start_date=data["start_date"], end_date=data["end_date"],
+                guide=guide, start_date=data["start_date"], end_date=data["end_date"],
                 participants=data["participants"], guest_name=data["guest_name"], guest_email=data["guest_email"],
                 guest_phone=data["guest_phone"], guest_message=data["guest_message"], language=data["language"],
             )
@@ -149,3 +152,88 @@ def widget_request(request, slug):
         else:
             return _framed(render(request, "widget/success.html", {"guide": guide, "booking": booking}), guide)
     return _render(request, guide, form=form, status=400, **rerender)
+
+
+# --- Scheduled dates ---------------------------------------------------------
+
+
+def _departure(public_id):
+    return get_object_or_404(Departure.objects.select_related("guide"), public_id=public_id, guide__is_active=True)
+
+
+def _departure_page(request, departure, *, form=None, waitlist_form=None, status=200, joined=False):
+    lang = translation.get_language()
+    free = departure.seats_free
+    if form is None and free:
+        form = RegistrationForm(initial={"language": lang}, max_seats=free)
+    if waitlist_form is None and not free:
+        waitlist_form = WaitlistForm(initial={"language": lang})
+    response = render(request, "widget/departure.html", {
+        "guide": departure.guide, "departure": departure, "seats_free": free, "form": form,
+        "waitlist_form": waitlist_form, "joined": joined, "cancelled_payment": request.GET.get("abgebrochen") == "1",
+        "can_pay": departure.guide.can_take_card_payments,
+    }, status=status)
+    return _framed(response, departure.guide)
+
+
+def departure_page(request, public_id):
+    """Each scheduled date has its own address that leads straight to the signup (R-110)."""
+    return _departure_page(request, _departure(public_id))
+
+
+@csrf_exempt
+@require_POST
+def departure_signup(request, public_id):
+    departure = _departure(public_id)
+    form = RegistrationForm(request.POST, max_seats=max(departure.seats_free, 1))
+    if not form.is_valid():
+        return _departure_page(request, departure, form=form, status=400)
+    if form.is_spam():
+        return redirect("widget:departure", public_id=public_id)
+    if _rate_limited(request, "signup"):
+        form.add_error(None, _("Zu viele Anmeldungen. Bitte versuche es später erneut."))
+        return _departure_page(request, departure, form=form, status=429)
+    d = form.cleaned_data
+    try:
+        booking = departures.start_registration(
+            departure, seats=d["seats"], guest_name=d["guest_name"], guest_email=d["guest_email"],
+            guest_phone=d["guest_phone"], emergency_contact=d["emergency_contact"], experience=d["experience"],
+            language=d["language"],
+        )
+        url = stripe_service.create_registration_checkout(booking)
+    except services.BookingError as exc:
+        form.add_error(None, str(exc))
+        return _departure_page(request, departure, form=form, status=400)
+    except stripe_service.PaymentError as exc:
+        departures.payment_failed(booking)
+        form.add_error(None, str(exc))
+        return _departure_page(request, departure, form=form, status=400)
+    return redirect(url)
+
+
+@csrf_exempt
+@require_POST
+def departure_waitlist(request, public_id):
+    departure = _departure(public_id)
+    form = WaitlistForm(request.POST)
+    if not form.is_valid():
+        return _departure_page(request, departure, waitlist_form=form, status=400)
+    if form.is_spam():
+        return redirect("widget:departure", public_id=public_id)
+    if _rate_limited(request, "waitlist"):
+        form.add_error(None, _("Zu viele Versuche. Bitte versuche es später erneut."))
+        return _departure_page(request, departure, waitlist_form=form, status=429)
+    d = form.cleaned_data
+    try:
+        departures.join_waitlist(departure, name=d["guest_name"], email=d["guest_email"], seats=d["seats"],
+                                 language=d["language"])
+    except services.BookingError as exc:
+        form.add_error(None, str(exc))
+        return _departure_page(request, departure, waitlist_form=form, status=400)
+    return _departure_page(request, departure, joined=True)
+
+
+def terms(request, slug):
+    """The guide's terms for guests, or the Tourchef template with the guide's cancellation tiers (R-003, R-004)."""
+    guide = _guide(slug)
+    return _framed(render(request, "widget/terms.html", {"guide": guide}), guide)

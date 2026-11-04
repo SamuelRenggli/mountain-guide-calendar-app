@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Wiederherstellungscodes" %} – Tourchef{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+<h1>{% translate "Zwei-Faktor ist aktiv" %}</h1>
+<div class="alert warning">{% translate "Notiere diese Wiederherstellungscodes und bewahre sie sicher auf. Jeder Code funktioniert einmal, falls du dein Handy verlierst. Sie werden nur jetzt angezeigt." %}</div>
+<section class="card"><ul class="codes">{% for code in codes %}<li><code>{{ code }}</code></li>{% endfor %}</ul></section>
+<p><a class="btn" href="{% url 'dashboard:home' %}">{% translate "Weiter zum Dashboard" %}</a></p>
+{% endblock %}

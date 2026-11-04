@@ -1,10 +1,11 @@
 {% extends "base.html" %}
-{% block title %}Tour – Tourchef{% endblock %}
+{% load i18n %}
+{% block title %}{% translate "Vorlage" %} – Tourchef{% endblock %}
 {% block content %}
-<p class="small"><a href="{% url 'dashboard:tours' %}">← Touren</a></p>
-<h1>{% if tour.pk %}Tour bearbeiten{% else %}Neue Tour{% endif %}</h1>
-<form method="post" class="card">{% csrf_token %}
+<p class="small"><a href="{% url 'dashboard:tours' %}">← {% translate "Vorlagen" %}</a></p>
+<h1>{% if tour.pk %}{% translate "Vorlage bearbeiten" %}{% else %}{% translate "Neue Vorlage" %}{% endif %}</h1>
+<form method="post" class="card form-mobile">{% csrf_token %}
   {% include "_form.html" %}
-  <button class="btn" type="submit">Speichern</button>
+  <button class="btn" type="submit">{% translate "Speichern" %}</button>
 </form>
 {% endblock %}

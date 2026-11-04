@@ -1,22 +1,25 @@
 {% extends "base.html" %}
-{% block title %}Touren – Tourchef{% endblock %}
+{% load i18n %}
+{% block title %}{% translate "Vorlagen" %} – Tourchef{% endblock %}
 {% block content %}
-<div class="spread"><h1>Touren</h1><a class="btn" href="{% url 'dashboard:tour_new' %}">Neue Tour</a></div>
+<div class="spread"><h1>{% translate "Tour-Vorlagen" %}</h1><a class="btn" href="{% url 'dashboard:tour_new' %}">{% translate "Neue Vorlage" %}</a></div>
+<p class="muted small">{% translate "Vorlagen sparen Tipparbeit: Aus einer Vorlage schreibst du einen Termin mit einem Klick aus." %}</p>
 <section class="card">
   {% if tours %}
   <div class="table-wrap"><table>
-    <thead><tr><th>Titel</th><th>Dauer</th><th>Preis</th><th>Max.</th><th>Im Widget</th><th></th></tr></thead>
+    <thead><tr><th>{% translate "Titel" %}</th><th>{% translate "Dauer" %}</th><th>{% translate "Preis pro Person" %}</th><th>{% translate "Gruppe" %}</th><th>{% translate "Aktiv" %}</th><th></th></tr></thead>
     <tbody>
     {% for tour in tours %}
       <tr>
         <td><a href="{% url 'dashboard:tour_edit' tour.pk %}">{{ tour.title }}</a></td>
-        <td>{{ tour.duration_days }} Tag{{ tour.duration_days|pluralize:"e" }}</td>
-        <td>CHF {{ tour.price }} <span class="small muted">{{ tour.get_price_mode_display }}</span></td>
-        <td>{{ tour.max_participants }}</td>
-        <td>{{ tour.is_active|yesno:"Ja,Nein" }}</td>
-        <td>
+        <td>{% blocktranslate count n=tour.duration_days trimmed %}{{ n }} Tag{% plural %}{{ n }} Tage{% endblocktranslate %}</td>
+        <td>CHF {{ tour.price_per_person|floatformat:"-2" }}</td>
+        <td>{{ tour.min_participants }}–{{ tour.max_participants }}</td>
+        <td>{% if tour.is_active %}{% translate "Ja" %}{% else %}{% translate "Nein" %}{% endif %}</td>
+        <td class="row">
+          {% if tour.is_active %}<a class="btn btn-small" href="{% url 'dashboard:departure_new' %}?vorlage={{ tour.pk }}">{% translate "Ausschreiben" %}</a>{% endif %}
           <form method="post" action="{% url 'dashboard:tour_delete' tour.pk %}" class="inline">{% csrf_token %}
-            <button class="btn btn-danger btn-small" type="submit">Löschen</button>
+            <button class="btn btn-danger btn-small" type="submit">{% translate "Löschen" %}</button>
           </form>
         </td>
       </tr>
@@ -24,7 +27,7 @@
     </tbody>
   </table></div>
   {% else %}
-  <p class="empty">Noch keine Touren. Gäste können erst buchen, wenn du mindestens eine Tour anlegst.</p>
+  <p class="empty">{% translate "Noch keine Vorlagen. Bei der Schnellerfassung eines Termins kannst du ihn als Vorlage speichern." %}</p>
   {% endif %}
 </section>
 {% endblock %}

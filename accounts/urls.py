@@ -9,6 +9,9 @@ urlpatterns = [
     path("anmelden/", views.LoginView.as_view(), name="login"),
     path("abmelden/", auth_views.LogoutView.as_view(), name="logout"),
     path("registrieren/", views.signup, name="signup"),
+    path("zwei-faktor/", views.two_factor_verify, name="2fa_verify"),
+    path("zwei-faktor/einrichten/", views.two_factor_setup, name="2fa_setup"),
+    path("bestaetigen/", views.reauth, name="reauth"),
     path(
         "passwort/aendern/",
         auth_views.PasswordChangeView.as_view(

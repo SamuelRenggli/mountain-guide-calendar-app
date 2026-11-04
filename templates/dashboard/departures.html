@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Termine" %} – Tourchef{% endblock %}
+{% block content %}
+<div class="spread"><h1>{% translate "Ausgeschriebene Termine" %}</h1><a class="btn" href="{% url 'dashboard:departure_new' %}">{% translate "Schnellerfassung" %}</a></div>
+{% if not can_pay %}
+<div class="alert warning">{% url 'dashboard:settings' as settings_url %}{% blocktranslate trimmed %}Gäste bezahlen Termine bei der Anmeldung mit Karte oder TWINT. Verbinde dafür zuerst <a href="{{ settings_url }}">Stripe in den Einstellungen</a>.{% endblocktranslate %}</div>
+{% endif %}
+
+{% if templates %}
+<section class="card">
+  <h2>{% translate "Aus Vorlage ausschreiben" %}</h2>
+  <div class="row">
+    {% for tour in templates %}<a class="btn btn-secondary btn-small" href="{% url 'dashboard:departure_new' %}?vorlage={{ tour.pk }}">{{ tour.title }}</a>{% endfor %}
+  </div>
+</section>
+{% endif %}
+
+<section class="card">
+  <h2>{% translate "Kommende" %}</h2>
+  {% translate "Keine kommenden Termine." as empty %}
+  {% include "dashboard/_departure_table.html" with departures=upcoming empty=empty %}
+</section>
+<section class="card">
+  <h2>{% translate "Vergangene und abgesagte" %}</h2>
+  {% translate "Noch keine." as empty %}
+  {% include "dashboard/_departure_table.html" with departures=past empty=empty %}
+</section>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "legal/_base.html" %}
+{% block title %}Informativa sulla protezione dei dati – Tourchef{% endblock %}
+{% block legal %}
+<h1>Informativa sulla protezione dei dati</h1>
+<p class="small muted">Stato: 4 novembre 2026</p>
+
+<h2>1. Chi è responsabile?</h2>
+<p>Tourchef è uno strumento di prenotazione per guide alpine. Il gestore è {{ operator_name }}, {{ operator_address }} («Tourchef», «noi»).</p>
+<ul>
+  <li><strong>Dati degli ospiti</strong> (richieste, iscrizioni, pagamenti): responsabile è la guida presso cui prenoti. Tourchef tratta questi dati per suo conto (trattamento su incarico).</li>
+  <li><strong>Dati delle guide</strong> e gestione di questo sito: responsabile è Tourchef.</li>
+</ul>
+<p>Contatto per la protezione dei dati: <a href="mailto:{{ privacy_email }}">{{ privacy_email }}</a></p>
+
+<h2>2. Quali dati trattiamo</h2>
+<p><strong>Ospiti:</strong> nome, e-mail, telefono, numero di partecipanti o posti, desiderio di gita e messaggi, date scelte, lingua, momento dell’accettazione delle condizioni, stato di pagamento e di rimborso. Per le iscrizioni a date pubblicate inoltre: contatto d’emergenza e una breve indicazione su esperienza e livello. I dati della carta li riceve solo il nostro fornitore di pagamenti Stripe, non Tourchef né la guida.</p>
+<p><strong>Guide:</strong> dati di accesso (e-mail, password come hash, chiave a due fattori cifrata), nome, telefono, tariffe giornaliere, condizioni, IBAN, numero IVA, disponibilità, l’indirizzo di un calendario esterno e i giorni occupati che ne derivano, ID dell’account Stripe.</p>
+<p><strong>Dati tecnici:</strong> indirizzo IP (brevemente, per prevenire abusi; per le guide nel registro degli accessi), log del server del nostro hosting (ora, indirizzo richiamato, IP).</p>
+
+<h2>3. Per quale scopo</h2>
+<ul>
+  <li>Gestire richieste, prenotazioni e iscrizioni e informarti via e-mail</li>
+  <li>Pagamenti, fatture, ricevute e rimborsi</li>
+  <li>Sicurezza in montagna: contatto d’emergenza ed esperienza aiutano la guida a pianificare la gita e ad agire in caso d’emergenza</li>
+  <li>Gestione sicura (prevenzione degli abusi, ricerca di errori) e obblighi di legge (contabilità)</li>
+</ul>
+<p>Per gli ospiti dell’UE il trattamento si basa sull’esecuzione del contratto (art. 6 par. 1 lett. b GDPR), su obblighi di legge (lett. c) e sull’interesse legittimo a una gestione sicura (lett. f).</p>
+
+<h2>4. Chi riceve i dati</h2>
+<ul>
+  <li>La guida presso cui prenoti. Le altre guide non vedono i tuoi dati.</li>
+  <li>Google Cloud (gestione dell’applicazione, regione Zurigo, Svizzera)</li>
+  <li>Neon (banca dati, regione Francoforte, UE)</li>
+  <li>Stripe Payments Europe Ltd. (Irlanda) e Stripe, Inc. (USA) per pagamenti e rimborsi</li>
+  <li>Il nostro servizio di invio e-mail [indicare il fornitore]</li>
+</ul>
+<p>I dati sono trasmessi negli USA solo con garanzie adeguate (EU-/Swiss-US Data Privacy Framework o clausole contrattuali standard).</p>
+
+<h2>5. Per quanto tempo</h2>
+<ul>
+  <li>Dati di prenotazione, fatturazione e pagamento: 10 anni (obbligo legale di conservazione)</li>
+  <li>Telefono, contatto d’emergenza ed esperienza: senza termine fisso, affinché la guida possa accompagnarti in sicurezza anche in altre gite senza che tu debba reinserire tutto. Su richiesta li cancelliamo in qualsiasi momento (vedi punto 7); prenotazioni e fatture restano conservate.</li>
+  <li>Liste d’attesa: fino alla data della gita</li>
+  <li>Log del server: di norma 30 giorni</li>
+</ul>
+<p>I dati cancellati scompaiono anche dalle copie di sicurezza alla scadenza del relativo termine.</p>
+
+<h2>6. Sicurezza</h2>
+<p>Le connessioni sono cifrate (HTTPS). Telefono, contatto d’emergenza ed esperienza sono inoltre cifrati nella banca dati; la chiave è conservata separatamente. Le guide accedono con password e secondo fattore; gli accessi ai contatti d’emergenza e gli export vengono registrati. La tua pagina di prenotazione è raggiungibile solo tramite un link segreto.</p>
+
+<h2>7. I tuoi diritti</h2>
+<p>Puoi chiedere informazioni sui tuoi dati, la loro rettifica, cancellazione e consegna. Rivolgiti alla guida presso cui hai prenotato o a <a href="mailto:{{ privacy_email }}">{{ privacy_email }}</a>. Rispondiamo entro 30 giorni. Puoi inoltre presentare reclamo all’Incaricato federale della protezione dei dati e della trasparenza (IFPDT) e, se provieni dall’UE, alla tua autorità di controllo.</p>
+
+<h2>8. Cookie</h2>
+<p>Usiamo solo cookie tecnicamente necessari: un cookie di sessione per le guide connesse e un cookie per la lingua scelta. Nessun tracciamento, nessuna pubblicità, nessun servizio di analisi.</p>
+
+<h2>9. Modifiche</h2>
+<p>Adattiamo questa informativa quando Tourchef cambia. Fa fede la versione pubblicata qui.</p>
+{% endblock %}

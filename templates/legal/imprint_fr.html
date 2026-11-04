@@ -1,0 +1,11 @@
+{% extends "legal/_base.html" %}
+{% block title %}Mentions légales – Tourchef{% endblock %}
+{% block legal %}
+<h1>Mentions légales</h1>
+<h2>Exploitant</h2>
+<p>{{ operator_name }}<br>{{ operator_address }}<br>E-mail : <a href="mailto:{{ privacy_email }}">{{ privacy_email }}</a></p>
+<h2>Offres des guides</h2>
+<p>Tourchef est un outil. Les guides de montagne sont responsables des courses, prix, conditions et indications figurant sur leurs pages ; ils sont les partenaires contractuels des clients.</p>
+<h2>Responsabilité</h2>
+<p>Nous vérifions les contenus avec soin, sans toutefois garantir leur exactitude ni leur exhaustivité. Les exploitants des sites liés sont responsables de leurs contenus.</p>
+{% endblock %}

@@ -1,68 +1,77 @@
-from datetime import timedelta
-
 from bookings import availability
-from bookings.models import BlockedPeriod, Booking, ExternalBusy, OpenPeriod, Tour
+from bookings.models import BlockedPeriod, Booking, Departure, ExternalBusy, OpenPeriod
 
 from .conftest import in_days
 
 
-def test_free_day_is_bookable(tour):
-    assert availability.can_start_on(tour, in_days(10))
+def free(guide, start, end=None):
+    return availability.range_bookable(guide, start, end or start)
 
 
-def test_booking_window(tour):
-    tour.guide.min_notice_days = 3
-    tour.guide.max_advance_days = 30
-    tour.guide.save()
-    assert not availability.can_start_on(tour, in_days(-1))
-    assert not availability.can_start_on(tour, in_days(2))
-    assert availability.can_start_on(tour, in_days(3))
-    assert availability.can_start_on(tour, in_days(30))
-    assert not availability.can_start_on(tour, in_days(31))
+def test_free_day_is_bookable(guide):
+    assert free(guide, in_days(10))
 
 
-def test_weekday_rules(tour):
+def test_booking_window(guide):
+    guide.min_notice_days = 3
+    guide.max_advance_days = 30
+    guide.save()
+    assert not free(guide, in_days(-1))
+    assert not free(guide, in_days(2))
+    assert free(guide, in_days(3))
+    assert free(guide, in_days(30))
+    assert not free(guide, in_days(31))
+
+
+def test_weekday_rules(guide):
     day = in_days(10)
-    tour.guide.available_weekdays = "".join(str(i) for i in range(7) if i != day.weekday())
-    tour.guide.save()
-    assert not availability.can_start_on(tour, day)
-    assert availability.can_start_on(tour, day + timedelta(days=1))
+    guide.available_weekdays = "".join(str(i) for i in range(7) if i != day.weekday())
+    guide.save()
+    assert not free(guide, day)
+    assert free(guide, in_days(11))
 
 
-def test_blocks_busy_days_and_bookings(tour, make_booking):
-    BlockedPeriod.objects.create(guide=tour.guide, start_date=in_days(10), end_date=in_days(11))
-    ExternalBusy.objects.create(guide=tour.guide, start_date=in_days(13), end_date=in_days(13))
-    make_booking(tour, in_days(15))
-    make_booking(tour, in_days(17), status=Booking.Status.REJECTED)
+def test_blocks_busy_days_and_bookings(guide, make_booking):
+    BlockedPeriod.objects.create(guide=guide, start_date=in_days(10), end_date=in_days(11))
+    ExternalBusy.objects.create(guide=guide, start_date=in_days(13), end_date=in_days(13))
+    make_booking(guide, in_days(15))
+    make_booking(guide, in_days(17), status=Booking.Status.REJECTED)
 
-    assert not availability.can_start_on(tour, in_days(10))
-    assert not availability.can_start_on(tour, in_days(11))
-    assert availability.can_start_on(tour, in_days(12))
-    assert not availability.can_start_on(tour, in_days(13))
-    assert not availability.can_start_on(tour, in_days(15))
-    assert availability.can_start_on(tour, in_days(17)), "rejected bookings free their dates"
-
-
-def test_other_guides_data_does_not_matter(tour, other_guide):
-    BlockedPeriod.objects.create(guide=other_guide, start_date=in_days(10), end_date=in_days(10))
-    assert availability.can_start_on(tour, in_days(10))
+    assert not free(guide, in_days(10))
+    assert not free(guide, in_days(11))
+    assert free(guide, in_days(12))
+    assert not free(guide, in_days(13))
+    assert not free(guide, in_days(15))
+    assert free(guide, in_days(17)), "rejected bookings free their dates"
 
 
-def test_multi_day_tour_needs_all_days_free(guide):
-    tour = Tour.objects.create(guide=guide, title="Haute Route", price=1500, duration_days=3)
+def test_every_day_of_a_tour_must_be_free(guide):
     BlockedPeriod.objects.create(guide=guide, start_date=in_days(12), end_date=in_days(12))
-    startable = availability.startable_days(tour, in_days(5), in_days(15))
-    assert in_days(9) in startable  # 9, 10, 11
-    assert in_days(10) not in startable  # 10, 11, 12 -> 12 blocked
-    assert in_days(12) not in startable
-    assert in_days(13) in startable
+    assert free(guide, in_days(9), in_days(11))
+    assert not free(guide, in_days(10), in_days(12))
 
 
-def test_day_states_priority(tour, make_booking):
-    ExternalBusy.objects.create(guide=tour.guide, start_date=in_days(10), end_date=in_days(12))
-    make_booking(tour, in_days(20), status=Booking.Status.PAID)
-    make_booking(tour, in_days(21))
-    states = availability.day_states(tour.guide, in_days(-1), in_days(22))
+def test_other_guides_data_does_not_matter(guide, other_guide):
+    BlockedPeriod.objects.create(guide=other_guide, start_date=in_days(10), end_date=in_days(10))
+    assert free(guide, in_days(10))
+
+
+def test_published_dates_block_requests(guide, make_departure):
+    """R-105: the days of a scheduled date can't be requested; a cancelled one frees them."""
+    departure = make_departure(guide, in_days(20))
+    assert not free(guide, in_days(20))
+    assert not free(guide, in_days(21))
+    states = availability.day_states(guide, in_days(20), in_days(21))
+    assert set(states.values()) == {availability.DEPARTURE}
+    Departure.objects.filter(pk=departure.pk).update(status=Departure.Status.CANCELLED)
+    assert free(guide, in_days(20))
+
+
+def test_day_states_priority(guide, make_booking):
+    ExternalBusy.objects.create(guide=guide, start_date=in_days(10), end_date=in_days(12))
+    make_booking(guide, in_days(20), status=Booking.Status.PAID)
+    make_booking(guide, in_days(21))
+    states = availability.day_states(guide, in_days(-1), in_days(22))
     assert states[in_days(-1)] == availability.PAST
     assert states[in_days(10)] == availability.BUSY
     assert states[in_days(20)] == availability.BOOKED
@@ -70,27 +79,13 @@ def test_day_states_priority(tour, make_booking):
     assert states[in_days(22)] == availability.FREE
 
 
-def test_open_periods_apply_once_there_is_one(tour):
-    assert availability.can_start_on(tour, in_days(20)), "without open periods every day is bookable"
-    OpenPeriod.objects.create(guide=tour.guide, start_date=in_days(-10), end_date=in_days(-5))
-    assert availability.can_start_on(tour, in_days(20)), "periods that are over don't count"
+def test_open_periods_apply_once_there_is_one(guide):
+    assert free(guide, in_days(20)), "without open periods every day is bookable"
+    OpenPeriod.objects.create(guide=guide, start_date=in_days(-10), end_date=in_days(-5))
+    assert free(guide, in_days(20)), "periods that are over don't count"
 
-    OpenPeriod.objects.create(guide=tour.guide, start_date=in_days(10), end_date=in_days(12))
-    assert not availability.can_start_on(tour, in_days(20))
-    assert availability.can_start_on(tour, in_days(10))
-    assert availability.can_start_on(tour, in_days(12))
-    assert not availability.can_start_on(tour, in_days(9))
-    assert not availability.can_start_on(tour, in_days(13))
-
-
-def test_open_periods_still_respect_blocks_and_weekdays(guide):
-    tour = Tour.objects.create(guide=guide, title="Haute Route", price=1500, duration_days=3)
-    OpenPeriod.objects.create(guide=guide, start_date=in_days(10), end_date=in_days(20))
-    BlockedPeriod.objects.create(guide=guide, start_date=in_days(15), end_date=in_days(15))
-    startable = availability.startable_days(tour, in_days(5), in_days(25))
-    assert in_days(10) in startable
-    assert in_days(13) not in startable  # 13, 14, 15 -> 15 blocked
-    assert in_days(16) in startable
-    assert in_days(18) in startable  # 18, 19, 20
-    assert in_days(19) not in startable  # would end after the open period
-
+    OpenPeriod.objects.create(guide=guide, start_date=in_days(10), end_date=in_days(12))
+    assert not free(guide, in_days(20))
+    assert free(guide, in_days(10), in_days(12))
+    assert not free(guide, in_days(9))
+    assert not free(guide, in_days(12), in_days(13)), "may not end after the open period"

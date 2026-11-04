@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block container_class %}legal-page{% endblock %}
+{% block content %}
+<div class="alert warning small">{% translate "Entwurf – vor der ersten echten Gastbuchung prüfen und vor dem Ausbau nach Mai 2027 juristisch prüfen lassen." %}</div>
+<article class="card legal">
+{% block legal %}{% endblock %}
+</article>
+{% endblock %}

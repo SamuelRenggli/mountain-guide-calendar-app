@@ -1,0 +1,6 @@
+{% load i18n %}<footer class="footer small muted">
+  <a href="{% url 'legal' 'datenschutz' %}" target="_blank" rel="noopener">{% translate "Datenschutz" %}</a> ·
+  <a href="{% url 'legal' 'impressum' %}" target="_blank" rel="noopener">{% translate "Impressum" %}</a> ·
+  <a href="{% url 'legal' 'nutzungsbedingungen' %}" target="_blank" rel="noopener">{% translate "Nutzungsbedingungen" %}</a>
+  {% if guide %} · <a href="{% url 'widget:terms' guide.slug %}" target="_blank" rel="noopener">{% blocktranslate with name=guide.display_name trimmed %}Bedingungen von {{ name }}{% endblocktranslate %}</a>{% endif %}
+</footer>

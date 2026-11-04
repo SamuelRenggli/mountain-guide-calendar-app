@@ -1,0 +1,59 @@
+{% extends "legal/_base.html" %}
+{% block title %}Déclaration de protection des données – Tourchef{% endblock %}
+{% block legal %}
+<h1>Déclaration de protection des données</h1>
+<p class="small muted">État : 4 novembre 2026</p>
+
+<h2>1. Qui est responsable ?</h2>
+<p>Tourchef est un outil de réservation pour guides de montagne. L’exploitant est {{ operator_name }}, {{ operator_address }} (« Tourchef », « nous »).</p>
+<ul>
+  <li><strong>Données des clients</strong> (demandes, inscriptions, paiements) : le ou la guide auprès de qui tu réserves est responsable. Tourchef traite ces données sur son mandat (sous-traitance).</li>
+  <li><strong>Données des guides</strong> et exploitation de ce site : Tourchef est responsable.</li>
+</ul>
+<p>Contact pour la protection des données : <a href="mailto:{{ privacy_email }}">{{ privacy_email }}</a></p>
+
+<h2>2. Données traitées</h2>
+<p><strong>Clients :</strong> nom, e-mail, téléphone, nombre de participants ou de places, souhait de course et messages, dates choisies, langue, moment de l’acceptation des conditions, statut de paiement et de remboursement. Pour les inscriptions à des dates publiées, en plus : contact d’urgence et une brève indication sur l’expérience et le niveau. Les données de carte ne sont transmises qu’à notre prestataire de paiement Stripe, ni à Tourchef ni au guide.</p>
+<p><strong>Guides :</strong> données de connexion (e-mail, mot de passe haché, clé à deux facteurs chiffrée), nom, téléphone, tarifs journaliers, conditions, IBAN, numéro TVA, disponibilités, l’adresse d’un calendrier externe et les jours occupés qui en proviennent, ID du compte Stripe.</p>
+<p><strong>Technique :</strong> adresse IP (brièvement, pour prévenir les abus ; pour les guides dans le journal d’accès), journaux serveur de notre hébergeur (heure, adresse consultée, IP).</p>
+
+<h2>3. Finalités</h2>
+<ul>
+  <li>Traiter les demandes, réservations et inscriptions et t’informer par e-mail</li>
+  <li>Paiements, factures, quittances et remboursements</li>
+  <li>Sécurité en course : le contact d’urgence et l’expérience aident le guide à planifier la course et à agir en cas d’urgence</li>
+  <li>Exploitation sûre (prévention des abus, recherche d’erreurs) et obligations légales (comptabilité)</li>
+</ul>
+<p>Pour les clients de l’UE, le traitement repose sur l’exécution du contrat (art. 6, al. 1, let. b RGPD), sur des obligations légales (let. c) et sur l’intérêt légitime à une exploitation sûre (let. f).</p>
+
+<h2>4. Destinataires</h2>
+<ul>
+  <li>Le guide auprès de qui tu réserves. Les autres guides ne voient pas tes données.</li>
+  <li>Google Cloud (exploitation de l’application, région Zurich, Suisse)</li>
+  <li>Neon (base de données, région Francfort, UE)</li>
+  <li>Stripe Payments Europe Ltd. (Irlande) et Stripe, Inc. (États-Unis) pour les paiements et remboursements</li>
+  <li>Notre service d’envoi d’e-mails [indiquer le prestataire]</li>
+</ul>
+<p>Les données ne sont transmises aux États-Unis qu’avec des garanties appropriées (Data Privacy Framework UE/Suisse–États-Unis ou clauses contractuelles types).</p>
+
+<h2>5. Durée de conservation</h2>
+<ul>
+  <li>Données de réservation, de facturation et de paiement : 10 ans (obligation légale de conservation)</li>
+  <li>Téléphone, contact d’urgence et expérience : sans délai fixe, afin que le guide puisse te conduire en sécurité lors d’autres courses sans que tu doives tout ressaisir. Sur demande, nous les supprimons à tout moment (voir ch. 7) ; les réservations et factures sont conservées.</li>
+  <li>Listes d’attente : jusqu’à la date de la course</li>
+  <li>Journaux serveur : en règle générale 30 jours</li>
+</ul>
+<p>Les données supprimées disparaissent aussi des sauvegardes à l’échéance du délai de sauvegarde.</p>
+
+<h2>6. Sécurité</h2>
+<p>Les connexions sont chiffrées (HTTPS). Le téléphone, le contact d’urgence et l’expérience sont en outre chiffrés dans la base de données ; la clé est conservée séparément. Les guides se connectent avec mot de passe et second facteur ; les accès aux contacts d’urgence et les exports sont journalisés. Ta page de réservation n’est accessible que par un lien secret.</p>
+
+<h2>7. Tes droits</h2>
+<p>Tu peux demander l’accès à tes données, leur rectification, leur suppression et leur remise. Adresse-toi au guide auprès de qui tu as réservé ou à <a href="mailto:{{ privacy_email }}">{{ privacy_email }}</a>. Nous répondons dans les 30 jours. Tu peux aussi déposer une plainte auprès du Préposé fédéral à la protection des données et à la transparence (PFPDT) et, si tu viens de l’UE, auprès de ton autorité de contrôle.</p>
+
+<h2>8. Cookies</h2>
+<p>Nous n’utilisons que des cookies techniquement nécessaires : un cookie de session pour les guides connectés et un cookie pour la langue choisie. Pas de suivi, pas de publicité, pas de services d’analyse.</p>
+
+<h2>9. Modifications</h2>
+<p>Nous adaptons cette déclaration lorsque Tourchef évolue. La version publiée ici fait foi.</p>
+{% endblock %}

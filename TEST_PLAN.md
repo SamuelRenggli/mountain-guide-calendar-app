@@ -18,9 +18,15 @@ Record results in the tables (✅ / ❌ + note). Every ❌ gets a bug entry (tem
 pytest
 ```
 
-112 tests cover availability, the booking state machine, double-booking prevention, access control between
-guides, XSS escaping, widget spam protection, calendar parsing, SSRF protection, Stripe checkout and webhooks,
-and all emails in German and English. **All must pass.**
+185 tests cover availability, the request state machine, scheduled dates (seats, payment holds, waitlist,
+cancellation fees, refunds, decision deadline), double-booking prevention, access control between guides,
+two-factor login, encryption at rest, export, XSS escaping, widget spam protection, calendar parsing, SSRF
+protection, Stripe checkout, refunds and webhooks, legal pages and all emails in DE/FR/IT/EN. **All must pass.**
+
+Phases 1–3 below were written before scheduled dates existed. Also walk through: publish a date on the phone
+(quick entry), share the link, sign up and pay with a Stripe test card and TWINT, fill it up and join the
+waiting list, cancel as a guest at 20/10/3 days before (0/50/100 %), move the date for weather, let a decision
+deadline pass, and export the period as Excel.
 
 ## Phase 1 – Owner walkthrough on the pilot server (Stripe test mode, ~2 h)
 

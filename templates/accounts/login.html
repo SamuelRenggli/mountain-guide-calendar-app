@@ -1,12 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Anmelden – Tourchef{% endblock %}
+{% load i18n %}
+{% block title %}{% translate "Anmelden" %} – Tourchef{% endblock %}
 {% block container_class %}narrow{% endblock %}
 {% block content %}
-<h1>Anmelden</h1>
+<h1>{% translate "Anmelden" %}</h1>
 <form method="post" class="card">{% csrf_token %}
   {% include "_form.html" %}
   <input type="hidden" name="next" value="{{ next }}">
-  <button class="btn" type="submit">Anmelden</button>
+  <button class="btn" type="submit">{% translate "Anmelden" %}</button>
 </form>
-<p class="small"><a href="{% url 'accounts:password_reset' %}">Passwort vergessen?</a> · <a href="{% url 'accounts:signup' %}">Neu als Bergführer registrieren</a></p>
+<p class="small"><a href="{% url 'accounts:password_reset' %}">{% translate "Passwort vergessen?" %}</a> · <a href="{% url 'accounts:signup' %}">{% translate "Neu als Bergführer registrieren" %}</a></p>
 {% endblock %}

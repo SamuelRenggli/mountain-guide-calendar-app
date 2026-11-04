@@ -1,0 +1,59 @@
+{% extends "legal/_base.html" %}
+{% block title %}Privacy policy – Tourchef{% endblock %}
+{% block legal %}
+<h1>Privacy policy</h1>
+<p class="small muted">As of 4 November 2026</p>
+
+<h2>1. Who is responsible?</h2>
+<p>Tourchef is a booking tool for mountain guides. It is operated by {{ operator_name }}, {{ operator_address }} ("Tourchef", "we").</p>
+<ul>
+  <li><strong>Guest data</strong> (requests, sign-ups, payments): the mountain guide you book with is responsible. Tourchef processes this data on their behalf (as a processor).</li>
+  <li><strong>Guide data</strong> and the operation of this website: Tourchef is responsible.</li>
+</ul>
+<p>Privacy contact: <a href="mailto:{{ privacy_email }}">{{ privacy_email }}</a></p>
+
+<h2>2. What data we process</h2>
+<p><strong>Guests:</strong> name, email, phone, number of participants or seats, tour wish and messages, chosen dates, language, when you accepted the terms, payment and refund status. For sign-ups to scheduled dates also: an emergency contact and a short note on experience and level. Card details only go to our payment provider Stripe, not to Tourchef and not to the guide.</p>
+<p><strong>Guides:</strong> login data (email, password as a hash, encrypted two-factor key), name, phone, day rates, terms, IBAN, VAT number, availability, the address of an external calendar and the busy days taken from it, Stripe account ID.</p>
+<p><strong>Technical:</strong> IP address (briefly, to prevent abuse; for guides in the access log), server logs of our host (time, address requested, IP).</p>
+
+<h2>3. Why</h2>
+<ul>
+  <li>To handle requests, bookings and sign-ups and to keep you informed by email</li>
+  <li>Payments, invoices, receipts and refunds</li>
+  <li>Safety on tours: the emergency contact and your experience help the guide plan the tour and act in an emergency</li>
+  <li>Secure operation (abuse prevention, troubleshooting) and legal obligations (bookkeeping)</li>
+</ul>
+<p>For guests from the EU, processing is based on performance of the contract (Art. 6(1)(b) GDPR), legal obligations (c) and our legitimate interest in secure operation (f).</p>
+
+<h2>4. Who receives the data</h2>
+<ul>
+  <li>The guide you book with. Other guides do not see your data.</li>
+  <li>Google Cloud (running the application, Zurich region, Switzerland)</li>
+  <li>Neon (database, Frankfurt region, EU)</li>
+  <li>Stripe Payments Europe Ltd. (Ireland) and Stripe, Inc. (USA) for payments and refunds</li>
+  <li>Our email delivery service [enter provider]</li>
+</ul>
+<p>Data is only transferred to the USA with appropriate safeguards (EU/Swiss-US Data Privacy Framework or standard contractual clauses).</p>
+
+<h2>5. How long</h2>
+<ul>
+  <li>Booking, invoice and payment data: 10 years (statutory retention)</li>
+  <li>Phone, emergency contact and experience: without a fixed limit, so the guide can lead you safely on further tours without you having to enter everything again. We delete them at any time on request (see section 7); bookings and invoices are kept.</li>
+  <li>Waiting lists: until the tour date</li>
+  <li>Server logs: usually 30 days</li>
+</ul>
+<p>Deleted data also disappears from backups once the backup period has passed.</p>
+
+<h2>6. Security</h2>
+<p>Connections are encrypted (HTTPS). Phone, emergency contact and experience are additionally encrypted in the database; the key is kept separately from it. Guides log in with a password and a second factor; access to emergency contacts and exports are logged. Your booking page can only be reached through a secret link.</p>
+
+<h2>7. Your rights</h2>
+<p>You can ask for access to your data, have it corrected or deleted, and ask for a copy. Contact the guide you booked with or <a href="mailto:{{ privacy_email }}">{{ privacy_email }}</a>. We reply within 30 days. You can also complain to the Federal Data Protection and Information Commissioner (FDPIC) and, as a guest from the EU, to your supervisory authority.</p>
+
+<h2>8. Cookies</h2>
+<p>We only use technically necessary cookies: a session cookie for logged-in guides and a cookie for the chosen language. No tracking, no advertising, no analytics.</p>
+
+<h2>9. Changes</h2>
+<p>We update this policy when Tourchef changes. The version published here applies.</p>
+{% endblock %}

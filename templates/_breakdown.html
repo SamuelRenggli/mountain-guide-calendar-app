@@ -1,0 +1,11 @@
+{% load i18n %}{% if booking.price_breakdown and not booking.is_invoiced %}
+<div class="table-wrap"><table class="invoice small">
+  <thead><tr><th>{% translate "Wer" %}</th><th class="num">{% translate "Personen" %}</th><th class="num">{% translate "Tage" %}</th><th class="num">{% translate "Tagesansatz" %}</th><th class="num">CHF</th></tr></thead>
+  <tbody>
+  {% for row in booking.price_breakdown %}
+    <tr><td>{% if row.role == "aspirant" %}{% translate "Aspirant" %}{% else %}{% translate "Bergführer" %}{% endif %}</td><td class="num">{{ row.persons }}</td><td class="num">{{ row.days|floatformat:"-1" }}</td><td class="num">{{ row.rate }}</td><td class="num">{{ row.amount }}</td></tr>
+  {% endfor %}
+  </tbody>
+  {% if booking.breakdown_total != booking.price %}<tfoot><tr><td colspan="4">{% translate "Vereinbarter Preis" %}</td><td class="num">{{ booking.price }}</td></tr></tfoot>{% endif %}
+</table></div>
+{% endif %}

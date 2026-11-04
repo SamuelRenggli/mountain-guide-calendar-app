@@ -1,0 +1,3 @@
+{% load i18n %}<nav class="lang-switch small" aria-label="{% translate 'Sprache' %}">
+  {% for code, name in LANGUAGE_CHOICES %}<a href="?{{ lang_query|default:'' }}lang={{ code }}" lang="{{ code }}" hreflang="{{ code }}" {% if code == CURRENT_LANGUAGE %}aria-current="true" class="active"{% endif %} title="{{ name }}">{{ code|upper }}</a>{% endfor %}
+</nav>

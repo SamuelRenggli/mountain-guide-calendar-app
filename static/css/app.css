@@ -144,3 +144,50 @@ code.embed { display: block; padding: .75rem; background: #f0f2f0; border-radius
   border-top: 2px solid var(--border); font-size: 1.15rem; }
 table.invoice td.num, table.invoice th.num { text-align: right; white-space: nowrap; }
 table.invoice tfoot td { font-weight: 700; border-top: 2px solid var(--border); }
+
+/* Footer and language switch */
+.footer { max-width: 960px; margin: 0 auto; padding: 1rem 1rem 2rem; text-align: center; }
+.footer a { color: var(--muted); }
+.lang-switch { display: flex; gap: .5rem; }
+.lang-switch a { text-decoration: none; color: var(--muted); padding: .1rem .3rem; border-radius: 4px; }
+.lang-switch a.active { color: var(--text); font-weight: 700; background: var(--free); }
+.widget-head { margin-bottom: .5rem; }
+.widget-head h1 { margin: 0; }
+
+/* Scheduled dates */
+ul.cards { list-style: none; padding: 0; margin: 0 0 1rem; display: grid; gap: .5rem; }
+.departure-card { display: flex; justify-content: space-between; align-items: center; gap: .75rem; padding: .75rem 1rem; margin: 0; }
+.departure-link { display: flex; flex-direction: column; text-decoration: none; color: var(--text); flex: 1; min-width: 0; }
+.free-text { color: var(--free-text); font-weight: 600; }
+.price-note { margin: .5rem 0 1rem; }
+table.rates { width: auto; margin: .25rem 0; }
+table.rates td { padding: .15rem 1rem .15rem 0; border: 0; }
+.badge-d-open { background: var(--requested); }
+.badge-d-confirmed, .badge-confirmed { background: var(--free); color: var(--free-text); }
+.badge-d-cancelled { background: #eee; color: var(--muted); }
+.badge-reschedule, .badge-payment_pending { background: #dbe8ff; }
+.legend .l-departure::before { background: #dcd8f5; }
+.month .s-departure { background: #dcd8f5; }
+.month .day a.add { text-decoration: none; text-align: right; opacity: .5; }
+.month .day a.add:hover { opacity: 1; }
+
+/* 2FA */
+.qr { display: flex; justify-content: center; }
+.qr svg { max-width: 220px; height: auto; }
+ul.codes { columns: 2; list-style: none; padding: 0; margin: 0; }
+input[type=datetime-local], input[type=time] { width: 100%; padding: .55rem .65rem; border: 1px solid var(--border);
+  border-radius: 6px; font: inherit; background: #fff; }
+.tier-row { grid-template-columns: 1fr 1fr auto; align-items: end; }
+
+/* Phones (R-104: quick entry from 360 px) */
+@media (max-width: 480px) {
+  .container { padding: 1rem .75rem 2rem; }
+  .card { padding: 1rem .85rem; }
+  .topbar { gap: .75rem; }
+  .topbar nav { gap: .6rem; font-size: .9rem; }
+  .form-mobile .btn[type=submit] { width: 100%; padding: .8rem; }
+  .departure-card { flex-direction: column; align-items: stretch; }
+  dl.facts { grid-template-columns: 1fr; gap: .1rem; }
+  dl.facts dd { margin-bottom: .4rem; }
+  .expense-row, .tier-row { grid-template-columns: 1fr; }
+}

@@ -1,0 +1,43 @@
+{% extends "widget/base.html" %}
+{% load i18n %}
+{% block title %}{% blocktranslate with name=guide.display_name trimmed %}Bedingungen von {{ name }}{% endblocktranslate %}{% endblock %}
+{% block heading %}<h1>{% blocktranslate with name=guide.display_name trimmed %}Bedingungen von {{ name }}{% endblocktranslate %}</h1>{% endblock %}
+{% block content %}
+<section class="card">
+  <h2>{% translate "Stornierung" %}</h2>
+  <table class="small">
+    <tr><td>{% blocktranslate with d=guide.cancel_free_days trimmed %}bis {{ d }} Tage vor Tourbeginn{% endblocktranslate %}</td><td>0 %</td></tr>
+    {% if guide.cancel_partial_days < guide.cancel_free_days %}<tr><td>{% blocktranslate with d=guide.cancel_partial_days trimmed %}bis {{ d }} Tage vor Tourbeginn{% endblocktranslate %}</td><td>{{ guide.cancel_partial_percent }} %</td></tr>{% endif %}
+    <tr><td>{% translate "danach" %}</td><td>100 %</td></tr>
+    <tr><td>{% translate "Absage wegen Wetter oder Verhältnissen oder durch den Bergführer" %}</td><td>0 %</td></tr>
+  </table>
+  <p class="small muted">{% translate "Prozent des Tourenpreises. Stichtag ist der Tag, an dem du stornierst." %}</p>
+</section>
+
+{% if guide.has_own_terms %}
+<section class="card">
+  <p class="pre">{{ guide.guest_terms }}</p>
+</section>
+{% else %}
+<section class="card legal">
+  <p class="small muted">{% translate "Vorlage von Tourchef, angelehnt an die Grundsätze des Schweizer Bergführerverbands (SBV)." %}</p>
+  <h2>{% translate "1. Vertragspartner" %}</h2>
+  <p>{% blocktranslate with name=guide.display_name trimmed %}Dein Vertragspartner ist {{ name }}. Tourchef stellt nur das Buchungswerkzeug zur Verfügung und ist nicht Partei des Vertrags.{% endblocktranslate %}</p>
+  <h2>{% translate "2. Anfrage und Vertragsabschluss" %}</h2>
+  <p>{% translate "Eine Anfrage für eine eigene Tour ist unverbindlich. Der Vertrag kommt zustande, wenn der Bergführer die Anfrage bestätigt oder du sein Angebot annimmst. Die Anmeldung für einen ausgeschriebenen Termin ist mit der erfolgreichen Zahlung verbindlich." %}</p>
+  <h2>{% translate "3. Preise und Zahlung" %}</h2>
+  <p>{% translate "Bei Touren auf Anfrage gilt der bestätigte Preis für die Führung. Spesen wie Reise, Hütte, Bahn und Verpflegung des Bergführers kommen dazu und werden nach der Tour abgerechnet; geschätzte Spesen im Angebot sind unverbindlich. Bei ausgeschriebenen Terminen gilt der Preis pro Person; er wird bei der Anmeldung mit Karte oder TWINT bezahlt." %}</p>
+  <h2>{% translate "4. Stornierung durch dich" %}</h2>
+  <p>{% translate "Es gelten die Storno-Kosten oben. Bereits bezahlte Beträge abzüglich der Storno-Kosten erhältst du automatisch zurück. Du kannst jederzeit über den Link in deiner Bestätigung stornieren." %}</p>
+  <h2>{% translate "5. Absage oder Verschiebung durch den Bergführer" %}</h2>
+  <p>{% translate "Die Sicherheit geht vor. Lassen Wetter oder Verhältnisse die Tour nicht zu, kann der Bergführer sie absagen oder ein Ersatzdatum vorschlagen. Passt dir das Ersatzdatum nicht, wird die Buchung kostenlos storniert; Bezahltes erhältst du vollständig zurück. Bei Touren auf Anfrage trägst du Kosten, die bereits angefallen sind und die der Bergführer bei der Verschiebung ausweist (z. B. eine verfallene Hüttenanzahlung). Wird bei einem ausgeschriebenen Termin die Mindestzahl nicht erreicht, kann der Bergführer ihn bis zur Entscheid-Frist absagen; du erhältst den vollen Betrag zurück." %}</p>
+  <h2>{% translate "6. Anforderungen und Gesundheit" %}</h2>
+  <p>{% translate "Du gibst deine Erfahrung und Kondition wahrheitsgemäss an und informierst den Bergführer über gesundheitliche Einschränkungen. Der Bergführer darf Teilnehmende ausschliessen oder eine Tour abbrechen oder ändern, wenn die Sicherheit es verlangt; ein Anspruch auf Rückzahlung besteht dann nicht, sofern der Grund bei dir liegt." %}</p>
+  <h2>{% translate "7. Versicherung und Haftung" %}</h2>
+  <p>{% translate "Bergsport ist mit Risiken verbunden. Eine Unfall-, Rettungs- und Annullationsversicherung ist Sache der Teilnehmenden. Der Bergführer haftet im Rahmen des Gesetzes und seiner Berufshaftpflicht; die Haftung für leichte Fahrlässigkeit ist ausgeschlossen, soweit gesetzlich zulässig." %}</p>
+  <h2>{% translate "8. Anwendbares Recht" %}</h2>
+  <p>{% translate "Es gilt Schweizer Recht. Gerichtsstand ist der Geschäftssitz des Bergführers, soweit das Gesetz nichts anderes zwingend vorschreibt." %}</p>
+  <p class="small muted">{% translate "Entwurf – vor dem Einsatz juristisch prüfen lassen." %}</p>
+</section>
+{% endif %}
+{% endblock %}

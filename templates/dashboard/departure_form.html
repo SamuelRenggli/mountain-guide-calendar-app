@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Termin" %} – Tourchef{% endblock %}
+{% block content %}
+<p class="small"><a href="{% if departure %}{% url 'dashboard:departure' departure.pk %}{% else %}{% url 'dashboard:departures' %}{% endif %}">← {% translate "Termine" %}</a></p>
+<h1>{% if departure %}{% translate "Termin bearbeiten" %}{% elif tour %}{% blocktranslate with title=tour.title trimmed %}Ausschreiben: {{ title }}{% endblocktranslate %}{% else %}{% translate "Termin ausschreiben" %}{% endif %}</h1>
+{% if not can_pay %}<div class="alert warning">{% translate "Verbinde zuerst Stripe in den Einstellungen – ohne Online-Zahlung können sich Gäste nicht anmelden." %}</div>{% endif %}
+<form method="post" class="card form-mobile">{% csrf_token %}
+  {% if tour %}<input type="hidden" name="vorlage" value="{{ tour.pk }}">{% endif %}
+  {% include "_form.html" %}
+  <p class="small muted">{% translate "Sobald du veröffentlichst, sind diese Tage für Anfragen gesperrt. Gäste melden sich an und bezahlen sofort." %}</p>
+  <button class="btn" type="submit">{% if departure %}{% translate "Speichern" %}{% else %}{% translate "Veröffentlichen" %}{% endif %}</button>
+</form>
+{% endblock %}

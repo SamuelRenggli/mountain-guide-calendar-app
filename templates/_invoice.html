@@ -1,9 +1,10 @@
-<div class="table-wrap"><table class="invoice">
-  <thead><tr><th>Posten</th><th class="num">CHF</th></tr></thead>
+{% load i18n %}<div class="table-wrap"><table class="invoice">
+  <thead><tr><th>{% translate "Posten" %}</th><th class="num">CHF</th></tr></thead>
   <tbody>
   {% for line in lines %}
     <tr><td>{{ line.description }}</td><td class="num">{{ line.amount }}</td></tr>
   {% endfor %}
   </tbody>
-  <tfoot><tr><td>Total</td><td class="num">{{ booking.price }}</td></tr></tfoot>
+  <tfoot><tr><td>{% translate "Total" %}</td><td class="num">{{ booking.price }}</td></tr></tfoot>
 </table></div>
+{% if vat is not None %}<p class="small muted">{% blocktranslate with rate=booking.guide.vat_rate|floatformat:"-1" vat=vat number=booking.guide.vat_number trimmed %}inkl. {{ rate }} % MWST CHF {{ vat }} · MWST-Nr. {{ number }}{% endblocktranslate %}</p>{% endif %}

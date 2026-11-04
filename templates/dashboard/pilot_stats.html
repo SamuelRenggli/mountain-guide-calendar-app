@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Pilot-Auswertung" %} – Tourchef{% endblock %}
+{% block content %}
+<h1>{% translate "Pilot-Auswertung" %}</h1>
+<section class="card">
+  <div class="table-wrap"><table>
+    <thead><tr><th>{% translate "Bergführer" %}</th><th>{% translate "Anfragen" %}</th><th>{% translate "Buchungen" %}</th><th>{% translate "Termine" %}</th><th>{% translate "Anmeldungen" %}</th><th>{% translate "Stornos" %}</th></tr></thead>
+    <tbody>
+    {% for g in guides %}
+      <tr><td>{{ g.display_name }}</td><td>{{ g.n_requests }}</td><td>{{ g.n_bookings }}</td><td>{{ g.n_departures }}</td><td>{{ g.n_registrations }}</td><td>{{ g.n_cancellations }}</td></tr>
+    {% empty %}
+      <tr><td colspan="6" class="empty">{% translate "Noch keine Bergführer." %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  <p class="small muted">{% translate "Anfragen: alle Anfragen für eigene Touren. Buchungen: davon bestätigt, abgerechnet oder bezahlt. Anmeldungen: bezahlte Anmeldungen für Termine. Stornos: von Gast oder Bergführer storniert." %}</p>
+</section>
+{% endblock %}

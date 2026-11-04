@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Zwei-Faktor einrichten" %} – Tourchef{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+<h1>{% translate "Zwei-Faktor-Anmeldung einrichten" %}</h1>
+{% if required and not replacing %}<div class="alert info">{% translate "Zum Schutz der Gästedaten ist die Zwei-Faktor-Anmeldung Pflicht. Das dauert zwei Minuten." %}</div>{% endif %}
+<ol class="small">
+  <li>{% translate "Installiere eine Authenticator-App auf deinem Handy (z. B. Google Authenticator, Microsoft Authenticator, 1Password)." %}</li>
+  <li>{% translate "Scanne diesen QR-Code mit der App." %}</li>
+  <li>{% translate "Gib den 6-stelligen Code ein, den die App anzeigt." %}</li>
+</ol>
+<div class="card qr">{{ qr }}</div>
+<p class="small muted">{% translate "Kein Scan möglich? Schlüssel manuell eingeben:" %} <code>{{ secret }}</code></p>
+<form method="post" class="card">{% csrf_token %}
+  {% include "_form.html" %}
+  <button class="btn" type="submit">{% translate "Aktivieren" %}</button>
+</form>
+{% endblock %}

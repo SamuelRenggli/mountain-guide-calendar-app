@@ -1,51 +1,93 @@
 {% extends "widget/base.html" %}
+{% load i18n %}
+{% block heading %}<h1>{{ guide.display_name }}</h1>{% endblock %}
 {% block content %}
-<h1>Wann hat {{ guide.display_name }} Zeit?</h1>
+{% if departures %}
+<section class="departure-list" aria-labelledby="departures-title">
+  <h2 id="departures-title">{% translate "Ausgeschriebene Termine" %}</h2>
+  <ul class="cards">
+    {% for d in departures %}
+    <li class="card departure-card">
+      <a href="{% url 'widget:departure' d.public_id %}" class="departure-link">
+        <strong>{{ d.title }}</strong>
+        <span class="small">{{ d.start_date|date:"D d.m.Y" }}{% if d.end_date != d.start_date %} – {{ d.end_date|date:"D d.m.Y" }}{% endif %}</span>
+        <span class="small">{% blocktranslate with price=d.price_per_person|floatformat:"-2" trimmed %}CHF {{ price }} pro Person{% endblocktranslate %}</span>
+        {% with free=d.seats_free %}<span class="small {% if free %}free-text{% else %}muted{% endif %}">{% if free %}{% blocktranslate count n=free trimmed %}{{ n }} Platz frei{% plural %}{{ n }} Plätze frei{% endblocktranslate %}{% else %}{% translate "Ausgebucht – Warteliste" %}{% endif %}</span>{% endwith %}
+      </a>
+      <a class="btn btn-small" href="{% url 'widget:departure' d.public_id %}">{% translate "Anmelden" context "signup" %}</a>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+<section aria-labelledby="request-title">
+<h2 id="request-title">{% translate "Eigene Tour anfragen" %}</h2>
 <p class="small muted">
-  Wähle den ersten und den letzten Tag, an dem du Zeit hättest (max. {{ max_window_days }} Tage).
-  Für eine Tagestour reicht ein Tag. {{ guide.display_name }} meldet sich mit einem konkreten Vorschlag.
+  {% blocktranslate with name=guide.display_name max=max_request_days trimmed %}
+    Wähle den ersten und den letzten Tag deiner Tour (höchstens {{ max }} Tage). Für eine Tagestour reicht ein Klick.
+    {{ name }} bestätigt die Tour oder macht dir einen Vorschlag.
+  {% endblocktranslate %}
 </p>
-<p class="price-note"><strong>Basispreis CHF {{ guide.day_rate|floatformat:"-2" }} pro Tag</strong>, zuzüglich Spesen (z. B. Hütte, Bahn). Abgerechnet wird nach der Tour.</p>
+<div class="price-note">
+  <strong>{% translate "Richtpreis Bergführer" %}</strong>
+  <table class="small rates">
+    {% for lo, hi, rate in rate_table %}
+    <tr><td>{% if hi %}{% blocktranslate trimmed %}{{ lo }}–{{ hi }} Personen{% endblocktranslate %}{% else %}{% blocktranslate trimmed %}ab {{ lo }} Personen{% endblocktranslate %}{% endif %}</td>
+        <td>{% blocktranslate with rate=rate|floatformat:"-2" trimmed %}CHF {{ rate }} pro Tag{% endblocktranslate %}</td></tr>
+    {% endfor %}
+  </table>
+  <span class="small muted">{% translate "Zuzüglich Spesen (z. B. Hütte, Bahn, Reise). Abgerechnet wird nach der Tour." %}</span>
+</div>
 
 {% if notice %}<div class="alert error">{{ notice }}</div>{% endif %}
 
 <div class="cal-nav">
-  {% if prev_month %}<a class="btn btn-secondary btn-small" href="?lang={{ lang }}&amp;monat={{ prev_month }}" aria-label="Vorheriger Monat">←</a>{% else %}<span class="disabled">←</span>{% endif %}
+  {% if prev_month %}<a class="btn btn-secondary btn-small" href="?monat={{ prev_month }}" aria-label="{% translate 'Vorheriger Monat' %}">←</a>{% else %}<span class="disabled">←</span>{% endif %}
   <strong>{{ month_label }}</strong>
-  {% if next_month %}<a class="btn btn-secondary btn-small" href="?lang={{ lang }}&amp;monat={{ next_month }}" aria-label="Nächster Monat">→</a>{% else %}<span class="disabled">→</span>{% endif %}
+  {% if next_month %}<a class="btn btn-secondary btn-small" href="?monat={{ next_month }}" aria-label="{% translate 'Nächster Monat' %}">→</a>{% else %}<span class="disabled">→</span>{% endif %}
 </div>
 
-<div class="cal" role="grid" aria-label="Verfügbare Tage {{ month_label }}">
+<div class="cal" role="grid" aria-label="{% blocktranslate trimmed %}Verfügbare Tage {{ month_label }}{% endblocktranslate %}">
   {% for name in weekday_names %}<div class="head">{{ name }}</div>{% endfor %}
   {% for week in weeks %}{% for day in week %}
     {% if not day.in_month %}<span class="day out"></span>
-    {% elif day.free %}<a class="day free{% if day.selected %} selected{% endif %}" href="{{ day.link }}" aria-label="{{ day.date|date:'l, j. F Y' }} – frei">{{ day.date.day }}</a>
-    {% else %}<span class="day{% if day.selected %} in-range{% endif %}" aria-label="{{ day.date|date:'j. F' }} – nicht verfügbar">{{ day.date.day }}</span>{% endif %}
+    {% elif day.free %}<a class="day free{% if day.selected %} selected{% endif %}" href="{{ day.link }}" aria-label="{{ day.date|date:'l, j. F Y' }} – {% translate 'frei' %}">{{ day.date.day }}</a>
+    {% else %}<span class="day{% if day.selected %} in-range{% endif %}" aria-label="{{ day.date|date:'j. F' }} – {% translate 'nicht verfügbar' %}">{{ day.date.day }}</span>{% endif %}
   {% endfor %}{% endfor %}
 </div>
-<div class="legend"><span class="l-free">Zeit – Tag anklicken</span></div>
+<div class="legend"><span class="l-free">{% translate "frei – Tag anklicken" %}</span></div>
 
 {% if form %}
 <form method="post" action="{% url 'widget:request' guide.slug %}" class="booking-form" id="booking-form">
-  <h2>
-    {% if start == end %}Anfrage für {{ start|date:"l, d.m.Y" }}
-    {% else %}Anfrage für {{ start|date:"d.m." }} – {{ end|date:"d.m.Y" }}{% endif %}
-  </h2>
-  {% if window_open %}<p class="small muted">Für ein längeres Zeitfenster klicke noch den letzten möglichen Tag an.</p>{% endif %}
-  {{ form.start_date }}{{ form.end_date }}{{ form.ts }}
+  <h3>
+    {% if start == end %}{% blocktranslate with day=start|date:"l, d.m.Y" trimmed %}Anfrage für {{ day }}{% endblocktranslate %}
+    {% else %}{% blocktranslate with first=start|date:"d.m." last=end|date:"d.m.Y" trimmed %}Anfrage für {{ first }} – {{ last }}{% endblocktranslate %}{% endif %}
+  </h3>
+  {% if picking_end %}<p class="small muted">{% translate "Mehrtägige Tour? Klicke noch den letzten Tag an." %}</p>{% endif %}
+  {{ form.start_date }}{{ form.end_date }}{{ form.ts }}{{ form.language }}
   {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
 
-  {% for field in form %}{% if field.name not in "start_date end_date ts website" %}
+  {% for field in form %}{% if field.name in "guest_message participants guest_name guest_email guest_phone" %}
     <div class="field{% if field.errors %} has-error{% endif %}">
       <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
-      {% if field.help_text %}<p class="small muted">{{ field.help_text }} (max. {{ field.field.max_length }} Zeichen)</p>{% endif %}
+      {% if field.help_text %}<p class="small muted">{{ field.help_text }}{% if field.field.max_length %} {% blocktranslate with n=field.field.max_length trimmed %}(max. {{ n }} Zeichen){% endblocktranslate %}{% endif %}</p>{% endif %}
       {{ field }}
+      {% if field.name == "participants" %}<p class="small muted" data-rate-hint data-rates="{% for lo, hi, rate in rate_table %}{{ lo }}:{{ rate|floatformat:'-2' }}{% if not forloop.last %},{% endif %}{% endfor %}" data-template="{% translate 'Richtpreis: CHF {rate} pro Tag + Spesen' %}"></p>{% endif %}
       {{ field.errors }}
     </div>
   {% endif %}{% endfor %}
+  <div class="field{% if form.accept_terms.errors %} has-error{% endif %}">
+    <label class="check">{{ form.accept_terms }}
+      {% url 'widget:terms' guide.slug as terms_url %}{% url 'legal' 'datenschutz' as privacy_url %}
+      {% blocktranslate trimmed %}Ich akzeptiere die <a href="{{ terms_url }}" target="_blank" rel="noopener">Bedingungen</a> und habe die <a href="{{ privacy_url }}" target="_blank" rel="noopener">Datenschutzerklärung</a> gelesen.{% endblocktranslate %} *
+    </label>
+    {{ form.accept_terms.errors }}
+  </div>
   <div class="hp" aria-hidden="true"><label for="{{ form.website.id_for_label }}">Website</label>{{ form.website }}</div>
-  <p class="small muted">Die Anfrage ist unverbindlich. Bezahlt wird nach der Tour: CHF {{ guide.day_rate|floatformat:"-2" }} pro Tag plus Spesen.</p>
-  <button class="btn" type="submit">Anfrage senden</button>
+  <p class="small muted">{% translate "Die Anfrage ist unverbindlich, bis du die Bestätigung erhältst. Bezahlt wird nach der Tour." %}</p>
+  <button class="btn" type="submit">{% translate "Anfrage senden" %}</button>
 </form>
 {% endif %}
+</section>
 {% endblock %}

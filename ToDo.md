@@ -3,6 +3,19 @@
 Everything that has to happen outside the code, in order. Tick items off as you go.
 The pilot test with one guide is described in [TEST_PLAN.md](TEST_PLAN.md).
 
+## 0. Before merging this rebuild to `main` (deploys automatically)
+
+- [ ] Generate `FIELD_ENCRYPTION_KEYS` (`python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"`),
+      put it into `.env.cloudrun` **and** a password manager, run `bash deploy/push-config.sh`. Without it the new
+      version doesn't start; if it's lost, phone numbers, emergency contacts and 2FA secrets are unreadable.
+- [ ] Also set `OPERATOR_NAME`, `OPERATOR_ADDRESS`, `PRIVACY_EMAIL` (shown in legal notice and privacy policy).
+- [ ] Stripe webhook: add `checkout.session.expired` and `checkout.session.async_payment_failed`; turn on TWINT
+      for connected accounts (or set `STRIPE_PAYMENT_METHODS=card`).
+- [ ] After deploy, every guide sets up two-factor login on first login (have recovery codes ready).
+- [ ] Review the legal drafts in `templates/legal/` (12 files: privacy, legal notice, terms × DE/FR/IT/EN) and the
+      guest terms template in `templates/widget/terms.html`; replace the `[Anbieter eintragen]` placeholders.
+- [ ] Have a French and an Italian speaker skim the translations (`locale/fr`, `locale/it`).
+
 ## 1. Right now (security)
 
 - [ ] **Rotate the Stripe test keys.** The first commit (`57dfcad`) contained them in the docs, and they are still in
@@ -53,9 +66,10 @@ The pilot test with one guide is described in [TEST_PLAN.md](TEST_PLAN.md).
 
 - [ ] Stripe account for the platform; Connect enabled (Express accounts, country Switzerland).
 - [ ] Connect settings: platform name, logo, support email (guides see this during onboarding).
-- [ ] Payment methods: cards on; TWINT on if wanted (also for connected accounts).
+- [ ] Payment methods: cards and TWINT on (also for connected accounts) — scheduled dates accept only these.
 - [ ] Webhook endpoint `https://buchen.example.ch/zahlungen/stripe/webhook/`, events from **your account**:
-      `checkout.session.completed`, `checkout.session.async_payment_succeeded` → secret into `STRIPE_WEBHOOK_SECRET`.
+      `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`,
+      `checkout.session.async_payment_failed` → secret into `STRIPE_WEBHOOK_SECRET`.
 - [ ] Second endpoint, same URL, events from **connected accounts**: `account.updated`
       → secret into `STRIPE_CONNECT_WEBHOOK_SECRET`.
 - [ ] Decide the platform fee (`PLATFORM_FEE_PERCENT`, currently 0).
@@ -63,13 +77,12 @@ The pilot test with one guide is described in [TEST_PLAN.md](TEST_PLAN.md).
 
 ## 5. Legal (Switzerland, nDSG; GDPR for EU guests)
 
-- [ ] Privacy policy: what guest data is stored (name, email, phone, message), why, how long, processors
-      (hosting, email provider, Stripe).
-- [ ] Terms between you (platform) and guides: fee, who is the contract partner of the guest (the guide), liability.
-- [ ] Cancellation/refund policy that guests see — per guide or platform-wide.
-- [ ] Imprint.
-- [ ] Code follow-up: link privacy policy + terms in the widget form and on the guest page (not built yet).
-- [ ] Decide how long old bookings are kept; delete guest data after that.
+- [x] Drafts of privacy policy, legal notice and terms of use (incl. data processing agreement) in four languages,
+      linked everywhere; guests accept the guide's terms with every request and sign-up.
+- [x] Cancellation template (14 days 0 %, 7 days 50 %, then 100 %), adjustable per guide; own guest terms possible.
+- [x] Retention: phone, emergency contact, experience kept without limit, deleted on request (decision 42).
+- [ ] Check the drafts against the SBV terms DOM brings (decision 31); legal review before expanding after May 2027.
+- [ ] Short incident plan (who notices a leak, who decides, report to EDÖB and guides) — 12-datenschutz.md.
 
 ## 6. Pilot with one guide
 
@@ -81,7 +94,8 @@ The pilot test with one guide is described in [TEST_PLAN.md](TEST_PLAN.md).
 ## 7. After the pilot, before more guides
 
 - [ ] Fix what the pilot found.
-- [ ] English version of the widget and guest page (emails are already German + English).
-- [ ] CI: run `pytest` with a Postgres service on every push (GitHub Actions).
+- [x] Widget, guest page, dashboard and emails in DE/FR/IT/EN.
+- [x] CI runs `pytest` with a Postgres service on every push.
 - [ ] Decide on `SECURE_HSTS_INCLUDE_SUBDOMAINS` (only if every subdomain is HTTPS).
-- [ ] Optional: automatic refunds on cancellation, French/Italian, iCal export of bookings for guides.
+- [x] Automatic refunds on cancellation.
+- [ ] Optional: iCal export of bookings for guides.

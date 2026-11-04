@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Bestätigen" %} – Tourchef{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+<h1>{% translate "Bitte bestätige, dass du es bist" %}</h1>
+<p class="small muted">{% translate "Für Exporte und das Löschen von Gästedaten brauchen wir dein Passwort noch einmal." %}</p>
+<form method="post" class="card">{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="field"><label for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>{{ form.password }}</div>
+  {% if needs_code %}<div class="field"><label for="{{ form.code.id_for_label }}">{{ form.code.label }}</label>{{ form.code }}</div>{% endif %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <button class="btn" type="submit">{% translate "Bestätigen" %}</button>
+</form>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends "legal/_base.html" %}
+{% block title %}Conditions d’utilisation – Tourchef{% endblock %}
+{% block legal %}
+<h1>Conditions d’utilisation pour guides</h1>
+<p class="small muted">État : 4 novembre 2026 · entre {{ operator_name }} (« Tourchef ») et toi en tant que guide de montagne (« guide »)</p>
+
+<h2>1. Objet</h2>
+<p>Tourchef met à ta disposition un outil pour recevoir des demandes et des inscriptions pour tes courses, publier des dates, facturer et traiter les paiements via Stripe. Tourchef n’est ni une place de marché ni un organisateur de voyages.</p>
+
+<h2>2. Phase pilote</h2>
+<p>Pendant le pilote, Tourchef est gratuit. Les fonctions peuvent évoluer. Nous t’informerons à temps d’un modèle de prix après le pilote ; il ne s’appliquera qu’avec ton accord.</p>
+
+<h2>3. Tes obligations</h2>
+<ul>
+  <li>Tu es le partenaire contractuel de tes clients et tu es responsable de tes offres, prix, conditions, de la réalisation des courses et de la sécurité.</li>
+  <li>Tu disposes des brevets et autorisations nécessaires (p. ex. guide de montagne avec brevet fédéral, autorisation selon la loi sur les activités à risque) et d’une assurance responsabilité civile professionnelle.</li>
+  <li>Tes indications sont exactes ; tu tiens à jour tes disponibilités et dates et réponds aux demandes dans les délais.</li>
+  <li>Les impôts et charges sociales sur tes revenus te concernent, de même que la TVA si tu y es assujetti.</li>
+  <li>Tu protèges ton accès (mot de passe fort, connexion à deux facteurs) et ne le transmets pas.</li>
+</ul>
+
+<h2>4. Paiements</h2>
+<p>Les clients paient via Stripe Connect directement sur ton compte Stripe ; les conditions de Stripe s’appliquent en plus. Pendant le pilote, Tourchef prend en charge les frais de Stripe, y compris pour les remboursements. Les remboursements selon tes conditions d’annulation, en cas d’annulation et à ta demande (geste commercial) sont débités automatiquement de ton compte Stripe.</p>
+
+<h2>5. Sous-traitance (protection des données)</h2>
+<p>Tu es responsable des données de tes clients ; Tourchef les traite sur ton mandat (art. 9 LPD, art. 28 RGPD). Il en découle :</p>
+<ul>
+  <li>Tourchef traite les données des clients uniquement pour te fournir les fonctions de Tourchef, et non à ses propres fins.</li>
+  <li>Toutes les personnes ayant accès aux données chez Tourchef sont tenues à la confidentialité.</li>
+  <li>Mesures techniques et organisationnelles : chiffrement des connexions et des champs sensibles, gestion séparée des clés, connexion à deux facteurs, journal d’accès, séparation des données par guide, mises à jour de sécurité régulières.</li>
+  <li>Sous-traitants ultérieurs : Google Cloud (Suisse), Neon (UE), Stripe (Irlande/États-Unis), envoi d’e-mails [prestataire]. Nous t’informons à l’avance de tout nouveau sous-traitant ; tu peux t’y opposer et résilier le contrat.</li>
+  <li>Tourchef t’aide à répondre aux demandes des clients (accès, suppression) et t’annonce les violations de la sécurité des données dans les meilleurs délais.</li>
+  <li>À la fin du contrat, nous supprimons les données des clients ou te les remettons, sous réserve des obligations de conservation.</li>
+</ul>
+
+<h2>6. Disponibilité et responsabilité</h2>
+<p>Nous nous efforçons d’assurer un fonctionnement fiable, sans pouvoir garantir une disponibilité ininterrompue. Tourchef ne répond que des dommages causés intentionnellement ou par négligence grave, dans la mesure permise par la loi. Tourchef ne répond pas des courses ni de la relation avec tes clients.</p>
+
+<h2>7. Durée et résiliation</h2>
+<p>Tu peux résilier à tout moment. Tourchef peut résilier moyennant un préavis de 30 jours, ou immédiatement en cas de violation grave. Les réservations en cours sont menées à terme.</p>
+
+<h2>8. Modifications</h2>
+<p>Nous t’annonçons toute modification de ces conditions au moins 30 jours à l’avance. Si tu continues d’utiliser Tourchef ensuite, elles sont réputées acceptées.</p>
+
+<h2>9. Droit applicable et for</h2>
+<p>Le droit suisse s’applique. Le for est au siège de l’exploitant.</p>
+{% endblock %}

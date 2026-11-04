@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Zwei-Faktor-Anmeldung" %} – Tourchef{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+<h1>{% translate "Code eingeben" %}</h1>
+<p class="small muted">{% translate "Öffne deine Authenticator-App (z. B. Google Authenticator, Microsoft Authenticator, 1Password) und gib den 6-stelligen Code für Tourchef ein." %}</p>
+<form method="post" class="card">{% csrf_token %}
+  {% include "_form.html" %}
+  <input type="hidden" name="next" value="{{ next }}">
+  <button class="btn" type="submit">{% translate "Bestätigen" %}</button>
+</form>
+<p class="small muted">{% translate "Handy verloren? Verwende einen deiner Wiederherstellungscodes oder melde dich beim Tourchef-Support." %}</p>
+{% endblock %}

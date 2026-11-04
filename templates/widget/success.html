@@ -1,19 +1,18 @@
 {% extends "widget/base.html" %}
+{% load i18n %}
+{% block heading %}<h1>{% translate "Danke für deine Anfrage!" %}</h1>{% endblock %}
 {% block content %}
-<h1>Danke für deine Anfrage!</h1>
 <div class="alert success">
   {% if booking %}
-    Deine Anfrage für <strong>{{ booking.title }}</strong>
-    {% if booking.start_date == booking.end_date %}am <strong>{{ booking.start_date|date:"d.m.Y" }}</strong>
-    {% else %}{% if booking.is_window %}im Zeitfenster{% endif %} <strong>{{ booking.start_date|date:"d.m.Y" }} – {{ booking.end_date|date:"d.m.Y" }}</strong>{% endif %}
-    ist bei {{ guide.display_name }} eingegangen.
+    {% if booking.start_date == booking.end_date %}
+      {% blocktranslate with day=booking.start_date|date:"d.m.Y" name=guide.display_name trimmed %}Deine Anfrage für den <strong>{{ day }}</strong> ist bei {{ name }} eingegangen.{% endblocktranslate %}
+    {% else %}
+      {% blocktranslate with first=booking.start_date|date:"d.m.Y" last=booking.end_date|date:"d.m.Y" name=guide.display_name trimmed %}Deine Anfrage für <strong>{{ first }} – {{ last }}</strong> ist bei {{ name }} eingegangen.{% endblocktranslate %}
+    {% endif %}
   {% else %}
-    Deine Anfrage ist bei {{ guide.display_name }} eingegangen.
+    {% blocktranslate with name=guide.display_name trimmed %}Deine Anfrage ist bei {{ name }} eingegangen.{% endblocktranslate %}
   {% endif %}
 </div>
-<p>Du erhältst eine Bestätigung per E-Mail.
-{% if booking.is_window %}{{ guide.display_name }} meldet sich mit einem konkreten Vorschlag für die Daten.
-{% else %}{{ guide.display_name }} meldet sich, sobald die Tour bestätigt ist.{% endif %}
-Die Rechnung bekommst du nach der Tour.</p>
-<p><a href="{% url 'widget:show' guide.slug %}">Weitere Anfrage stellen</a></p>
+<p>{% blocktranslate with name=guide.display_name trimmed %}Du erhältst eine Bestätigung per E-Mail. {{ name }} bestätigt die Tour oder macht dir einen Vorschlag. Die Rechnung bekommst du nach der Tour.{% endblocktranslate %}</p>
+<p><a href="{% url 'widget:show' guide.slug %}">{% translate "Zurück zum Kalender" %}</a></p>
 {% endblock %}
