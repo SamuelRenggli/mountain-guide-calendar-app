@@ -8,10 +8,11 @@ FILE=${1:-.env.cloudrun}
 REGION=${REGION:-europe-west6}
 SERVICE=tourchef
 
-NEW=$(gcloud secrets versions add tourchef-env --data-file="$FILE" --format='value(name)')
+# tr -d '\r': gcloud on Windows ends lines with CRLF, which would break the version comparison below.
+NEW=$(gcloud secrets versions add tourchef-env --data-file="$FILE" --format='value(name)' | tr -d '\r')
 NEW=${NEW##*/}
 # Only the newest version is needed; destroying the rest keeps Secret Manager in the free tier.
-for v in $(gcloud secrets versions list tourchef-env --filter="state!=DESTROYED" --format='value(name)'); do
+for v in $(gcloud secrets versions list tourchef-env --filter="state!=DESTROYED" --format='value(name)' | tr -d '\r'); do
   v=${v##*/}
   [ "$v" = "$NEW" ] || gcloud secrets versions destroy "$v" --secret=tourchef-env --quiet >/dev/null
 done
