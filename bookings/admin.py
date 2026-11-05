@@ -1,7 +1,8 @@
 from django.contrib import admin
 
 from .models import (
-    BlockedPeriod, Booking, BookingEvent, Departure, ExternalBusy, InvoiceLine, OpenPeriod, Tour, WaitlistEntry,
+    BlockedPeriod, Booking, BookingEvent, Departure, ExternalBusy, ExternalTour, InvoiceLine, OpenPeriod, Partner,
+    PartnerPeriod, Tour, WaitlistEntry,
 )
 
 
@@ -55,3 +56,22 @@ class BookingAdmin(admin.ModelAdmin):
 admin.site.register(BlockedPeriod)
 admin.site.register(OpenPeriod)
 admin.site.register(ExternalBusy)
+
+
+class PartnerPeriodInline(admin.TabularInline):
+    model = PartnerPeriod
+    extra = 0
+
+
+@admin.register(Partner)
+class PartnerAdmin(admin.ModelAdmin):
+    list_display = ("name", "guide", "email", "created_at")
+    search_fields = ("name", "guide__display_name")
+    inlines = [PartnerPeriodInline]
+
+
+@admin.register(ExternalTour)
+class ExternalTourAdmin(admin.ModelAdmin):
+    list_display = ("title", "guide", "provider", "start_date", "end_date", "status")
+    list_filter = ("status",)
+    search_fields = ("title", "provider", "guide__display_name")

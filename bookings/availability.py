@@ -2,7 +2,8 @@
 
 A day is free when it is a bookable weekday (and, as soon as the guide has
 opened any current periods, inside one of them) and not covered by a manual block,
-an external calendar event, an active booking or a published scheduled date (R-105). The booking window
+an external calendar event, an active booking, a published scheduled date (R-105) or a tour for another
+provider (confirmed or offered by a partner). Periods released to a partner count as opened for guests too. The booking window
 (min notice / max advance) applies to the start date of a tour.
 """
 
@@ -10,7 +11,7 @@ from datetime import date, timedelta
 
 from django.utils import timezone
 
-from .models import BlockedPeriod, Booking, Departure, ExternalBusy, OpenPeriod
+from .models import BlockedPeriod, Booking, Departure, ExternalBusy, ExternalTour, OpenPeriod, PartnerPeriod
 
 FREE = "free"
 UNAVAILABLE = "unavailable"  # weekday not offered
@@ -18,11 +19,13 @@ BUSY = "busy"  # external calendar
 BLOCKED = "blocked"  # manual block
 REQUESTED = "requested"  # open request / offer
 DEPARTURE = "departure"  # published scheduled date
+EXTERNAL = "external"  # tour for another provider (confirmed)
 BOOKED = "booked"  # confirmed or paid
 PAST = "past"
 
 # When several things apply to a day, the most important one wins.
-_PRIORITY = {FREE: 0, UNAVAILABLE: 1, BUSY: 2, BLOCKED: 3, REQUESTED: 4, DEPARTURE: 5, BOOKED: 6, PAST: 7}
+_PRIORITY = {FREE: 0, UNAVAILABLE: 1, BUSY: 2, BLOCKED: 3, REQUESTED: 4, DEPARTURE: 5, EXTERNAL: 6, BOOKED: 7,
+             PAST: 8}
 
 
 def days_between(start: date, end: date):
@@ -46,6 +49,9 @@ def day_states(guide, start: date, end: date) -> dict[date, str]:
         opened = set()
         for s, e in OpenPeriod.objects.filter(**overlapping).values_list("start_date", "end_date"):
             opened.update(days_between(max(s, start), min(e, end)))
+        partner_periods = PartnerPeriod.objects.filter(partner__guide=guide, start_date__lte=end, end_date__gte=start)
+        for s, e in partner_periods.values_list("start_date", "end_date"):
+            opened.update(days_between(max(s, start), min(e, end)))
         for d, state in states.items():
             if state == FREE and d not in opened:
                 states[d] = UNAVAILABLE
@@ -62,6 +68,9 @@ def day_states(guide, start: date, end: date) -> dict[date, str]:
     for s, e, status in requests.values_list("start_date", "end_date", "status"):
         held = BOOKED if status in Booking.BOOKED_STATUSES else REQUESTED
         mark(s, e, held)
+    external = ExternalTour.objects.filter(status__in=ExternalTour.ACTIVE_STATUSES, **overlapping)
+    for s, e, status in external.values_list("start_date", "end_date", "status"):
+        mark(s, e, EXTERNAL if status == ExternalTour.Status.CONFIRMED else REQUESTED)
     return states
 
 

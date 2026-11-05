@@ -12,9 +12,9 @@ from core.middleware import widget_csp
 from core.ratelimit import allow, client_ip
 from payments import stripe_service
 
-from . import availability, departures, monthgrid, services
-from .forms import BookingRequestForm, RegistrationForm, WaitlistForm
-from .models import Departure
+from . import availability, departures, monthgrid, partners, services
+from .forms import BookingRequestForm, PartnerOfferForm, RegistrationForm, WaitlistForm
+from .models import Departure, Partner
 
 
 def _guide(slug):
@@ -88,9 +88,15 @@ def _render(request, guide, *, start_value=None, end_value=None, month_value=Non
     if start and form is None:
         form = BookingRequestForm(initial={"start_date": start, "end_date": tour_end, "language": lang})
 
+    live = live_departures(guide)
+    departure_on = {}
+    for dep in live:
+        for d in availability.days_between(dep.start_date, dep.end_date):
+            departure_on.setdefault(d, dep)
+
     context = {
         "guide": guide,
-        "departures": live_departures(guide),
+        "departures": live,
         "rate_table": guide.rate_table(),
         "month_label": monthgrid.month_label(month),
         "prev_month": f"{monthgrid.shift_month(month, -1):%Y-%m}" if month > first_month else None,
@@ -98,7 +104,8 @@ def _render(request, guide, *, start_value=None, end_value=None, month_value=Non
         "weekday_names": monthgrid.weekday_names(),
         "weeks": [
             [{"date": d, "in_month": d.month == month.month, "free": d in bookable and d.month == month.month,
-              "selected": bool(start) and start <= d <= tour_end, "link": link(d) if d in bookable else None}
+              "selected": bool(start) and start <= d <= tour_end, "link": link(d) if d in bookable else None,
+              "departure": departure_on.get(d)}
              for d in week]
             for week in weeks
         ],
@@ -237,3 +244,60 @@ def terms(request, slug):
     """The guide's terms for guests, or the Tourchef template with the guide's cancellation tiers (R-003, R-004)."""
     guide = _guide(slug)
     return _framed(render(request, "widget/terms.html", {"guide": guide}), guide)
+
+
+# --- Partner link --------------------------------------------------------------
+
+
+def partner_page(request, token):
+    """A provider the guide works for offers a tour in a period the guide released for them. The token is the key;
+    the page shows only those periods and whether each day is still free. Not embedded, so normal CSRF applies."""
+    partner = get_object_or_404(Partner.objects.select_related("guide"), token=token, guide__is_active=True)
+    guide = partner.guide
+    today = timezone.localdate()
+    form = PartnerOfferForm(request.POST or None, initial={"start_date": request.GET.get("von"),
+                                                           "end_date": request.GET.get("von")})
+    sent = None
+    status = 200
+    if request.method == "POST":
+        if form.is_valid() and form.is_spam():
+            return redirect("widget:partner", token=token)
+        if form.is_valid() and _rate_limited(request, "partner"):
+            form.add_error(None, _("Zu viele Versuche. Bitte versuche es später erneut."))
+        elif form.is_valid():
+            d = form.cleaned_data
+            try:
+                sent = partners.create_offer(
+                    partner, title=d["title"], url=d["url"], start_date=d["start_date"], end_date=d["end_date"],
+                    contact_name=d["contact_name"], contact_email=d["contact_email"], note=d["note"],
+                    language=translation.get_language()[:2],
+                )
+            except partners.PartnerOfferError as exc:
+                form.add_error(None, str(exc))
+            else:
+                form = PartnerOfferForm()
+        if not sent:
+            status = 400
+
+    periods = list(partner.periods.filter(end_date__gt=today))
+    months = []
+    if periods:
+        first = max(min(p.start_date for p in periods), today).replace(day=1)
+        last = max(p.end_date for p in periods).replace(day=1)
+        month = first
+        while month <= last and len(months) < 18:
+            weeks = monthgrid.weeks(month)
+            released = partners.released_days(partner, weeks[0][0], weeks[-1][-1])
+            free = partners.free_days(partner, weeks[0][0], weeks[-1][-1]) if released else set()
+            months.append({
+                "label": monthgrid.month_label(month),
+                "weeks": [[{"date": d, "in_month": d.month == month.month,
+                            "state": ("free" if d in free and d > today else "taken") if d in released else ""}
+                           for d in week] for week in weeks],
+            })
+            month = monthgrid.shift_month(month, 1)
+    return render(request, "widget/partner.html", {
+        "guide": guide, "partner": partner, "periods": periods, "months": months, "form": form, "sent": sent,
+        "weekday_names": monthgrid.weekday_names(),
+        "offers": partner.external_tours.filter(end_date__gte=today).exclude(status="cancelled"),
+    }, status=status)

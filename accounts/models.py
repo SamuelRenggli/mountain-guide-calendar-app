@@ -112,6 +112,11 @@ class User(AbstractUser):
     ical_url = models.URLField(_("iCal-Adresse"), max_length=1000, blank=True)
     ical_last_synced_at = models.DateTimeField(null=True, blank=True)
     ical_last_error = models.CharField(max_length=300, blank=True)
+    ical_block_all = models.BooleanField(
+        _("Auch «verfügbare» Termine sperren"), default=False,
+        help_text=_("Normalerweise sperren nur Termine, die im Kalender als «beschäftigt» markiert sind. "
+                    "Aktivieren, wenn jeder Termin die Tage sperren soll."),
+    )
 
     # Widget embedding: space-separated origins allowed to frame the widget, empty = any
     widget_allowed_origins = models.TextField(_("Erlaubte Websites"), blank=True)

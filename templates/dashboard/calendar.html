@@ -14,19 +14,21 @@
   <div class="cal month">
     {% for name in weekday_names %}<div class="head">{{ name }}</div>{% endfor %}
     {% for week in weeks %}{% for day in week %}
-      <div class="day s-{{ day.state }}{% if day.open %} open{% endif %}{% if not day.in_month %} out{% endif %}">
+      <div class="day s-{{ day.state }}{% if day.open or day.for_partner %} open{% endif %}{% if not day.in_month %} out{% endif %}">
         <span class="num">{{ day.date.day }}</span>
-        {% for dep in day.departures %}<a href="{% url 'dashboard:departure' dep.pk %}" title="{{ dep.title }}">▸ {{ dep.title }}</a>{% endfor %}
-        {% if day.booking %}<a href="{% url 'dashboard:booking' day.booking.pk %}" title="{{ day.booking.guest_name }}">{{ day.booking.guest_name }}</a>
+        {% for dep in day.departures %}<a class="ev ev-departure" href="{% url 'dashboard:departure' dep.pk %}" title="{% translate 'Ausgeschriebener Termin' %}: {{ dep.title }}">{{ dep.title }}</a>{% endfor %}
+        {% for t in day.externals %}<a class="ev ev-external{% if t.is_pending %} pending{% endif %}" href="{% url 'dashboard:external_tours' %}" title="{{ t.provider }}: {{ t.title }}{% if t.is_pending %} ({% translate 'Angebot offen' %}){% endif %}">{% if t.is_pending %}? {% endif %}{{ t.title }}</a>{% endfor %}
+        {% if day.booking %}<a class="ev" href="{% url 'dashboard:booking' day.booking.pk %}" title="{{ day.booking.guest_name }}">{{ day.booking.guest_name }}</a>
         {% elif day.state == "busy" %}<span>{% translate "Kalender" %}</span>
         {% elif day.state == "blocked" %}<span>{% translate "Gesperrt" %}</span>
+        {% elif day.for_partner and day.state == "free" %}<span class="small">{% translate "Für Anbieter" %}</span>
         {% elif day.open and day.state == "free" %}<span>{% translate "Freigegeben" %}</span>
         {% elif day.state == "free" and day.date >= today %}<a class="small muted add" href="{% url 'dashboard:departure_new' %}?datum={{ day.date|date:'Y-m-d' }}" title="{% translate 'Termin ausschreiben' %}">+</a>{% endif %}
       </div>
     {% endfor %}{% endfor %}
   </div>
   <div class="legend">
-    <span class="l-free">{% if has_open_periods %}{% translate "freigegeben" %}{% else %}{% translate "frei" %}{% endif %}</span><span class="l-requested">{% translate "Anfrage" %}</span><span class="l-departure">{% translate "Termin" %}</span><span class="l-booked">{% translate "bestätigt / bezahlt" %}</span><span class="l-blocked">{% translate "gesperrt / belegt" %}</span>
+    <span class="l-free">{% if has_open_periods %}{% translate "freigegeben" %}{% else %}{% translate "frei" %}{% endif %}</span><span class="l-requested">{% translate "Anfrage" %}</span><span class="l-departure">{% translate "ausgeschriebener Termin" %}</span><span class="l-booked">{% translate "bestätigt / bezahlt" %}</span><span class="l-external">{% translate "externe Tour" %}</span><span class="l-blocked">{% translate "gesperrt / belegt" %}</span>
   </div>
 </div>
 {% endblock %}

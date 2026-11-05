@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy as _
 
 from accounts.models import LANGUAGE_CHOICES
 
-from .models import BlockedPeriod, Departure, InvoiceLine, OpenPeriod, Tour
+from .models import BlockedPeriod, Departure, ExternalTour, InvoiceLine, OpenPeriod, Partner, PartnerPeriod, Tour
 
 _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
 FORM_SIGNER_SALT = "widget-form"
@@ -377,6 +377,96 @@ class BlockedPeriodForm(forms.ModelForm):
 class OpenPeriodForm(BlockedPeriodForm):
     class Meta(BlockedPeriodForm.Meta):
         model = OpenPeriod
+
+
+def _check_range(form, cleaned, start="start_date", end="end_date"):
+    s, e = cleaned.get(start), cleaned.get(end)
+    if s and e and e < s:
+        form.add_error(end, _("Das Ende muss nach dem Beginn liegen."))
+
+
+class ExternalTourForm(forms.ModelForm):
+    """A tour the guide leads for another provider. The title is read from the link when left empty."""
+
+    class Meta:
+        model = ExternalTour
+        fields = ("url", "title", "provider", "start_date", "end_date", "note")
+        widgets = {"start_date": _date_input(), "end_date": _date_input(), "note": forms.Textarea(attrs={"rows": 2})}
+        help_texts = {
+            "url": _("Link zum Tourenangebot, z. B. auf der Website der Bergschule."),
+            "title": _("Leer lassen: wird von der verlinkten Seite übernommen."),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["title"].required = False
+
+    def clean(self):
+        cleaned = super().clean()
+        _check_range(self, cleaned)
+        if not cleaned.get("title") and not cleaned.get("url") and "url" not in self.errors:
+            self.add_error("title", _("Bitte einen Titel oder einen Link angeben."))
+        return cleaned
+
+    def clean_url(self):
+        url = self.cleaned_data["url"].strip()
+        if url and not url.startswith("https://"):
+            raise forms.ValidationError(_("Die Adresse muss mit https:// beginnen."))
+        return url
+
+
+class PartnerForm(forms.ModelForm):
+    class Meta:
+        model = Partner
+        fields = ("name", "email")
+
+
+class PartnerPeriodForm(forms.ModelForm):
+    class Meta:
+        model = PartnerPeriod
+        fields = ("partner", "start_date", "end_date", "note")
+        widgets = {"start_date": _date_input(), "end_date": _date_input()}
+        labels = {"partner": _("Anbieter")}
+
+    def __init__(self, *args, guide, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["partner"].queryset = guide.partners.all()
+        self.fields["partner"].empty_label = None
+
+    def clean(self):
+        cleaned = super().clean()
+        _check_range(self, cleaned)
+        return cleaned
+
+
+class PartnerOfferForm(PublicForm):
+    """A partner places a tour in a period the guide released for them."""
+
+    title = forms.CharField(label=_("Tour"), max_length=300)
+    url = forms.URLField(label=_("Link zum Angebot"), max_length=1000, required=False)
+    start_date = forms.DateField(label=_("Von"), widget=_date_input())
+    end_date = forms.DateField(label=_("Bis"), widget=_date_input())
+    contact_name = forms.CharField(label=_("Kontaktperson"), max_length=200)
+    contact_email = forms.EmailField(label=_("E-Mail"))
+    note = forms.CharField(label=_("Nachricht"), required=False, max_length=2000,
+                           widget=forms.Textarea(attrs={"rows": 3}))
+
+    def clean_title(self):
+        return single_line(self.cleaned_data["title"])
+
+    def clean_contact_name(self):
+        return single_line(self.cleaned_data["contact_name"])
+
+    def clean_url(self):
+        url = self.cleaned_data["url"].strip()
+        if url and not url.startswith("https://"):
+            raise forms.ValidationError(_("Die Adresse muss mit https:// beginnen."))
+        return url
+
+    def clean(self):
+        cleaned = super().clean()
+        _check_range(self, cleaned)
+        return cleaned
 
 
 class ExportForm(forms.Form):

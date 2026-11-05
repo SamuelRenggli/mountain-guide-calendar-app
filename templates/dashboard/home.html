@@ -14,6 +14,13 @@
 </div>
 {% endif %}
 
+{% if partner_offers %}
+<div class="alert info">
+  {% blocktranslate count n=partner_offers|length trimmed %}Ein Anbieter hat dir eine Tour angeboten.{% plural %}Anbieter haben dir {{ n }} Touren angeboten.{% endblocktranslate %}
+  <a href="{% url 'dashboard:external_tours' %}">{% translate "Jetzt beantworten" %}</a>
+</div>
+{% endif %}
+
 <section class="card">
   <h2>{% translate "Neue Anfragen – bitte beantworten" %}</h2>
   {% translate "Keine offenen Anfragen." as empty %}

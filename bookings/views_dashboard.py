@@ -17,12 +17,13 @@ from accounts.views import recent_auth_required
 from core.ratelimit import allow
 from payments import stripe_service
 
-from . import availability, calsync, departures, export, monthgrid, services
+from . import availability, calsync, departures, export, monthgrid, pagetitle, partners, services
 from .forms import (
     BlockedPeriodForm, ChangeBookingForm, ConfirmForm, DepartureForm, EraseGuestDataForm, ExpenseFormSet, ExportForm,
-    InvoiceForm, MessageForm, MoveDepartureForm, OfferForm, OpenPeriodForm, ProposeDateForm, RefundExtraForm, TourForm,
+    ExternalTourForm, InvoiceForm, MessageForm, MoveDepartureForm, OfferForm, OpenPeriodForm, PartnerForm,
+    PartnerPeriodForm, ProposeDateForm, RefundExtraForm, TourForm,
 )
-from .models import BlockedPeriod, Booking, Departure, OpenPeriod, Tour
+from .models import BlockedPeriod, Booking, Departure, ExternalTour, OpenPeriod, Partner, PartnerPeriod, Tour
 
 S = Booking.Status
 D = Departure.Status
@@ -43,6 +44,7 @@ def home(request):
         "history": requests.exclude(status__in=[S.REQUESTED, S.OFFERED, S.CONFIRMED, S.RESCHEDULE_PROPOSED,
                                                 S.AWAITING_PAYMENT]).order_by("-updated_at")[:20],
         "is_new": not request.user.bookings.exists() and not upcoming_departures.exists(),
+        "partner_offers": request.user.external_tours.filter(status=ExternalTour.Status.PENDING),
     })
 
 
@@ -311,10 +313,27 @@ def availability_view(request):
     block_form = BlockedPeriodForm(prefix="block")
     open_form = OpenPeriodForm(prefix="open")
     ical_form = CalendarSyncForm(instance=guide, prefix="ical")
+    partner_form = PartnerForm(prefix="partner")
+    partner_period_form = PartnerPeriodForm(prefix="pp", guide=guide)
 
     if request.method == "POST":
         which = request.POST.get("form")
-        if which == "block":
+        if which == "partner":
+            partner_form = PartnerForm(request.POST, prefix="partner")
+            if partner_form.is_valid():
+                partner = partner_form.save(commit=False)
+                partner.guide = guide
+                partner.save()
+                messages.success(request, _("Anbieter angelegt. Gib jetzt einen Zeitraum frei und schick den Link."))
+                return redirect("dashboard:availability")
+        elif which == "partner_period":
+            partner_period_form = PartnerPeriodForm(request.POST, prefix="pp", guide=guide)
+            if partner_period_form.is_valid():
+                partner_period_form.save()
+                messages.success(request, _("Zeitraum für %(name)s freigegeben.")
+                                 % {"name": partner_period_form.cleaned_data["partner"].name})
+                return redirect("dashboard:availability")
+        elif which == "block":
             block_form = BlockedPeriodForm(request.POST, prefix="block")
             if block_form.is_valid():
                 block = block_form.save(commit=False)
@@ -343,6 +362,12 @@ def availability_view(request):
         "ical_form": ical_form,
         "blocks": guide.blocked_periods.filter(end_date__gte=timezone.localdate()),
         "open_periods": guide.open_periods.filter(end_date__gte=timezone.localdate()),
+        "partner_form": partner_form,
+        "partner_period_form": partner_period_form,
+        "partners": [
+            (p, [pp for pp in p.periods.all() if pp.end_date >= timezone.localdate()])
+            for p in guide.partners.prefetch_related("periods")
+        ],
     })
 
 
@@ -360,6 +385,84 @@ def open_delete(request, pk):
     get_object_or_404(OpenPeriod, pk=pk, guide=request.user).delete()
     messages.success(request, _("Freigabe entfernt."))
     return redirect("dashboard:availability")
+
+
+@login_required
+@require_POST
+def partner_delete(request, pk):
+    get_object_or_404(Partner, pk=pk, guide=request.user).delete()  # the link stops working; tours stay
+    messages.success(request, _("Anbieter entfernt. Der Link funktioniert nicht mehr."))
+    return redirect("dashboard:availability")
+
+
+@login_required
+@require_POST
+def partner_period_delete(request, pk):
+    get_object_or_404(PartnerPeriod, pk=pk, partner__guide=request.user).delete()
+    messages.success(request, _("Freigabe entfernt."))
+    return redirect("dashboard:availability")
+
+
+# --- Tours for other providers ---------------------------------------------
+
+
+@login_required
+def external_tours(request):
+    guide = request.user
+    form = ExternalTourForm(request.POST or None, prefix="ext")
+    if request.method == "POST" and form.is_valid():
+        tour = form.save(commit=False)
+        if tour.url and (not tour.title or not tour.provider):
+            try:
+                title, provider = pagetitle.fetch(tour.url)
+            except calsync.CalendarSyncError:
+                title, provider = "", pagetitle.provider_from_url(tour.url)
+            tour.title = tour.title or title
+            tour.provider = tour.provider or provider
+        if not tour.title:
+            form.add_error("title", _("Der Titel konnte nicht von der Seite gelesen werden. Bitte selbst eingeben."))
+        else:
+            tour.guide = guide
+            tour.status = ExternalTour.Status.CONFIRMED
+            tour.save()
+            states = availability.day_states(guide, tour.start_date, tour.end_date)
+            if any(states[d] not in (availability.FREE, availability.UNAVAILABLE, availability.EXTERNAL)
+                   for d in states):
+                messages.warning(request, _("Eingetragen. Achtung: An mindestens einem dieser Tage hast du schon "
+                                            "etwas anderes."))
+            else:
+                messages.success(request, _("Tour eingetragen. Die Tage sind für Gäste gesperrt."))
+            return redirect("dashboard:external_tours")
+    today = timezone.localdate()
+    active = guide.external_tours.filter(status__in=ExternalTour.ACTIVE_STATUSES).select_related("partner")
+    return render(request, "dashboard/external_tours.html", {
+        "form": form,
+        "pending": active.filter(status=ExternalTour.Status.PENDING),
+        "upcoming": active.filter(status=ExternalTour.Status.CONFIRMED, end_date__gte=today),
+        "past": active.filter(status=ExternalTour.Status.CONFIRMED, end_date__lt=today).order_by("-start_date")[:20],
+    })
+
+
+@login_required
+@require_POST
+def external_tour_action(request, pk, name):
+    tour = get_object_or_404(ExternalTour, pk=pk, guide=request.user)
+    if name in ("annehmen", "ablehnen"):
+        try:
+            partners.answer_offer(tour, accept=name == "annehmen")
+        except partners.PartnerOfferError as exc:
+            messages.error(request, str(exc))
+        else:
+            messages.success(request, _("Bestätigt. Die Tage sind im Kalender eingetragen.") if name == "annehmen"
+                             else _("Abgelehnt. Die Tage sind wieder frei."))
+    elif name == "loeschen":
+        if tour.is_pending:
+            partners.answer_offer(tour, accept=False)
+        else:
+            tour.status = ExternalTour.Status.CANCELLED
+            tour.save(update_fields=["status"])
+        messages.success(request, _("Tour entfernt. Die Tage sind wieder frei."))
+    return redirect("dashboard:external_tours")
 
 
 def _sync(request):
@@ -395,16 +498,23 @@ def calendar_view(request):
         status__in=Booking.ACTIVE_STATUSES, is_window=False, departure__isnull=True, start_date__lte=last,
         end_date__gte=first,
     ).select_related("tour")
-    by_day, departures_by_day = {}, {}
+    by_day, departures_by_day, external_by_day = {}, {}, {}
     for b in bookings:
         for d in availability.days_between(b.start_date, b.end_date):
             by_day.setdefault(d, b)
     for dep in guide.departures.filter(status__in=[D.OPEN, D.CONFIRMED], start_date__lte=last, end_date__gte=first):
         for d in availability.days_between(dep.start_date, dep.end_date):
             departures_by_day.setdefault(d, []).append(dep)
-    opened = set()
+    externals = guide.external_tours.filter(status__in=ExternalTour.ACTIVE_STATUSES, start_date__lte=last,
+                                            end_date__gte=first)
+    for t in externals:
+        for d in availability.days_between(t.start_date, t.end_date):
+            external_by_day.setdefault(d, []).append(t)
+    opened, for_partner = set(), set()
     for p in guide.open_periods.filter(start_date__lte=last, end_date__gte=first):
         opened.update(availability.days_between(p.start_date, p.end_date))
+    for p in PartnerPeriod.objects.filter(partner__guide=guide, start_date__lte=last, end_date__gte=first):
+        for_partner.update(availability.days_between(p.start_date, p.end_date))
     return render(request, "dashboard/calendar.html", {
         "month_label": monthgrid.month_label(month),
         "prev_month": f"{monthgrid.shift_month(month, -1):%Y-%m}",
@@ -414,7 +524,8 @@ def calendar_view(request):
         "today": timezone.localdate(),
         "weeks": [
             [{"date": d, "in_month": d.month == month.month, "state": states[d], "booking": by_day.get(d),
-              "departures": departures_by_day.get(d, []), "open": d in opened} for d in week]
+              "departures": departures_by_day.get(d, []), "externals": external_by_day.get(d, []),
+              "open": d in opened, "for_partner": d in for_partner} for d in week]
             for week in weeks
         ],
     })

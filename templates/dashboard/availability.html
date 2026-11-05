@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load i18n static %}
 {% block title %}{% translate "Verfügbarkeit" %} – Tourchef{% endblock %}
 {% block content %}
 <h1>{% translate "Verfügbarkeit" %}</h1>
@@ -66,7 +66,55 @@
 </div>
 
 <section class="card">
+  <h2>{% translate "Für Anbieter freigeben" %}</h2>
+  <p class="small muted">{% translate "Gib Zeiträume gezielt für einen Anbieter frei (z. B. eine Bergschule) und schick ihm den Link. Der Anbieter sieht nur diese Zeiträume und kann dir dort direkt eine Tour eintragen; du bestätigst sie unter «Extern». Gäste können diese Tage weiterhin anfragen." %}</p>
+  {% if partners %}
+  <table>
+    {% for partner, periods in partners %}
+    <tr>
+      <td><strong>{{ partner.name }}</strong>{% if partner.email %}<br><span class="small muted">{{ partner.email }}</span>{% endif %}</td>
+      <td>
+        <div class="row"><code class="small" id="partner-link-{{ partner.pk }}">{{ partner.public_url }}</code> <button class="btn btn-secondary btn-small" type="button" data-copy="#partner-link-{{ partner.pk }}">{% translate "Link kopieren" %}</button></div>
+        {% for pp in periods %}
+        <div class="small">{{ pp.start_date|date:"d.m.Y" }}{% if pp.end_date != pp.start_date %} – {{ pp.end_date|date:"d.m.Y" }}{% endif %}{% if pp.note %} · {{ pp.note }}{% endif %}
+          <form method="post" action="{% url 'dashboard:partner_period_delete' pp.pk %}" class="inline">{% csrf_token %}<button class="link-button small" type="submit">{% translate "entfernen" %}</button></form>
+        </div>
+        {% empty %}<span class="small muted">{% translate "Noch kein Zeitraum freigegeben." %}</span>{% endfor %}
+      </td>
+      <td>
+        <form method="post" action="{% url 'dashboard:partner_delete' partner.pk %}" class="inline">{% csrf_token %}
+          <button class="btn btn-danger btn-small" type="submit">{% translate "Entfernen" %}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+  {% endif %}
+  <div class="grid-2">
+    {% if partners %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="form" value="partner_period">
+      <h3>{% translate "Zeitraum freigeben" %}</h3>
+      {% include "_form.html" with form=partner_period_form %}
+      <button class="btn" type="submit">{% translate "Freigeben" %}</button>
+    </form>
+    {% endif %}
+    <form method="post">{% csrf_token %}
+      <input type="hidden" name="form" value="partner">
+      <h3>{% translate "Neuer Anbieter" %}</h3>
+      {% include "_form.html" with form=partner_form %}
+      <button class="btn btn-secondary" type="submit">{% translate "Anlegen" %}</button>
+    </form>
+  </div>
+</section>
+
+<section class="card">
   <h2>{% translate "Externer Kalender" %}</h2>
+  <div class="alert info small">
+    <strong>{% translate "Wichtig:" %}</strong>
+    {% translate "Es sperren nur Termine, die in deinem Kalender als «beschäftigt» markiert sind. In Google Kalender sind ganztägige Termine standardmässig «verfügbar»: im Termin «Verfügbar» auf «Beschäftigt» umstellen – oder unten «Auch verfügbare Termine sperren» aktivieren." %}
+    {% translate "Neue Termine erscheinen mit Verzögerung: Tourchef gleicht stündlich ab, Google aktualisiert die iCal-Adresse selbst teils erst nach einigen Stunden." %}
+  </div>
   <form method="post">{% csrf_token %}
     <input type="hidden" name="form" value="ical">
     {% include "_form.html" with form=ical_form %}
@@ -84,3 +132,4 @@
   {% endif %}
 </section>
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/copy.js' %}"></script>{% endblock %}

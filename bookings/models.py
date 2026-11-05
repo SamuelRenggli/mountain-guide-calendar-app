@@ -193,6 +193,83 @@ def new_token() -> str:
     return secrets.token_urlsafe(32)  # 256 bits
 
 
+class Partner(models.Model):
+    """An external provider (e.g. a mountaineering school) the guide works for. The token link is the partner's
+    only key: whoever has it sees the periods released to this partner and can place an offer there."""
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="partners")
+    name = models.CharField(_("Name des Anbieters"), max_length=200, help_text=_("z. B. Bergschule, Reiseanbieter"))
+    email = models.EmailField(_("E-Mail des Anbieters"), blank=True,
+                              help_text=_("Optional. Erhält deine Antwort auf Angebote."))
+    token = models.CharField(max_length=64, unique=True, default=new_token, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def public_url(self) -> str:
+        return f"{settings.SITE_URL}/p/{self.token}/"
+
+
+class PartnerPeriod(models.Model):
+    """Days the guide released for one partner. Guests can still request these days too."""
+
+    partner = models.ForeignKey(Partner, on_delete=models.CASCADE, related_name="periods")
+    start_date = models.DateField(_("Von"))
+    end_date = models.DateField(_("Bis"))
+    note = models.CharField(_("Notiz"), max_length=200, blank=True)
+
+    class Meta:
+        ordering = ["start_date"]
+        constraints = [models.CheckConstraint(condition=Q(end_date__gte=F("start_date")),
+                                              name="partner_period_end_after_start")]
+
+
+class ExternalTour(models.Model):
+    """A tour the guide leads for another provider. Entered by the guide (confirmed right away) or offered by a
+    partner through the partner link (pending until the guide accepts). Confirmed and pending ones block the days."""
+
+    class Status(models.TextChoices):
+        PENDING = "pending", _("Angebot offen")
+        CONFIRMED = "confirmed", _("Bestätigt")
+        DECLINED = "declined", _("Abgelehnt")
+        CANCELLED = "cancelled", _("Zurückgezogen")
+
+    ACTIVE_STATUSES = (Status.PENDING, Status.CONFIRMED)
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="external_tours")
+    partner = models.ForeignKey(Partner, on_delete=models.SET_NULL, null=True, blank=True,
+                                related_name="external_tours")
+    provider = models.CharField(_("Anbieter"), max_length=200, blank=True)
+    title = models.CharField(_("Titel"), max_length=300)
+    url = models.URLField(_("Link zum Angebot"), max_length=1000, blank=True)
+    start_date = models.DateField(_("Von"))
+    end_date = models.DateField(_("Bis"))
+    note = models.TextField(_("Notiz"), blank=True, validators=[MaxLengthValidator(2000)])
+    contact_name = models.CharField(_("Kontaktperson"), max_length=200, blank=True)
+    contact_email = models.EmailField(_("E-Mail"), blank=True)
+    language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default="de")  # partner's email language
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.CONFIRMED, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    answered_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["start_date", "id"]
+        constraints = [models.CheckConstraint(condition=Q(end_date__gte=F("start_date")),
+                                              name="external_tour_end_after_start")]
+
+    def __str__(self):
+        return self.title
+
+    @property
+    def is_pending(self) -> bool:
+        return self.status == self.Status.PENDING
+
+
 class Booking(models.Model):
     """Either a request for a custom tour (departure is empty) or a registration for a scheduled date."""
 

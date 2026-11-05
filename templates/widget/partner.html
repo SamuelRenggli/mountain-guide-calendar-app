@@ -1,0 +1,59 @@
+{% extends "widget/base.html" %}
+{% load i18n %}
+{% block title %}{% blocktranslate with name=guide.display_name trimmed %}Verfügbarkeit – {{ name }}{% endblocktranslate %}{% endblock %}
+{% block heading %}<h1>{% blocktranslate with name=guide.display_name trimmed %}Verfügbarkeit von {{ name }}{% endblocktranslate %}</h1>{% endblock %}
+{% block content %}
+<p class="muted">
+  {% blocktranslate with name=guide.display_name partner=partner.name trimmed %}
+    {{ name }} hat diese Zeiträume für {{ partner }} freigegeben. Trag hier eine Tour ein: Die Tage sind sofort
+    vorläufig reserviert, {{ name }} bestätigt per E-Mail.
+  {% endblocktranslate %}
+</p>
+
+{% if sent %}
+<div class="alert success">
+  {% blocktranslate with name=guide.display_name trimmed %}Danke! Dein Angebot ist bei {{ name }}. Du erhältst eine E-Mail, sobald es bestätigt oder abgelehnt ist.{% endblocktranslate %}
+</div>
+{% endif %}
+
+{% if months %}
+{% for month in months %}
+<section class="card">
+  <h2>{{ month.label }}</h2>
+  <div class="cal">
+    {% for name in weekday_names %}<div class="head">{{ name }}</div>{% endfor %}
+    {% for week in month.weeks %}{% for day in week %}
+      {% if not day.in_month %}<span class="day out"></span>
+      {% elif day.state == "free" %}<a class="day free" href="?von={{ day.date|date:'Y-m-d' }}#offer" aria-label="{{ day.date|date:'l, j. F Y' }} – {% translate 'frei' %}">{{ day.date.day }}</a>
+      {% elif day.state == "taken" %}<span class="day taken" aria-label="{{ day.date|date:'j. F' }} – {% translate 'belegt' %}">{{ day.date.day }}</span>
+      {% else %}<span class="day" aria-label="{{ day.date|date:'j. F' }} – {% translate 'nicht freigegeben' %}">{{ day.date.day }}</span>{% endif %}
+    {% endfor %}{% endfor %}
+  </div>
+</section>
+{% endfor %}
+<div class="legend"><span class="l-free">{% translate "frei" %}</span><span class="l-taken">{% translate "belegt" %}</span></div>
+
+<form method="post" class="card booking-form" id="offer">{% csrf_token %}
+  <h2>{% translate "Tour eintragen" %}</h2>
+  {% include "_form.html" with form=form %}
+  <button class="btn" type="submit">{% translate "Angebot senden" %}</button>
+</form>
+{% else %}
+<p class="empty">{% translate "Zurzeit sind keine Zeiträume freigegeben." %}</p>
+{% endif %}
+
+{% if offers %}
+<section class="card">
+  <h2>{% translate "Deine Angebote" %}</h2>
+  <table>
+    {% for t in offers %}
+    <tr>
+      <td>{{ t.start_date|date:"d.m.Y" }}{% if t.end_date != t.start_date %} – {{ t.end_date|date:"d.m.Y" }}{% endif %}</td>
+      <td>{{ t.title }}</td>
+      <td><span class="badge badge-ext-{{ t.status }}">{{ t.get_status_display }}</span></td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
+{% endblock %}

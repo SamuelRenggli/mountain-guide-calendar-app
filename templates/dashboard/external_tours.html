@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Externe Touren" %} – Tourchef{% endblock %}
+{% block content %}
+<h1>{% translate "Externe Touren" %}</h1>
+<p class="muted">{% translate "Touren, die du für andere Anbieter führst (z. B. eine Bergschule). Sie erscheinen in deinem Kalender und sperren die Tage für Gäste." %}</p>
+
+{% if pending %}
+<section class="card">
+  <h2>{% translate "Angebote von Anbietern – bitte beantworten" %}</h2>
+  <table>
+    {% for t in pending %}
+    <tr>
+      <td>{{ t.start_date|date:"d.m.Y" }}{% if t.end_date != t.start_date %} – {{ t.end_date|date:"d.m.Y" }}{% endif %}</td>
+      <td>
+        <strong>{% if t.url %}<a href="{{ t.url }}" target="_blank" rel="noopener noreferrer">{{ t.title }}</a>{% else %}{{ t.title }}{% endif %}</strong><br>
+        <span class="small muted">{{ t.provider }}{% if t.contact_name %} · {{ t.contact_name }}{% endif %}{% if t.contact_email %} · <a href="mailto:{{ t.contact_email }}">{{ t.contact_email }}</a>{% endif %}</span>
+        {% if t.note %}<p class="small pre">{{ t.note }}</p>{% endif %}
+      </td>
+      <td class="row">
+        <form method="post" action="{% url 'dashboard:external_tour_action' t.pk 'annehmen' %}" class="inline">{% csrf_token %}
+          <button class="btn btn-small" type="submit">{% translate "Bestätigen" %}</button>
+        </form>
+        <form method="post" action="{% url 'dashboard:external_tour_action' t.pk 'ablehnen' %}" class="inline">{% csrf_token %}
+          <button class="btn btn-danger btn-small" type="submit">{% translate "Ablehnen" %}</button>
+        </form>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</section>
+{% endif %}
+
+<div class="grid-2">
+  <form method="post" class="card">{% csrf_token %}
+    <h2>{% translate "Tour eintragen" %}</h2>
+    {% include "_form.html" with form=form %}
+    <button class="btn" type="submit">{% translate "Eintragen" %}</button>
+  </form>
+
+  <section class="card">
+    <h2>{% translate "Kommende externe Touren" %}</h2>
+    {% if upcoming %}
+    <table>
+      {% for t in upcoming %}
+      <tr>
+        <td>{{ t.start_date|date:"d.m.Y" }}{% if t.end_date != t.start_date %} – {{ t.end_date|date:"d.m.Y" }}{% endif %}</td>
+        <td>{% if t.url %}<a href="{{ t.url }}" target="_blank" rel="noopener noreferrer">{{ t.title }}</a>{% else %}{{ t.title }}{% endif %}<br><span class="small muted">{{ t.provider }}</span></td>
+        <td>
+          <form method="post" action="{% url 'dashboard:external_tour_action' t.pk 'loeschen' %}" class="inline">{% csrf_token %}
+            <button class="btn btn-danger btn-small" type="submit">{% translate "Entfernen" %}</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </table>
+    {% else %}<p class="empty">{% translate "Keine externen Touren." %}</p>{% endif %}
+    <p class="small muted">{% blocktranslate trimmed %}Anbieter können dir Touren auch direkt eintragen: Lege unter «Verfügbarkeit» einen Anbieter an und schick ihm den Link.{% endblocktranslate %}</p>
+  </section>
+</div>
+{% endblock %}

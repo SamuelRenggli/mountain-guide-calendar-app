@@ -84,7 +84,7 @@ RateTierFormSet = forms.inlineformset_factory(User, DayRateTier, form=RateTierFo
 class CalendarSyncForm(forms.ModelForm):
     class Meta:
         model = User
-        fields = ("ical_url",)
+        fields = ("ical_url", "ical_block_all")
         help_texts = {
             "ical_url": _("Google Kalender: Einstellungen → dein Kalender → «Privatadresse im iCal-Format». "
                           "Belegte Tage werden automatisch für Anfragen gesperrt.")

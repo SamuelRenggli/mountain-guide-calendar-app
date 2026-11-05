@@ -16,6 +16,7 @@
         <a href="{% url 'dashboard:home' %}" {% if name == 'home' or name == 'booking' or name == 'invoice' %}class="active"{% endif %}>{% translate "Anfragen" %}</a>
         <a href="{% url 'dashboard:departures' %}" {% if name == 'departures' or name == 'departure' or name == 'departure_new' or name == 'departure_edit' %}class="active"{% endif %}>{% translate "Termine" %}</a>
         <a href="{% url 'dashboard:calendar' %}" {% if name == 'calendar' %}class="active"{% endif %}>{% translate "Kalender" %}</a>
+        <a href="{% url 'dashboard:external_tours' %}" {% if name == 'external_tours' %}class="active"{% endif %}>{% translate "Extern" %}</a>
         <a href="{% url 'dashboard:tours' %}" {% if name == 'tours' or name == 'tour_new' or name == 'tour_edit' %}class="active"{% endif %}>{% translate "Vorlagen" %}</a>
         <a href="{% url 'dashboard:availability' %}" {% if name == 'availability' %}class="active"{% endif %}>{% translate "Verfügbarkeit" %}</a>
         <a href="{% url 'dashboard:export' %}" {% if name == 'export' %}class="active"{% endif %}>{% translate "Export" %}</a>

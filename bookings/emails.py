@@ -197,6 +197,25 @@ PRICE_SEATS = _("CHF {price} ({seats} × CHF {per_person})")
 BREAKDOWN_TITLE = _("Zusammensetzung:")
 BREAKDOWN_GUIDE = _("Bergführer")
 BREAKDOWN_ASPIRANT = _("Aspirant")
+MESSAGES.update({
+    "partner_offer_to_guide": (
+        _("Neues Tourenangebot von {partner}"),
+        _("Hallo {guide}\n\n{partner} möchte dich für diese Tour einplanen:\n\n{tour}\n{dates}\n{url}\n\n"
+          "Kontakt: {contact} <{contact_email}>\nNachricht:\n{note}\n\n"
+          "Die Tage sind vorläufig für dich reserviert. Bitte bestätige oder lehne ab:\n{guide_link}"),
+    ),
+    "partner_offer_confirmed": (
+        _("{guide} hat die Tour bestätigt"),
+        _("Hallo {contact}\n\n{guide} hat die Tour bestätigt und die Tage im Kalender eingetragen:\n\n"
+          "{tour}\n{dates}\n\nWeitere Zeiträume: {partner_link}"),
+    ),
+    "partner_offer_declined": (
+        _("{guide} kann die Tour nicht übernehmen"),
+        _("Hallo {contact}\n\nLeider kann {guide} diese Tour nicht übernehmen:\n\n{tour}\n{dates}\n\n"
+          "Weitere Zeiträume: {partner_link}"),
+    ),
+})
+
 BREAKDOWN_ROW = _("{persons} × {role} × {days} Tage × CHF {rate} = CHF {amount}")
 BILLING_HINT = _("Nach der Tour erhältst du die Rechnung per E-Mail.\nDetails zu deiner Buchung: {guest_link}")
 TOTAL = _("Total")
@@ -505,3 +524,34 @@ def waitlist_seat_free(entry):
 
 def goodwill_refund(b, amount):
     _send("goodwill_refund", b, to_guest=True, amount=f"{Decimal(amount):.2f}")
+
+
+# --- Tours for partners ---
+
+
+def _external_context(t) -> dict:
+    dates = f"{t.start_date:%d.%m.%Y}" + (f" – {t.end_date:%d.%m.%Y}" if t.end_date != t.start_date else "")
+    partner = t.partner
+    return {
+        "guide": t.guide.display_name, "partner": partner.name if partner else t.provider, "tour": t.title,
+        "dates": dates, "url": t.url or NONE, "contact": t.contact_name or NONE,
+        "contact_email": t.contact_email or NONE, "note": t.note or NONE,
+        "guide_link": f"{settings.SITE_URL}/dashboard/extern/",
+        "partner_link": partner.public_url if partner else NONE,
+        "privacy_url": f"{settings.SITE_URL}/rechtliches/datenschutz/",
+    }
+
+
+def partner_offer_to_guide(t):
+    lang = t.guide.language
+    with translation.override(lang):
+        ctx = _external_context(t)
+    _deliver("partner_offer_to_guide", lang, t.guide.email, ctx)
+
+
+def partner_offer_answered(t, *, accepted: bool):
+    if not t.contact_email:
+        return
+    with translation.override(t.language):
+        ctx = _external_context(t)
+    _deliver("partner_offer_confirmed" if accepted else "partner_offer_declined", t.language, t.contact_email, ctx)

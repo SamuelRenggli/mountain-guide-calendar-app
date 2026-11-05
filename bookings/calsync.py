@@ -47,12 +47,17 @@ def _check_url(url: str):
 
 
 def fetch_ical(url: str) -> bytes:
+    return safe_get(url, MAX_BYTES)
+
+
+def safe_get(url: str, max_bytes: int, *, too_big_ok: bool = False) -> bytes:
+    """GET a user-supplied https URL. With too_big_ok, a long response is cut off instead of rejected."""
     for _ in range(MAX_REDIRECTS + 1):
         _check_url(url)
         try:
             resp = requests.get(
                 url, timeout=(5, 20), stream=True, allow_redirects=False,
-                headers={"User-Agent": "Tourchef-Calendar-Sync/1.0"},
+                headers={"User-Agent": "Tourchef/1.0"},
             )
         except requests.RequestException as exc:
             raise CalendarSyncError("Kalender konnte nicht geladen werden.") from exc
@@ -61,11 +66,13 @@ def fetch_ical(url: str) -> bytes:
                 url = urljoin(url, resp.headers.get("Location", ""))
                 continue
             if resp.status_code != 200:
-                raise CalendarSyncError(f"Kalender-Server antwortet mit Fehler {resp.status_code}.")
+                raise CalendarSyncError(f"Server antwortet mit Fehler {resp.status_code}.")
             data = b""
             for chunk in resp.iter_content(64 * 1024):
                 data += chunk
-                if len(data) > MAX_BYTES:
+                if len(data) > max_bytes:
+                    if too_big_ok:
+                        return data[:max_bytes]
                     raise CalendarSyncError("Kalender ist zu gross.")
             return data
     raise CalendarSyncError("Zu viele Weiterleitungen.")
@@ -77,8 +84,12 @@ def _to_local(value, tz) -> datetime:
     return datetime.combine(value, time.min, tzinfo=tz)
 
 
-def busy_ranges(ical_data: bytes, window_start: date, window_end: date, tz=None) -> list[tuple[date, date]]:
-    """Inclusive (start, end) day ranges covered by opaque events, merged and clipped to the window."""
+def busy_ranges(ical_data: bytes, window_start: date, window_end: date, tz=None, *,
+                include_free: bool = False) -> list[tuple[date, date]]:
+    """Inclusive (start, end) day ranges covered by busy events, merged and clipped to the window.
+
+    Events marked "free" (TRANSP:TRANSPARENT) are skipped unless include_free is set. Google marks all-day
+    events as free by default, so guides either set them to "busy" or turn on include_free."""
     tz = tz or ZoneInfo(settings.TIME_ZONE)
     try:
         cal = Calendar.from_ical(ical_data)
@@ -87,7 +98,7 @@ def busy_ranges(ical_data: bytes, window_start: date, window_end: date, tz=None)
 
     ranges = []
     for event in recurring_ical_events.of(cal).between(window_start, window_end + timedelta(days=1)):
-        if str(event.get("TRANSP", "OPAQUE")).upper() == "TRANSPARENT":
+        if not include_free and str(event.get("TRANSP", "OPAQUE")).upper() == "TRANSPARENT":
             continue  # marked as "free" in the calendar
         if str(event.get("STATUS", "")).upper() == "CANCELLED":
             continue
@@ -134,7 +145,8 @@ def sync_guide(guide) -> int:
         return 0
     today = timezone.localdate()
     try:
-        ranges = busy_ranges(fetch_ical(guide.ical_url), today, today + timedelta(days=SYNC_DAYS_AHEAD))
+        ranges = busy_ranges(fetch_ical(guide.ical_url), today, today + timedelta(days=SYNC_DAYS_AHEAD),
+                             include_free=guide.ical_block_all)
     except CalendarSyncError as exc:
         guide.ical_last_error = str(exc)[:300]
         guide.save(update_fields=["ical_last_error"])

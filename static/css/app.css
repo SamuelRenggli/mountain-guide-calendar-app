@@ -11,7 +11,10 @@
   --free: #e3f2e9;
   --free-text: #1f5a3c;
   --requested: #fdecc8;
-  --booked: #f6d4d1;
+  --booked: #cfe0f6;  /* confirmed: calm blue, not alarm red */
+  --departure: #ddd5fa;
+  --departure-text: #3f2f8f;
+  --external: #f5e0c8;
   --blocked: #e4e4e4;
   --radius: 8px;
   font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -166,8 +169,22 @@ table.rates td { padding: .15rem 1rem .15rem 0; border: 0; }
 .badge-d-confirmed, .badge-confirmed { background: var(--free); color: var(--free-text); }
 .badge-d-cancelled { background: #eee; color: var(--muted); }
 .badge-reschedule, .badge-payment_pending { background: #dbe8ff; }
-.legend .l-departure::before { background: #dcd8f5; }
-.month .s-departure { background: #dcd8f5; }
+.legend .l-departure::before { background: var(--departure); border: 1px solid var(--departure-text); }
+.legend .l-external::before { background: var(--external); }
+.legend .l-taken::before { background: var(--blocked); }
+.month .s-departure { background: var(--departure); }
+.month .s-external { background: var(--external); }
+.month .day a.ev { display: block; margin-top: .15rem; padding: 0 .3rem; border-radius: 4px; background: rgba(255,255,255,.7);
+  color: var(--text); text-decoration: none; }
+.month .day a.ev-departure { background: var(--departure-text); color: #fff; font-weight: 600; }
+.month .day a.ev-external { background: #8a5a22; color: #fff; }
+.month .day a.ev-external.pending { background: #fff; color: #8a5a22; border: 1px dashed #8a5a22; }
+.cal a.day.dep { background: var(--departure); color: var(--departure-text); font-weight: 600; border-color: var(--departure-text); }
+.cal .day.taken { background: var(--blocked); text-decoration: line-through; }
+.row code { word-break: break-all; }
+.badge-ext-pending { background: var(--requested); }
+.badge-ext-confirmed { background: var(--free); color: var(--free-text); }
+.badge-ext-declined { background: #eee; color: var(--muted); }
 .month .day a.add { text-decoration: none; text-align: right; opacity: .5; }
 .month .day a.add:hover { opacity: 1; }
 

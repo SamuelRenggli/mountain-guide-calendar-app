@@ -53,10 +53,11 @@
   {% for week in weeks %}{% for day in week %}
     {% if not day.in_month %}<span class="day out"></span>
     {% elif day.free %}<a class="day free{% if day.selected %} selected{% endif %}" href="{{ day.link }}" aria-label="{{ day.date|date:'l, j. F Y' }} – {% translate 'frei' %}">{{ day.date.day }}</a>
+    {% elif day.departure %}<a class="day dep" href="{% url 'widget:departure' day.departure.public_id %}" title="{{ day.departure.title }}" aria-label="{{ day.date|date:'l, j. F Y' }} – {% translate 'Ausgeschriebener Termin' %}: {{ day.departure.title }}">{{ day.date.day }}</a>
     {% else %}<span class="day{% if day.selected %} in-range{% endif %}" aria-label="{{ day.date|date:'j. F' }} – {% translate 'nicht verfügbar' %}">{{ day.date.day }}</span>{% endif %}
   {% endfor %}{% endfor %}
 </div>
-<div class="legend"><span class="l-free">{% translate "frei – Tag anklicken" %}</span></div>
+<div class="legend"><span class="l-free">{% translate "frei – Tag anklicken" %}</span>{% if departures %}<span class="l-departure">{% translate "ausgeschriebener Termin" %}</span>{% endif %}</div>
 
 {% if form %}
 <form method="post" action="{% url 'widget:request' guide.slug %}" class="booking-form" id="booking-form">
