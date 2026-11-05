@@ -2,43 +2,23 @@
 {% load i18n %}
 {% block heading %}<h1>{{ guide.display_name }}</h1>{% endblock %}
 {% block content %}
-{% if departures %}
-<section class="departure-list" aria-labelledby="departures-title">
-  <h2 id="departures-title">{% translate "Ausgeschriebene Termine" %}</h2>
-  <ul class="cards">
-    {% for d in departures %}
-    <li class="card departure-card">
-      <a href="{% url 'widget:departure' d.public_id %}" class="departure-link">
-        <strong>{{ d.title }}</strong>
-        <span class="small">{{ d.start_date|date:"D d.m.Y" }}{% if d.end_date != d.start_date %} – {{ d.end_date|date:"D d.m.Y" }}{% endif %}</span>
-        <span class="small">{% blocktranslate with price=d.price_per_person|floatformat:"-2" trimmed %}CHF {{ price }} pro Person{% endblocktranslate %}</span>
-        {% with free=d.seats_free %}<span class="small {% if free %}free-text{% else %}muted{% endif %}">{% if free %}{% blocktranslate count n=free trimmed %}{{ n }} Platz frei{% plural %}{{ n }} Plätze frei{% endblocktranslate %}{% else %}{% translate "Ausgebucht – Warteliste" %}{% endif %}</span>{% endwith %}
-      </a>
-      <a class="btn btn-small" href="{% url 'widget:departure' d.public_id %}">{% translate "Anmelden" context "signup" %}</a>
-    </li>
-    {% endfor %}
-  </ul>
+{% if next_offer %}
+<section class="next-offer" aria-labelledby="next-title">
+  <div class="spread"><h2 id="next-title">{% translate "Als Nächstes" %}</h2>
+    {% if offers|length > 1 %}<a class="small" href="#angebote">{% blocktranslate count n=offers|length trimmed %}Alle {{ n }} Angebote{% plural %}Alle {{ n }} Angebote{% endblocktranslate %} ↓</a>{% endif %}</div>
+  <ul class="cards">{% include "widget/_offer_card.html" with o=next_offer big=True %}</ul>
 </section>
 {% endif %}
 
 <section aria-labelledby="request-title">
-<h2 id="request-title">{% translate "Eigene Tour anfragen" %}</h2>
+<h2 id="request-title">{% translate "Kalender" %}</h2>
 <p class="small muted">
+  {% if offers %}{% translate "Angebote anklicken und buchen." %} {% endif %}
   {% blocktranslate with name=guide.display_name max=max_request_days trimmed %}
-    Wähle den ersten und den letzten Tag deiner Tour (höchstens {{ max }} Tage). Für eine Tagestour reicht ein Klick.
+    Oder eigene Tour anfragen: Wähle den ersten und den letzten Tag (höchstens {{ max }} Tage). Für eine Tagestour reicht ein Klick.
     {{ name }} bestätigt die Tour oder macht dir einen Vorschlag.
   {% endblocktranslate %}
 </p>
-<div class="price-note">
-  <strong>{% translate "Richtpreis Bergführer" %}</strong>
-  <table class="small rates">
-    {% for lo, hi, rate in rate_table %}
-    <tr><td>{% if hi %}{% blocktranslate trimmed %}{{ lo }}–{{ hi }} Personen{% endblocktranslate %}{% else %}{% blocktranslate trimmed %}ab {{ lo }} Personen{% endblocktranslate %}{% endif %}</td>
-        <td>{% blocktranslate with rate=rate|floatformat:"-2" trimmed %}CHF {{ rate }} pro Tag{% endblocktranslate %}</td></tr>
-    {% endfor %}
-  </table>
-  <span class="small muted">{% translate "Zuzüglich Spesen (z. B. Hütte, Bahn, Reise). Abgerechnet wird nach der Tour." %}</span>
-</div>
 
 {% if notice %}<div class="alert error">{{ notice }}</div>{% endif %}
 
@@ -48,16 +28,33 @@
   {% if next_month %}<a class="btn btn-secondary btn-small" href="?monat={{ next_month }}" aria-label="{% translate 'Nächster Monat' %}">→</a>{% else %}<span class="disabled">→</span>{% endif %}
 </div>
 
-<div class="cal" role="grid" aria-label="{% blocktranslate trimmed %}Verfügbare Tage {{ month_label }}{% endblocktranslate %}">
+<div class="cal cal-tiles" role="grid" aria-label="{% blocktranslate trimmed %}Verfügbare Tage {{ month_label }}{% endblocktranslate %}">
   {% for name in weekday_names %}<div class="head">{{ name }}</div>{% endfor %}
   {% for week in weeks %}{% for day in week %}
-    {% if not day.in_month %}<span class="day out"></span>
+    {% if day.offer %}{% with o=day.offer %}
+    <a class="day tile span-{{ day.span }}{% if o.external %} tile-external{% endif %}{% if day.continues %} tile-cont{% endif %}{% if day.goes_on %} tile-more{% endif %}" href="{{ o.link }}"{% if o.external %} target="_blank" rel="noopener noreferrer"{% endif %}
+       title="{{ o.title }}" aria-label="{{ day.first|date:'j. F' }}{% if day.last != day.first %} – {{ day.last|date:'j. F' }}{% endif %}: {{ o.title }}">
+      {% if o.picture %}<img src="{{ o.picture }}" alt="" loading="lazy">{% endif %}
+      <span class="tile-text"><span class="tile-date">{{ day.first.day }}{% if day.last != day.first %}–{{ day.last.day }}{% endif %}</span><span class="tile-title">{{ o.title }}</span></span>
+    </a>
+    {% endwith %}
+    {% elif not day.in_month %}<span class="day out"></span>
     {% elif day.free %}<a class="day free{% if day.selected %} selected{% endif %}" href="{{ day.link }}" aria-label="{{ day.date|date:'l, j. F Y' }} – {% translate 'frei' %}">{{ day.date.day }}</a>
-    {% elif day.departure %}<a class="day dep" href="{% url 'widget:departure' day.departure.public_id %}" title="{{ day.departure.title }}" aria-label="{{ day.date|date:'l, j. F Y' }} – {% translate 'Ausgeschriebener Termin' %}: {{ day.departure.title }}">{{ day.date.day }}</a>
     {% else %}<span class="day{% if day.selected %} in-range{% endif %}" aria-label="{{ day.date|date:'j. F' }} – {% translate 'nicht verfügbar' %}">{{ day.date.day }}</span>{% endif %}
   {% endfor %}{% endfor %}
 </div>
-<div class="legend"><span class="l-free">{% translate "frei – Tag anklicken" %}</span>{% if departures %}<span class="l-departure">{% translate "ausgeschriebener Termin" %}</span>{% endif %}</div>
+<div class="legend"><span class="l-free">{% translate "frei – Tag anklicken" %}</span>{% if offers %}<span class="l-departure">{% translate "Angebot – anklicken zum Buchen" %}</span>{% endif %}</div>
+
+<details class="price-note">
+  <summary><strong>{% translate "Richtpreis Bergführer" %}</strong> <span class="small muted">{% translate "für eine eigene Tour" %}</span></summary>
+  <table class="small rates">
+    {% for lo, hi, rate in rate_table %}
+    <tr><td>{% if hi %}{% blocktranslate trimmed %}{{ lo }}–{{ hi }} Personen{% endblocktranslate %}{% else %}{% blocktranslate trimmed %}ab {{ lo }} Personen{% endblocktranslate %}{% endif %}</td>
+        <td>{% blocktranslate with rate=rate|floatformat:"-2" trimmed %}CHF {{ rate }} pro Tag{% endblocktranslate %}</td></tr>
+    {% endfor %}
+  </table>
+  <span class="small muted">{% translate "Zuzüglich Spesen (z. B. Hütte, Bahn, Reise). Abgerechnet wird nach der Tour." %}</span>
+</details>
 
 {% if form %}
 <form method="post" action="{% url 'widget:request' guide.slug %}" class="booking-form" id="booking-form">
@@ -91,4 +88,11 @@
 </form>
 {% endif %}
 </section>
+
+{% if offers|length > 1 %}
+<section id="angebote" aria-labelledby="offers-title">
+  <h2 id="offers-title">{% translate "Alle Angebote" %}</h2>
+  <ul class="cards">{% for o in offers %}{% include "widget/_offer_card.html" %}{% endfor %}</ul>
+</section>
+{% endif %}
 {% endblock %}

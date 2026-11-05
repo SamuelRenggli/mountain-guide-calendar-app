@@ -1,9 +1,10 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% translate "Export" %} – Tourchef{% endblock %}
+{% block title %}{% translate "Buchhaltung" %} – Tourchef{% endblock %}
 {% block container_class %}narrow{% endblock %}
 {% block content %}
-<h1>{% translate "Einnahmen exportieren" %}</h1>
+<h1>{% translate "Buchhaltung" %}</h1>
+<h2>{% translate "Einnahmen exportieren" %}</h2>
 <p class="small muted">{% translate "Alle Zahlungen im Zeitraum mit Spesen, Rückzahlungen und MWST – für deine Buchhaltung. Ohne Telefonnummern und Notfallkontakte." %}</p>
 <form method="get" class="card">
   {% include "_form.html" %}

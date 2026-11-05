@@ -8,7 +8,10 @@ from django.utils.translation import gettext_lazy as _
 
 from accounts.models import LANGUAGE_CHOICES
 
-from .models import BlockedPeriod, Departure, ExternalTour, InvoiceLine, OpenPeriod, Partner, PartnerPeriod, Tour
+from . import pictures
+from .models import (
+    BlockedPeriod, Departure, ExternalTour, InvoiceLine, OpenPeriod, Partner, PartnerPeriod, Picture, Tour,
+)
 
 _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
 FORM_SIGNER_SALT = "widget-form"
@@ -148,7 +151,44 @@ class WaitlistForm(PublicForm):
 TEXTAREA = forms.Textarea(attrs={"rows": 3})
 
 
-class TourForm(forms.ModelForm):
+class PhotoMixin:
+    """An optional tour photo: upload a new one, keep the current one or remove it.
+    Call picture(guide, current) after is_valid() to get the Picture to store."""
+
+    def add_photo_fields(self, current=None):
+        self.current_picture = current
+        self.fields["photo"] = forms.FileField(
+            label=_("Bild"), required=False,
+            widget=forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,image/webp"}),
+            help_text=_("Erscheint im Buchungskalender. JPG, PNG oder WebP, höchstens 8 MB."),
+        )
+        if current:
+            self.fields["remove_photo"] = forms.BooleanField(label=_("Bild entfernen"), required=False)
+
+    def clean_photo(self):
+        upload = self.cleaned_data.get("photo")
+        if upload:
+            if upload.size > pictures.MAX_UPLOAD_BYTES:
+                raise forms.ValidationError(_("Das Bild ist zu gross (höchstens 8 MB)."))
+            try:
+                self._shrunk = pictures.shrink(upload.read())
+            except pictures.PictureError as exc:
+                raise forms.ValidationError(str(exc)) from exc
+        return upload
+
+    def picture(self, guide, current=None):
+        current = self.current_picture if current is None else current
+        if getattr(self, "_shrunk", None):
+            return pictures.store(guide, self._shrunk)
+        if self.cleaned_data.get("remove_photo"):
+            return None
+        return current
+
+    def detail_data(self) -> dict:
+        return {k: v for k, v in self.cleaned_data.items() if k not in ("photo", "remove_photo")}
+
+
+class TourForm(PhotoMixin, forms.ModelForm):
     class Meta:
         model = Tour
         fields = ("title", "duration_days", "price_per_person", "min_participants", "max_participants", "description",
@@ -159,6 +199,10 @@ class TourForm(forms.ModelForm):
         }
         help_texts = {"is_active": _("Inaktive Vorlagen erscheinen nicht mehr beim Ausschreiben.")}
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.add_photo_fields(self.instance.picture if self.instance.pk else None)
+
     def clean(self):
         cleaned = super().clean()
         lo, hi = cleaned.get("min_participants"), cleaned.get("max_participants")
@@ -167,7 +211,7 @@ class TourForm(forms.ModelForm):
         return cleaned
 
 
-class DepartureForm(forms.ModelForm):
+class DepartureForm(PhotoMixin, forms.ModelForm):
     """Publish a date from a template or as a quick entry (R-100–R-104). Works on a phone."""
 
     save_as_template = forms.BooleanField(label=_("Als Vorlage speichern"), required=False,
@@ -188,12 +232,13 @@ class DepartureForm(forms.ModelForm):
 
     REQUIRED = ("meeting_point", "meeting_time")  # R-101
 
-    def __init__(self, *args, editing=False, **kwargs):
+    def __init__(self, *args, editing=False, picture=None, **kwargs):
         super().__init__(*args, **kwargs)
         for name in self.REQUIRED:
             self.fields[name].required = True
         if editing:
             del self.fields["save_as_template"]
+        self.add_photo_fields(self.instance.picture if self.instance.pk else picture)
 
     @staticmethod
     def initial_from(tour: Tour | None, start=None) -> dict:
@@ -385,28 +430,72 @@ def _check_range(form, cleaned, start="start_date", end="end_date"):
         form.add_error(end, _("Das Ende muss nach dem Beginn liegen."))
 
 
-class ExternalTourForm(forms.ModelForm):
-    """A tour the guide leads for another provider. The title is read from the link when left empty."""
+class ExternalTourForm(PhotoMixin, forms.ModelForm):
+    """A tour the guide leads for another provider. Pasting the link is enough: title, provider, dates and picture
+    are read from the page; whatever can't be found the guide fills in."""
+
+    NO_PICTURE = "none"
+
+    picture_key = forms.CharField(required=False, widget=forms.HiddenInput)  # picture already read from the page
 
     class Meta:
         model = ExternalTour
-        fields = ("url", "title", "provider", "start_date", "end_date", "note")
+        fields = ("url", "title", "provider", "start_date", "end_date", "show_to_guests", "note")
         widgets = {"start_date": _date_input(), "end_date": _date_input(), "note": forms.Textarea(attrs={"rows": 2})}
         help_texts = {
-            "url": _("Link zum Tourenangebot, z. B. auf der Website der Bergschule."),
+            "url": _("Link zum Tourenangebot, z. B. auf der Website der Bergschule. Titel, Datum und Bild werden "
+                     "von der Seite übernommen."),
             "title": _("Leer lassen: wird von der verlinkten Seite übernommen."),
+            "start_date": _("Leer lassen: wird von der verlinkten Seite übernommen."),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, guide=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["title"].required = False
+        self.guide = guide
+        for name in ("title", "start_date", "end_date"):
+            self.fields[name].required = False
+        self.add_photo_fields()
+        self.fields["photo"].help_text = _("Leer lassen: das Vorschaubild der verlinkten Seite wird übernommen.")
+
+    @property
+    def picture_key_given(self) -> bool:
+        return bool(self.cleaned_data.get("picture_key"))
 
     def clean(self):
         cleaned = super().clean()
+        if pick := self.data.get(self.add_prefix("pick")):  # a date button: "2027-03-12:2027-03-14"
+            try:
+                start, end = (datetime.strptime(part, "%Y-%m-%d").date() for part in pick.split(":"))
+            except ValueError:
+                pass
+            else:
+                cleaned["start_date"], cleaned["end_date"] = start, end
+        if cleaned.get("start_date") and not cleaned.get("end_date"):
+            cleaned["end_date"] = cleaned["start_date"]
         _check_range(self, cleaned)
         if not cleaned.get("title") and not cleaned.get("url") and "url" not in self.errors:
             self.add_error("title", _("Bitte einen Titel oder einen Link angeben."))
         return cleaned
+
+    def complete(self, found_dates) -> bool:
+        """After reading the page: is everything there? Otherwise say what's missing."""
+        if not self.cleaned_data.get("title"):
+            self.add_error("title", _("Der Titel konnte nicht von der Seite gelesen werden. Bitte selbst eingeben."))
+        if not self.cleaned_data.get("start_date"):
+            if not self.cleaned_data.get("url"):
+                self.add_error("start_date", _("Bitte ein Datum angeben."))
+            elif len(found_dates) > 1:
+                self.add_error("start_date", _("Auf der Seite stehen mehrere Daten. Wähle oben das richtige oder gib "
+                                               "es ein."))
+            else:
+                self.add_error("start_date", _("Auf der Seite wurde kein Datum gefunden. Bitte selbst eingeben."))
+        return not self.errors
+
+    def picture(self, guide, current=None):
+        key = self.cleaned_data.get("picture_key")
+        if key and key != self.NO_PICTURE:
+            current = Picture.objects.filter(guide=guide, key=key).first()
+        return super().picture(guide, current) if current or getattr(self, "_shrunk", None) else None
 
     def clean_url(self):
         url = self.cleaned_data["url"].strip()

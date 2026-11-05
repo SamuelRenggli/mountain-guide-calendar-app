@@ -56,11 +56,13 @@ def test_sync_uses_guide_option(guide):
 def test_page_title_prefers_og_title():
     page = (b'<html><head><title>Startseite | B+T</title><meta property="og:title" content="Piz Pal&uuml; Hochtour">'
             b'<meta property="og:site_name" content="Bergschule B+T"></head></html>')
-    assert pagetitle.parse(page) == ("Piz Palü Hochtour", "Bergschule B+T")
+    info = pagetitle.parse(page)
+    assert (info.title, info.provider) == ("Piz Palü Hochtour", "Bergschule B+T")
 
 
 def test_page_title_falls_back_to_title_tag():
-    assert pagetitle.parse(b"<title>\n  Biancograt  </title>") == ("Biancograt", "")
+    info = pagetitle.parse(b"<title>\n  Biancograt  </title>")
+    assert (info.title, info.provider) == ("Biancograt", "")
 
 
 def test_provider_from_url():
@@ -72,7 +74,7 @@ def test_provider_from_url():
 
 def test_guide_adds_external_tour_with_title_from_link(client, guide):
     client.force_login(guide)
-    with mock.patch.object(pagetitle, "fetch", return_value=("Piz Palü", "Bergschule B+T")):
+    with mock.patch.object(pagetitle, "fetch", return_value=pagetitle.PageInfo("Piz Palü", "Bergschule B+T")):
         resp = client.post(reverse("dashboard:external_tours"), {
             "ext-url": "https://bt.example.ch/palue", "ext-title": "", "ext-provider": "",
             "ext-start_date": in_days(10).isoformat(), "ext-end_date": in_days(11).isoformat(), "ext-note": "",
@@ -226,4 +228,4 @@ def test_widget_calendar_links_departure_days(client, guide, make_departure):
     dep = make_departure(guide)
     resp = client.get(reverse("widget:show", args=[guide.slug]) + f"?monat={dep.start_date:%Y-%m}")
     assert reverse("widget:departure", args=[dep.public_id]) in resp.content.decode()
-    assert 'class="day dep"' in resp.content.decode()
+    assert 'class="day tile span-' in resp.content.decode()

@@ -11,19 +11,10 @@
   <header class="topbar">
     {% if user.is_authenticated %}<a class="brand" href="{% url 'dashboard:home' %}">Tourchef</a>{% else %}<span class="brand">Tourchef</span>{% endif %}
     {% if user.is_authenticated %}
-      {% with name=request.resolver_match.url_name %}
       <nav aria-label="{% translate 'Hauptnavigation' %}">
-        <a href="{% url 'dashboard:home' %}" {% if name == 'home' or name == 'booking' or name == 'invoice' %}class="active"{% endif %}>{% translate "Anfragen" %}</a>
-        <a href="{% url 'dashboard:departures' %}" {% if name == 'departures' or name == 'departure' or name == 'departure_new' or name == 'departure_edit' %}class="active"{% endif %}>{% translate "Termine" %}</a>
-        <a href="{% url 'dashboard:calendar' %}" {% if name == 'calendar' %}class="active"{% endif %}>{% translate "Kalender" %}</a>
-        <a href="{% url 'dashboard:external_tours' %}" {% if name == 'external_tours' %}class="active"{% endif %}>{% translate "Extern" %}</a>
-        <a href="{% url 'dashboard:tours' %}" {% if name == 'tours' or name == 'tour_new' or name == 'tour_edit' %}class="active"{% endif %}>{% translate "Vorlagen" %}</a>
-        <a href="{% url 'dashboard:availability' %}" {% if name == 'availability' %}class="active"{% endif %}>{% translate "Verfügbarkeit" %}</a>
-        <a href="{% url 'dashboard:export' %}" {% if name == 'export' %}class="active"{% endif %}>{% translate "Export" %}</a>
-        <a href="{% url 'dashboard:settings' %}" {% if name == 'settings' %}class="active"{% endif %}>{% translate "Einstellungen" %}</a>
-        {% if user.is_staff %}<a href="{% url 'dashboard:pilot_stats' %}" {% if name == 'pilot_stats' %}class="active"{% endif %}>{% translate "Pilot" %}</a>{% endif %}
+        {% for item in nav_sections %}<a href="{% url item.url_name %}"{% if item.active %} class="active" aria-current="page"{% endif %}>{{ item.label }}</a>{% endfor %}
+        {% if user.is_staff %}<a href="{% url 'dashboard:pilot_stats' %}" {% if request.resolver_match.url_name == 'pilot_stats' %}class="active"{% endif %}>{% translate "Pilot" %}</a>{% endif %}
       </nav>
-      {% endwith %}
     {% endif %}
     {% if user.is_authenticated %}
       <form method="post" action="{% url 'accounts:logout' %}" class="inline">{% csrf_token %}
@@ -33,6 +24,11 @@
       {% include "_lang_switch.html" %}
     {% endif %}
   </header>
+  {% if nav_tabs %}
+  <nav class="subnav" aria-label="{% translate 'Unterbereiche' %}">
+    {% for tab in nav_tabs %}<a href="{% url tab.url_name %}"{% if tab.active %} class="active" aria-current="page"{% endif %}>{{ tab.label }}</a>{% endfor %}
+  </nav>
+  {% endif %}
   <main class="container {% block container_class %}{% endblock %}">
     {% include "_messages.html" %}
     {% block content %}{% endblock %}

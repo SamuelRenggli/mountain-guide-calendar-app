@@ -1,0 +1,16 @@
+{% load i18n %}<li class="card offer-card{% if big %} offer-big{% endif %}">
+  <a href="{{ o.link }}" class="offer-link"{% if o.external %} target="_blank" rel="noopener noreferrer"{% endif %}>
+    {% if o.picture %}<img class="offer-img" src="{{ o.picture }}" alt="" loading="lazy">{% else %}<span class="offer-img offer-img-empty" aria-hidden="true">⛰</span>{% endif %}
+    <span class="offer-body">
+      <strong>{{ o.title }}</strong>
+      <span class="small">{{ o.start|date:"D d.m.Y" }}{% if o.end != o.start %} – {{ o.end|date:"D d.m.Y" }}{% endif %}</span>
+      {% if o.departure %}{% with d=o.departure %}
+        <span class="small">{% blocktranslate with price=d.price_per_person|floatformat:"-2" trimmed %}CHF {{ price }} pro Person{% endblocktranslate %}</span>
+        {% with free=d.seats_free %}<span class="small {% if free %}free-text{% else %}muted{% endif %}">{% if free %}{% blocktranslate count n=free trimmed %}{{ n }} Platz frei{% plural %}{{ n }} Plätze frei{% endblocktranslate %}{% else %}{% translate "Ausgebucht – Warteliste" %}{% endif %}</span>{% endwith %}
+      {% endwith %}{% else %}
+        <span class="small muted">{% blocktranslate with provider=o.provider trimmed %}Buchung bei {{ provider }}{% endblocktranslate %}</span>
+      {% endif %}
+    </span>
+  </a>
+  <a class="btn btn-small" href="{{ o.link }}"{% if o.external %} target="_blank" rel="noopener noreferrer"{% endif %}>{% if o.external %}{% translate "Zum Angebot" %}{% else %}{% translate "Anmelden" context "signup" %}{% endif %}</a>
+</li>

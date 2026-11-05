@@ -2,7 +2,7 @@
 {% load static i18n %}
 {% block title %}{{ departure.title }} – Tourchef{% endblock %}
 {% block content %}
-<p class="small"><a href="{% url 'dashboard:departures' %}">← {% translate "Termine" %}</a></p>
+<p class="small"><a href="{% url 'dashboard:departures' %}">← {% translate "Ausgeschriebene Touren" %}</a></p>
 <div class="spread">
   <h1>{{ departure.title }}</h1>
   <span class="badge badge-d-{{ departure.status }}">{{ departure.get_status_display }}</span>

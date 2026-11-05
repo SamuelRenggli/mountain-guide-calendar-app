@@ -74,7 +74,9 @@ class LanguageMiddleware:
 
 
 # Paths that never need a second factor: public guest pages, legal texts, webhooks, assets.
-TWO_FACTOR_EXEMPT_PREFIXES = ("/static/", "/healthz", "/w/", "/b/", "/t/", "/rechtliches/", "/zahlungen/stripe/webhook/")
+TWO_FACTOR_EXEMPT_PREFIXES = (
+    "/static/", "/healthz", "/w/", "/b/", "/t/", "/bild/", "/rechtliches/", "/zahlungen/stripe/webhook/",
+)
 
 
 def needs_two_factor(user) -> bool:

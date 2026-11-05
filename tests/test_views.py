@@ -118,7 +118,7 @@ def test_widget_lists_open_departures_first(client, guide, make_departure, make_
     make_registration(open_one, seats=3)
     make_departure(guide, in_days(40), title="Abgesagt", status=Departure.Status.CANCELLED)
     html = client.get(reverse("widget:show", args=[guide.slug])).content.decode()
-    assert html.index("Gran Paradiso") < html.index("Eigene Tour anfragen")
+    assert html.index("Gran Paradiso") < html.index('id="request-title"')
     assert "1 Platz frei" in html and "CHF 480 pro Person" in html
     assert "Abgesagt" not in html
 

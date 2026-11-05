@@ -1,9 +1,11 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% translate "Vorlagen" %} – Tourchef{% endblock %}
+{% block title %}{% translate "Tour ausschreiben" %} – Tourchef{% endblock %}
 {% block content %}
-<div class="spread"><h1>{% translate "Tour-Vorlagen" %}</h1><a class="btn" href="{% url 'dashboard:tour_new' %}">{% translate "Neue Vorlage" %}</a></div>
+<div class="spread"><h1>{% translate "Tour ausschreiben" %}</h1>
+  <div class="row"><a class="btn" href="{% url 'dashboard:departure_new' %}">{% translate "Schnellerfassung" %}</a><a class="btn btn-secondary" href="{% url 'dashboard:tour_new' %}">{% translate "Neue Vorlage" %}</a></div></div>
 <p class="muted small">{% translate "Vorlagen sparen Tipparbeit: Aus einer Vorlage schreibst du einen Termin mit einem Klick aus." %}</p>
+<h2>{% translate "Tour-Vorlagen" %}</h2>
 <section class="card">
   {% if tours %}
   <div class="table-wrap"><table>
@@ -11,7 +13,7 @@
     <tbody>
     {% for tour in tours %}
       <tr>
-        <td><a href="{% url 'dashboard:tour_edit' tour.pk %}">{{ tour.title }}</a></td>
+        <td><a class="row" href="{% url 'dashboard:tour_edit' tour.pk %}">{% if tour.picture %}<img class="thumb" src="{{ tour.picture.url }}" alt="" width="64" height="48">{% endif %}{{ tour.title }}</a></td>
         <td>{% blocktranslate count n=tour.duration_days trimmed %}{{ n }} Tag{% plural %}{{ n }} Tage{% endblocktranslate %}</td>
         <td>CHF {{ tour.price_per_person|floatformat:"-2" }}</td>
         <td>{{ tour.min_participants }}–{{ tour.max_participants }}</td>

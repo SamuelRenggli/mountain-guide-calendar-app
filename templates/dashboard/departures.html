@@ -2,7 +2,7 @@
 {% load i18n %}
 {% block title %}{% translate "Termine" %} – Tourchef{% endblock %}
 {% block content %}
-<div class="spread"><h1>{% translate "Ausgeschriebene Termine" %}</h1><a class="btn" href="{% url 'dashboard:departure_new' %}">{% translate "Schnellerfassung" %}</a></div>
+<div class="spread"><h1>{% translate "Ausgeschriebene Touren" %}</h1><a class="btn" href="{% url 'dashboard:departure_new' %}">{% translate "Schnellerfassung" %}</a></div>
 {% if not can_pay %}
 <div class="alert warning">{% url 'dashboard:settings' as settings_url %}{% blocktranslate trimmed %}Gäste bezahlen Termine bei der Anmeldung mit Karte oder TWINT. Verbinde dafür zuerst <a href="{{ settings_url }}">Stripe in den Einstellungen</a>.{% endblocktranslate %}</div>
 {% endif %}

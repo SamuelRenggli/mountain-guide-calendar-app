@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 {% load i18n %}
-{% block title %}{% translate "Externe Touren" %} – Tourchef{% endblock %}
+{% block title %}{% translate "Externe Anbieter" %} – Tourchef{% endblock %}
 {% block content %}
-<h1>{% translate "Externe Touren" %}</h1>
-<p class="muted">{% translate "Touren, die du für andere Anbieter führst (z. B. eine Bergschule). Sie erscheinen in deinem Kalender und sperren die Tage für Gäste." %}</p>
+<h1>{% translate "Externe Anbieter" %}</h1>
+<p class="muted">{% translate "Touren, die du für andere Anbieter führst (z. B. eine Bergschule). Sie erscheinen in deinem Kalender. Mit Link zeigen wir sie Gästen im Buchungskalender, gebucht wird beim Anbieter." %}</p>
 
 {% if pending %}
 <section class="card">
@@ -32,8 +32,19 @@
 {% endif %}
 
 <div class="grid-2">
-  <form method="post" class="card">{% csrf_token %}
+  <form method="post" class="card" enctype="multipart/form-data">{% csrf_token %}
     <h2>{% translate "Tour eintragen" %}</h2>
+    <p class="small muted">{% translate "Link einfügen und «Eintragen» – Titel, Datum und Bild holen wir von der Seite. Fehlt etwas, kannst du es ergänzen." %}</p>
+    {% if found_dates %}
+    <div class="alert warning">
+      <p>{% translate "Auf der Seite stehen mehrere Termine. Welchen führst du?" %}</p>
+      <div class="row wrap">
+        {% for start, end in found_dates %}
+        <button class="btn btn-secondary btn-small" type="submit" name="ext-pick" value="{{ start|date:'Y-m-d' }}:{{ end|date:'Y-m-d' }}">{{ start|date:"D d.m.Y" }}{% if end != start %} – {{ end|date:"D d.m.Y" }}{% endif %}</button>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
     {% include "_form.html" with form=form %}
     <button class="btn" type="submit">{% translate "Eintragen" %}</button>
   </form>
@@ -45,8 +56,12 @@
       {% for t in upcoming %}
       <tr>
         <td>{{ t.start_date|date:"d.m.Y" }}{% if t.end_date != t.start_date %} – {{ t.end_date|date:"d.m.Y" }}{% endif %}</td>
-        <td>{% if t.url %}<a href="{{ t.url }}" target="_blank" rel="noopener noreferrer">{{ t.title }}</a>{% else %}{{ t.title }}{% endif %}<br><span class="small muted">{{ t.provider }}</span></td>
-        <td>
+        <td class="thumb-cell">{% if t.picture %}<img class="thumb" src="{{ t.picture.url }}" alt="" width="64" height="48">{% endif %}</td>
+        <td>{% if t.url %}<a href="{{ t.url }}" target="_blank" rel="noopener noreferrer">{{ t.title }}</a>{% else %}{{ t.title }}{% endif %}<br><span class="small muted">{{ t.provider }}{% if t.is_public %} · {% translate "im Buchungskalender sichtbar" %}{% endif %}</span></td>
+        <td class="row">
+          {% if t.url %}<form method="post" action="{% url 'dashboard:external_tour_action' t.pk t.show_to_guests|yesno:'verbergen,zeigen' %}" class="inline">{% csrf_token %}
+            <button class="btn btn-secondary btn-small" type="submit">{% if t.show_to_guests %}{% translate "Für Gäste verbergen" %}{% else %}{% translate "Gästen zeigen" %}{% endif %}</button>
+          </form>{% endif %}
           <form method="post" action="{% url 'dashboard:external_tour_action' t.pk 'loeschen' %}" class="inline">{% csrf_token %}
             <button class="btn btn-danger btn-small" type="submit">{% translate "Entfernen" %}</button>
           </form>
@@ -55,7 +70,7 @@
       {% endfor %}
     </table>
     {% else %}<p class="empty">{% translate "Keine externen Touren." %}</p>{% endif %}
-    <p class="small muted">{% blocktranslate trimmed %}Anbieter können dir Touren auch direkt eintragen: Lege unter «Verfügbarkeit» einen Anbieter an und schick ihm den Link.{% endblocktranslate %}</p>
+    <p class="small muted">{% blocktranslate trimmed %}Anbieter können dir Touren auch direkt eintragen: Lege unter «Kalender › Verfügbarkeit» einen Anbieter an und schick ihm den Link.{% endblocktranslate %}</p>
   </section>
 </div>
 {% endblock %}

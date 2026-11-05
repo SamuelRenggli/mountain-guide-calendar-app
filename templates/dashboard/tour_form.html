@@ -2,9 +2,10 @@
 {% load i18n %}
 {% block title %}{% translate "Vorlage" %} – Tourchef{% endblock %}
 {% block content %}
-<p class="small"><a href="{% url 'dashboard:tours' %}">← {% translate "Vorlagen" %}</a></p>
+<p class="small"><a href="{% url 'dashboard:tours' %}">← {% translate "Tour ausschreiben" %}</a></p>
 <h1>{% if tour.pk %}{% translate "Vorlage bearbeiten" %}{% else %}{% translate "Neue Vorlage" %}{% endif %}</h1>
-<form method="post" class="card form-mobile">{% csrf_token %}
+<form method="post" class="card form-mobile" enctype="multipart/form-data">{% csrf_token %}
+  {% if form.current_picture %}<img class="preview" src="{{ form.current_picture.url }}" alt="">{% endif %}
   {% include "_form.html" %}
   <button class="btn" type="submit">{% translate "Speichern" %}</button>
 </form>

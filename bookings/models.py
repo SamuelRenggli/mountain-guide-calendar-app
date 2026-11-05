@@ -28,6 +28,27 @@ def cents(value) -> int:
     return int((Decimal(value) * 100).to_integral_value(rounding=ROUND_HALF_UP))
 
 
+def new_picture_key() -> str:
+    return secrets.token_urlsafe(16)
+
+
+class Picture(models.Model):
+    """A tour photo, shrunk to a web-sized JPEG and kept in the database (no file storage needed). Served
+    publicly under its random key, so guests' browsers never load images from other websites."""
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pictures")
+    key = models.CharField(max_length=32, unique=True, default=new_picture_key, editable=False)
+    data = models.BinaryField()
+    width = models.PositiveIntegerField(default=0)
+    height = models.PositiveIntegerField(default=0)
+    source_url = models.URLField(max_length=1000, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def url(self) -> str:
+        return f"/bild/{self.key}.jpg"
+
+
 class TourDetails(models.Model):
     """What a guest needs to know about a tour. Shared by templates (Tour) and scheduled dates (Departure)."""
 
@@ -49,9 +70,10 @@ class TourDetails(models.Model):
     max_participants = models.PositiveSmallIntegerField(
         _("Höchstzahl"), default=6, validators=[MinValueValidator(1), MaxValueValidator(50)]
     )
+    picture = models.ForeignKey(Picture, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
 
     DETAIL_FIELDS = ("title", "description", "requirements", "equipment", "included", "location", "meeting_point",
-                     "meeting_time", "price_per_person", "min_participants", "max_participants")
+                     "meeting_time", "price_per_person", "min_participants", "max_participants", "picture")
 
     class Meta:
         abstract = True
@@ -254,6 +276,12 @@ class ExternalTour(models.Model):
     contact_email = models.EmailField(_("E-Mail"), blank=True)
     language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default="de")  # partner's email language
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.CONFIRMED, db_index=True)
+    picture = models.ForeignKey(Picture, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    show_to_guests = models.BooleanField(
+        _("Im Buchungskalender zeigen"), default=True,
+        help_text=_("Gäste sehen die Tour mit Titel und Bild in deinem Kalender und buchen über den Link beim "
+                    "Anbieter."),
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     answered_at = models.DateTimeField(null=True, blank=True)
 
@@ -268,6 +296,11 @@ class ExternalTour(models.Model):
     @property
     def is_pending(self) -> bool:
         return self.status == self.Status.PENDING
+
+    @property
+    def is_public(self) -> bool:
+        """Guests see it in the booking calendar and can book it at the provider."""
+        return self.show_to_guests and bool(self.url) and self.status == self.Status.CONFIRMED
 
 
 class Booking(models.Model):

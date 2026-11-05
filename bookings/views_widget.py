@@ -1,8 +1,13 @@
 """Public pages for guests: the booking widget (iframe on guides' websites), scheduled dates and the guide's terms."""
 
+from dataclasses import dataclass
+from datetime import date
+
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 from django.views.decorators.csrf import csrf_exempt
@@ -14,7 +19,7 @@ from payments import stripe_service
 
 from . import availability, departures, monthgrid, partners, services
 from .forms import BookingRequestForm, PartnerOfferForm, RegistrationForm, WaitlistForm
-from .models import Departure, Partner
+from .models import Departure, ExternalTour, Partner, Picture
 
 
 def _guide(slug):
@@ -52,7 +57,51 @@ def _selection(guide, start_value, end_value):
 
 def live_departures(guide):
     return [d for d in guide.departures.filter(status__in=[Departure.Status.OPEN, Departure.Status.CONFIRMED],
-                                               start_date__gt=timezone.localdate()) if d.signup_open]
+                                               start_date__gt=timezone.localdate()).select_related("picture")
+            if d.signup_open]
+
+
+@dataclass
+class Offer:
+    """Something a guest can book right away: a scheduled date of the guide or a tour at another provider."""
+
+    title: str
+    start: date
+    end: date
+    link: str
+    picture: str  # image URL or ""
+    external: bool = False
+    provider: str = ""
+    departure: Departure | None = None
+
+
+def offers(guide) -> list[Offer]:
+    found = [Offer(d.title, d.start_date, d.end_date, reverse("widget:departure", args=[d.public_id]),
+                   d.picture.url if d.picture else "", departure=d) for d in live_departures(guide)]
+    external = guide.external_tours.filter(status=ExternalTour.Status.CONFIRMED, show_to_guests=True,
+                                           start_date__gt=timezone.localdate()).exclude(url="")
+    found += [Offer(t.title, t.start_date, t.end_date, t.url, t.picture.url if t.picture else "", external=True,
+                    provider=t.provider) for t in external.select_related("picture")]
+    return sorted(found, key=lambda o: (o.start, o.end, o.title))
+
+
+def _week_cells(week, month, offer_on, day_cell):
+    """One calendar row. Consecutive days of the same offer become one tile spanning those days."""
+    cells = []
+    for d in week:
+        offer = offer_on.get(d) if d.month == month.month else None
+        if offer and cells and cells[-1].get("offer") is offer:
+            cells[-1]["span"] += 1
+            cells[-1]["last"] = d
+            continue
+        if offer:
+            cells.append({"offer": offer, "span": 1, "first": d, "last": d, "continues": offer.start < d})
+        else:
+            cells.append(day_cell(d))
+    for cell in cells:
+        if cell.get("offer"):
+            cell["goes_on"] = cell["offer"].end > cell["last"]
+    return cells
 
 
 def _render(request, guide, *, start_value=None, end_value=None, month_value=None, form=None, status=200):
@@ -88,27 +137,28 @@ def _render(request, guide, *, start_value=None, end_value=None, month_value=Non
     if start and form is None:
         form = BookingRequestForm(initial={"start_date": start, "end_date": tour_end, "language": lang})
 
-    live = live_departures(guide)
-    departure_on = {}
-    for dep in live:
-        for d in availability.days_between(dep.start_date, dep.end_date):
-            departure_on.setdefault(d, dep)
+    upcoming = offers(guide)
+    offer_on = {}
+    for offer in upcoming:
+        for d in availability.days_between(offer.start, offer.end):
+            if d not in bookable:
+                offer_on.setdefault(d, offer)
+
+    def day_cell(d):
+        return {"date": d, "in_month": d.month == month.month, "free": d in bookable and d.month == month.month,
+                "selected": bool(start) and start <= d <= tour_end, "link": link(d) if d in bookable else None}
 
     context = {
         "guide": guide,
-        "departures": live,
+        "offers": upcoming,
+        "next_offer": upcoming[0] if upcoming else None,
+        "has_external": any(o.external for o in upcoming),
         "rate_table": guide.rate_table(),
         "month_label": monthgrid.month_label(month),
         "prev_month": f"{monthgrid.shift_month(month, -1):%Y-%m}" if month > first_month else None,
         "next_month": f"{monthgrid.shift_month(month, 1):%Y-%m}" if month < last_month else None,
         "weekday_names": monthgrid.weekday_names(),
-        "weeks": [
-            [{"date": d, "in_month": d.month == month.month, "free": d in bookable and d.month == month.month,
-              "selected": bool(start) and start <= d <= tour_end, "link": link(d) if d in bookable else None,
-              "departure": departure_on.get(d)}
-             for d in week]
-            for week in weeks
-        ],
+        "weeks": [_week_cells(week, month, offer_on, day_cell) for week in weeks],
         "start": start,
         "end": tour_end,
         "picking_end": bool(start) and not end,
@@ -244,6 +294,18 @@ def terms(request, slug):
     """The guide's terms for guests, or the Tourchef template with the guide's cancellation tiers (R-003, R-004)."""
     guide = _guide(slug)
     return _framed(render(request, "widget/terms.html", {"guide": guide}), guide)
+
+
+# --- Tour pictures -------------------------------------------------------------
+
+
+def picture(request, key):
+    """Tour photos, served from the database. The random key is the address; the bytes never change."""
+    pic = get_object_or_404(Picture.objects.only("data"), key=key)
+    response = HttpResponse(bytes(pic.data), content_type="image/jpeg")
+    response.headers["Cache-Control"] = "public, max-age=31536000, immutable"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    return response
 
 
 # --- Partner link --------------------------------------------------------------

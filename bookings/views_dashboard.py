@@ -17,7 +17,7 @@ from accounts.views import recent_auth_required
 from core.ratelimit import allow
 from payments import stripe_service
 
-from . import availability, calsync, departures, export, monthgrid, pagetitle, partners, services
+from . import availability, calsync, departures, export, monthgrid, pagetitle, partners, pictures, services
 from .forms import (
     BlockedPeriodForm, ChangeBookingForm, ConfirmForm, DepartureForm, EraseGuestDataForm, ExpenseFormSet, ExportForm,
     ExternalTourForm, InvoiceForm, MessageForm, MoveDepartureForm, OfferForm, OpenPeriodForm, PartnerForm,
@@ -192,8 +192,10 @@ def departure_list(request):
     })
 
 
-def _departure_fields(form) -> dict:
-    return {k: v for k, v in form.cleaned_data.items() if k != "save_as_template"}
+def _departure_fields(form, guide) -> dict:
+    fields = {k: v for k, v in form.detail_data().items() if k != "save_as_template"}
+    fields["picture"] = form.picture(guide)
+    return fields
 
 
 @login_required
@@ -202,10 +204,11 @@ def departure_new(request):
     if template_id := request.GET.get("vorlage") or request.POST.get("vorlage"):
         tour = get_object_or_404(Tour, pk=template_id, guide=request.user)
     start = monthgrid.parse_date(request.GET.get("datum"))
-    form = DepartureForm(request.POST or None, initial=DepartureForm.initial_from(tour, start))
+    form = DepartureForm(request.POST or None, request.FILES or None, initial=DepartureForm.initial_from(tour, start),
+                         picture=tour.picture if tour else None)
     if request.method == "POST" and form.is_valid():
         try:
-            departure = departures.create_departure(request.user, tour=tour, **_departure_fields(form),
+            departure = departures.create_departure(request.user, tour=tour, **_departure_fields(form, request.user),
                                                     save_as_template=form.cleaned_data["save_as_template"])
         except services.BookingError as exc:
             form.add_error(None, str(exc))
@@ -220,11 +223,11 @@ def departure_new(request):
 @login_required
 def departure_edit(request, pk):
     departure = _own_departure(request, pk)
-    form = DepartureForm(request.POST or None, instance=departure, editing=True)
+    form = DepartureForm(request.POST or None, request.FILES or None, instance=departure, editing=True)
     if request.method == "POST":
         if form.is_valid():
             try:
-                departures.update_departure(departure, **form.cleaned_data)
+                departures.update_departure(departure, **_departure_fields(form, request.user))
             except services.BookingError as exc:
                 form.add_error(None, str(exc))
             else:
@@ -282,15 +285,17 @@ def departure_action(request, pk, name):
 
 @login_required
 def tours(request):
-    return render(request, "dashboard/tours.html", {"tours": request.user.tours.all()})
+    return render(request, "dashboard/tours.html", {"tours": request.user.tours.select_related("picture")})
 
 
 @login_required
 def tour_edit(request, pk=None):
     tour = get_object_or_404(Tour, pk=pk, guide=request.user) if pk else Tour(guide=request.user)
-    form = TourForm(request.POST or None, instance=tour)
+    form = TourForm(request.POST or None, request.FILES or None, instance=tour)
     if request.method == "POST" and form.is_valid():
-        form.save()
+        tour = form.save(commit=False)
+        tour.picture = form.picture(request.user)
+        tour.save()
         messages.success(request, _("Vorlage gespeichert."))
         return redirect("dashboard:tours")
     return render(request, "dashboard/tour_form.html", {"form": form, "tour": tour})
@@ -406,24 +411,45 @@ def partner_period_delete(request, pk):
 # --- Tours for other providers ---------------------------------------------
 
 
+def _read_tour_page(form, data):
+    """Fill in what the guide left empty from the linked page: title, provider, dates and picture. Returns the
+    tour dates found on the page (the guide picks one when there are several)."""
+    url = form.cleaned_data.get("url")
+    try:
+        info = pagetitle.fetch(url)
+    except calsync.CalendarSyncError:
+        info = pagetitle.PageInfo(provider=pagetitle.provider_from_url(url))
+    for name, value in (("title", info.title), ("provider", info.provider)):
+        if not form.cleaned_data.get(name) and value:
+            data[f"ext-{name}"] = value
+    if not form.cleaned_data.get("start_date") and len(info.dates) == 1:
+        start, end = info.dates[0]
+        data["ext-start_date"], data["ext-end_date"] = start.isoformat(), end.isoformat()
+    if not data.get("ext-picture_key"):
+        picture = pictures.from_url(form.guide, info.image) if info.image else None
+        data["ext-picture_key"] = picture.key if picture else ExternalTourForm.NO_PICTURE
+    return info.dates
+
+
 @login_required
 def external_tours(request):
+    """The guide pastes the link of a tour they lead for another provider; title, dates and picture are read from
+    the page. When something can't be found, the form comes back filled in as far as possible."""
     guide = request.user
-    form = ExternalTourForm(request.POST or None, prefix="ext")
+    form = ExternalTourForm(request.POST or None, request.FILES or None, prefix="ext", guide=guide)
+    found_dates = []
     if request.method == "POST" and form.is_valid():
-        tour = form.save(commit=False)
-        if tour.url and (not tour.title or not tour.provider):
-            try:
-                title, provider = pagetitle.fetch(tour.url)
-            except calsync.CalendarSyncError:
-                title, provider = "", pagetitle.provider_from_url(tour.url)
-            tour.title = tour.title or title
-            tour.provider = tour.provider or provider
-        if not tour.title:
-            form.add_error("title", _("Der Titel konnte nicht von der Seite gelesen werden. Bitte selbst eingeben."))
-        else:
+        d = form.cleaned_data
+        if d["url"] and not (d["title"] and d["start_date"] and form.picture_key_given):
+            data = request.POST.copy()
+            found_dates = _read_tour_page(form, data)
+            form = ExternalTourForm(data, request.FILES or None, prefix="ext", guide=guide)
+            form.is_valid()
+        if form.is_valid() and form.complete(found_dates):
+            tour = form.save(commit=False)
             tour.guide = guide
             tour.status = ExternalTour.Status.CONFIRMED
+            tour.picture = form.picture(guide)
             tour.save()
             states = availability.day_states(guide, tour.start_date, tour.end_date)
             if any(states[d] not in (availability.FREE, availability.UNAVAILABLE, availability.EXTERNAL)
@@ -434,9 +460,10 @@ def external_tours(request):
                 messages.success(request, _("Tour eingetragen. Die Tage sind für Gäste gesperrt."))
             return redirect("dashboard:external_tours")
     today = timezone.localdate()
-    active = guide.external_tours.filter(status__in=ExternalTour.ACTIVE_STATUSES).select_related("partner")
+    active = guide.external_tours.filter(status__in=ExternalTour.ACTIVE_STATUSES).select_related("partner", "picture")
     return render(request, "dashboard/external_tours.html", {
         "form": form,
+        "found_dates": found_dates if len(found_dates) > 1 else [],
         "pending": active.filter(status=ExternalTour.Status.PENDING),
         "upcoming": active.filter(status=ExternalTour.Status.CONFIRMED, end_date__gte=today),
         "past": active.filter(status=ExternalTour.Status.CONFIRMED, end_date__lt=today).order_by("-start_date")[:20],
@@ -455,6 +482,11 @@ def external_tour_action(request, pk, name):
         else:
             messages.success(request, _("Bestätigt. Die Tage sind im Kalender eingetragen.") if name == "annehmen"
                              else _("Abgelehnt. Die Tage sind wieder frei."))
+    elif name in ("zeigen", "verbergen"):
+        tour.show_to_guests = name == "zeigen"
+        tour.save(update_fields=["show_to_guests"])
+        messages.success(request, _("Die Tour erscheint jetzt im Buchungskalender.") if tour.show_to_guests
+                         else _("Die Tour ist für Gäste nicht mehr sichtbar."))
     elif name == "loeschen":
         if tour.is_pending:
             partners.answer_offer(tour, accept=False)

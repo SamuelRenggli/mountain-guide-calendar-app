@@ -55,6 +55,7 @@ def create_offer(partner: Partner, *, title, url, start_date, end_date, contact_
             guide=partner.guide, partner=partner, provider=partner.name, title=title, url=url,
             start_date=start_date, end_date=end_date, contact_name=contact_name, contact_email=contact_email,
             note=note, language=language, status=ExternalTour.Status.PENDING,
+            show_to_guests=False,  # the guide decides whether guests see a partner's tour
         )
     transaction.on_commit(lambda: emails.partner_offer_to_guide(tour))
     return tour

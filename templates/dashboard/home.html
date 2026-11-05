@@ -28,7 +28,7 @@
 </section>
 
 <section class="card">
-  <div class="spread"><h2>{% translate "Ausgeschriebene Termine" %}</h2><a class="btn btn-small" href="{% url 'dashboard:departure_new' %}">{% translate "Termin ausschreiben" %}</a></div>
+  <div class="spread"><h2>{% translate "Ausgeschriebene Touren" %}</h2><a class="btn btn-small" href="{% url 'dashboard:departure_new' %}">{% translate "Termin ausschreiben" %}</a></div>
   {% translate "Keine Termine ausgeschrieben." as empty %}
   {% include "dashboard/_departure_table.html" with departures=departures empty=empty %}
 </section>
