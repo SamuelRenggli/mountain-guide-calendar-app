@@ -59,6 +59,8 @@ class TourDetails(models.Model):
     equipment = models.TextField(_("Ausrüstung"), blank=True, validators=[MaxLengthValidator(2000)])
     included = models.TextField(_("Inbegriffen"), blank=True, validators=[MaxLengthValidator(2000)],
                                 help_text=_("z. B. Führung, Hütte mit Halbpension, Bahn, Material"))
+    not_included = models.TextField(_("Nicht inbegriffen"), blank=True, validators=[MaxLengthValidator(2000)],
+                                    help_text=_("z. B. Anreise, Getränke, Mietmaterial"))
     location = models.CharField(_("Ort / Gebiet"), max_length=200, blank=True)
     meeting_point = models.CharField(_("Treffpunkt"), max_length=200, blank=True)
     meeting_time = models.TimeField(_("Zeit"), null=True, blank=True)
@@ -72,8 +74,8 @@ class TourDetails(models.Model):
     )
     picture = models.ForeignKey(Picture, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
 
-    DETAIL_FIELDS = ("title", "description", "requirements", "equipment", "included", "location", "meeting_point",
-                     "meeting_time", "price_per_person", "min_participants", "max_participants", "picture")
+    DETAIL_FIELDS = ("title", "description", "requirements", "equipment", "included", "not_included", "location",
+                     "meeting_point", "meeting_time", "price_per_person", "min_participants", "max_participants", "picture")
 
     class Meta:
         abstract = True

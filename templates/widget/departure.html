@@ -23,6 +23,7 @@
   {% if departure.requirements %}<h3>{% translate "Anforderungen" %}</h3><p class="pre">{{ departure.requirements }}</p>{% endif %}
   {% if departure.equipment %}<h3>{% translate "Ausrüstung" %}</h3><p class="pre">{{ departure.equipment }}</p>{% endif %}
   {% if departure.included %}<h3>{% translate "Inbegriffen" %}</h3><p class="pre">{{ departure.included }}</p>{% endif %}
+  {% if departure.not_included %}<h3>{% translate "Nicht inbegriffen" %}</h3><p class="pre">{{ departure.not_included }}</p>{% endif %}
 </section>
 
 {% if departure.signup_open and seats_free and can_pay %}

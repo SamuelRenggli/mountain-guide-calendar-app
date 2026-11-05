@@ -192,10 +192,11 @@ class TourForm(PhotoMixin, forms.ModelForm):
     class Meta:
         model = Tour
         fields = ("title", "duration_days", "price_per_person", "min_participants", "max_participants", "description",
-                  "requirements", "equipment", "included", "location", "meeting_point", "meeting_time", "is_active")
+                  "requirements", "equipment", "included", "not_included", "location", "meeting_point", "meeting_time",
+                  "is_active")
         widgets = {
             "description": forms.Textarea(attrs={"rows": 4}), "requirements": TEXTAREA, "equipment": TEXTAREA,
-            "included": TEXTAREA, "meeting_time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
+            "included": TEXTAREA, "not_included": TEXTAREA, "meeting_time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
         }
         help_texts = {"is_active": _("Inaktive Vorlagen erscheinen nicht mehr beim Ausschreiben.")}
 
@@ -221,13 +222,13 @@ class DepartureForm(PhotoMixin, forms.ModelForm):
         model = Departure
         fields = ("title", "start_date", "end_date", "price_per_person", "min_participants", "max_participants",
                   "signup_deadline", "decision_deadline", "meeting_point", "meeting_time", "description",
-                  "requirements", "equipment", "included", "location")
+                  "requirements", "equipment", "included", "not_included", "location")
         widgets = {
             "start_date": _date_input(), "end_date": _date_input(),
             "signup_deadline": _datetime_input(), "decision_deadline": _datetime_input(),
             "meeting_time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
             "description": forms.Textarea(attrs={"rows": 4}), "requirements": TEXTAREA, "equipment": TEXTAREA,
-            "included": TEXTAREA,
+            "included": TEXTAREA, "not_included": TEXTAREA,
         }
 
     REQUIRED = ("meeting_point", "meeting_time")  # R-101

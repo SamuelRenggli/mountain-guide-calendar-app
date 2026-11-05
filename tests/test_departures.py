@@ -54,6 +54,20 @@ def test_quick_entry_can_save_a_template(stripe_guide):
     assert (template.title, template.price_per_person, template.max_participants) == ("Weissmies", 390, 5)
 
 
+def test_not_included_goes_from_template_to_page_and_email(stripe_guide, client, mailoutbox,
+                                                          django_capture_on_commit_callbacks):
+    departure = departures.create_departure(stripe_guide, save_as_template=True,
+                                            **fields(in_days(20), not_included="Anreise, Getränke"))
+    assert Tour.objects.get().not_included == "Anreise, Getränke"
+    page = client.get(departure.public_url).content.decode()
+    assert "Nicht inbegriffen" in page and "Anreise, Getränke" in page
+    booking = signup(departure)
+    with django_capture_on_commit_callbacks(execute=True):
+        departures.registration_paid(booking, session_id="cs_1", payment_intent="pi_1", amount_cents=39000)
+    guest = next(m for m in mailoutbox if m.to == ["neu@example.com"])
+    assert "Nicht inbegriffen:\nAnreise, Getränke" in guest.body
+
+
 @pytest.mark.parametrize("bad", [
     {"max_participants": 1},
     {"start_date": None},

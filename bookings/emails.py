@@ -121,7 +121,7 @@ MESSAGES = {
           "Treffpunkt:     {meeting}\n"
           "Entscheid:      {guide} entscheidet bis {decision_deadline}, ob die Tour stattfindet. Fällt sie aus, "
           "erhältst du den vollen Betrag automatisch zurück.\n\n"
-          "Anforderungen:\n{requirements}\n\nAusrüstung:\n{equipment}\n\nInbegriffen:\n{included}\n\n"
+          "Anforderungen:\n{requirements}\n\nAusrüstung:\n{equipment}\n\nInbegriffen:\n{included}\n\nNicht inbegriffen:\n{not_included}\n\n"
           "Bergführer: {guide}, Telefon {guide_phone}, {guide_email}\n\n{receipt}\n\n"
           "Deine Anmeldung, Stornieren und Bedingungen:\n{guest_link}"),
     ),
@@ -325,6 +325,7 @@ def _departure_context(d) -> dict:
         "requirements": d.requirements or NONE,
         "equipment": d.equipment or NONE,
         "included": d.included or NONE,
+        "not_included": d.not_included or NONE,
         "seats_taken": d.seats_confirmed(),
         "min_participants": d.min_participants,
         "max_participants": d.max_participants,
