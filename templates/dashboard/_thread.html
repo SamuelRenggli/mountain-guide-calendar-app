@@ -1,0 +1,32 @@
+{% load i18n %}<section class="card" id="nachrichten">
+  <h2>{% translate "Nachrichten" %}</h2>
+  {% if thread %}
+  <ol class="thread">
+    {% for m in thread %}
+    <li class="msg {% if m.from_guest %}msg-in{% else %}msg-out{% endif %}{% if m.needs_review %} msg-review{% endif %}">
+      <div class="msg-meta small muted">{% if m.from_guest %}{{ booking.guest_name }}{% else %}{% translate "Du" %}{% endif %} · {{ m.created_at|date:"d.m.Y H:i" }}</div>
+      <div class="pre">{{ m.body }}</div>
+      {% if m.needs_review %}
+      <div class="msg-review-box small">
+        {% blocktranslate with sender=m.sender_email trimmed %}Diese Antwort kam von {{ sender }}, nicht von der Adresse des Gastes. Der Gast sieht sie nicht.{% endblocktranslate %}
+        <div class="row">
+          <form method="post" action="{% url 'dashboard:booking_message_action' booking.pk m.pk 'freigeben' %}" class="inline">{% csrf_token %}<button class="btn btn-small btn-secondary" type="submit">{% translate "Gehört dazu" %}</button></form>
+          <form method="post" action="{% url 'dashboard:booking_message_action' booking.pk m.pk 'loeschen' %}" class="inline">{% csrf_token %}<button class="btn btn-small btn-danger" type="submit">{% translate "Löschen" %}</button></form>
+        </div>
+      </div>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="small muted">{% translate "Noch keine Nachrichten. Der Gast erhält deine Nachricht per E-Mail und antwortet einfach darauf. Die Antwort erscheint hier." %}</p>
+  {% endif %}
+  <form method="post" action="{% url 'dashboard:booking_message' booking.pk %}">{% csrf_token %}
+    {% include "_form.html" with form=message_form %}
+    <div class="row">
+      <button class="btn" type="submit">{% blocktranslate with name=booking.guest_name trimmed %}An {{ name }} senden{% endblocktranslate %}</button>
+      {% if whatsapp %}<a class="btn btn-secondary" href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener">{% translate "WhatsApp öffnen" %}</a>{% endif %}
+    </div>
+    <p class="small muted">{% translate "Per E-Mail gesendete Nachrichten und die Antworten bleiben hier im Verlauf. WhatsApp-Nachrichten erscheinen nicht im Verlauf." %}</p>
+  </form>
+</section>

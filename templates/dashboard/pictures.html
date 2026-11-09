@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Bilder" %} – Tourchef{% endblock %}
+{% block content %}
+<h1>{% translate "Bildbibliothek" %}</h1>
+<p class="muted">{% translate "Deine Bilder, sortiert nach Tourenart. Beim Ausschreiben wählst du eines davon aus, statt jedes Mal neu hochzuladen. Für jede Tourenart stellt Tourchef zusätzlich ein Bild zur Verfügung." %}</p>
+
+<form method="post" enctype="multipart/form-data" class="card">{% csrf_token %}
+  <h2>{% translate "Bilder hochladen" %}</h2>
+  {% if missing_kinds %}<p class="small muted">{% translate "Optional. Noch ohne eigenes Bild:" %} {{ missing_kinds|join:", " }}</p>{% endif %}
+  <div class="field">
+    <label for="id_photos">{% translate "Bilder" %} *</label>
+    <input type="file" id="id_photos" name="photos" multiple accept="image/jpeg,image/png,image/webp" data-too-big="{% translate 'Das Bild ist zu gross (höchstens 8 MB).' %}">
+    <small class="help">{% translate "Bis 20 Bilder auf einmal, je höchstens 8 MB. Sie werden verkleinert, Standortdaten werden entfernt." %}</small>
+  </div>
+  {% include "_form.html" %}
+  <button class="btn" type="submit">{% translate "Hochladen" %}</button>
+</form>
+
+{% for label, pics in groups %}
+<section class="card">
+  <h2>{{ label }}</h2>
+  <div class="library-grid">
+    {% for pic in pics %}
+    <figure class="library-item">
+      <img src="{{ pic.url }}" alt="{{ pic.title }}" loading="lazy">
+      <figcaption class="small">
+        {% if pic.is_stock %}<span class="pick-badge">Tourchef</span>{% else %}
+        {% if pic.title %}{{ pic.title }}<br>{% endif %}
+        <form method="post" action="{% url 'dashboard:picture_action' pic.key 'tourenart' %}" class="row">{% csrf_token %}
+          <select name="category" aria-label="{% translate 'Tourenart' %}">{% for value, name in category_choices %}<option value="{{ value }}"{% if value == pic.category %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+          <button class="btn btn-small btn-secondary" type="submit">{% translate "Speichern" %}</button>
+        </form>
+        <form method="post" action="{% url 'dashboard:picture_action' pic.key 'loeschen' %}" class="inline">{% csrf_token %}
+          <button class="link-button small" type="submit">{% translate "Löschen" %}</button>
+        </form>
+        {% endif %}
+      </figcaption>
+    </figure>
+    {% endfor %}
+  </div>
+</section>
+{% empty %}
+<p class="empty">{% translate "Noch keine Bilder." %}</p>
+{% endfor %}
+{% endblock %}

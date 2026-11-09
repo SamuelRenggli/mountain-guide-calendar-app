@@ -6,6 +6,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
+from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from django.utils.translation import gettext as _
@@ -17,13 +18,19 @@ from accounts.views import recent_auth_required
 from core.ratelimit import allow
 from payments import stripe_service
 
-from . import availability, calsync, departures, export, monthgrid, pagetitle, partners, pictures, services
+from . import (
+    availability, calsync, departures, export, messaging, monthgrid, pagetitle, partners, pictures, services,
+)
 from .forms import (
     BlockedPeriodForm, ChangeBookingForm, ConfirmForm, DepartureForm, EraseGuestDataForm, ExpenseFormSet, ExportForm,
-    ExternalTourForm, InvoiceForm, MessageForm, MoveDepartureForm, OfferForm, OpenPeriodForm, PartnerForm,
-    PartnerPeriodForm, ProposeDateForm, RefundExtraForm, TourForm,
+    ExternalTourForm, GuestsMessageForm, GuideCancelForm, GuideMessageForm, InvoiceForm, LibraryUploadForm, MessageForm, MoveDepartureForm, OfferForm,
+    OpenPeriodForm, PartnerForm, PartnerPeriodForm, PictureCategoryForm, ProposeDateForm, RefundExtraForm, TourForm,
+    library_groups,
 )
-from .models import BlockedPeriod, Booking, Departure, ExternalTour, OpenPeriod, Partner, PartnerPeriod, Tour
+from .models import (
+    BlockedPeriod, Booking, Departure, Draft, ExternalTour, Message, Notification, OpenPeriod, Partner, PartnerPeriod,
+    Picture, Tour, TourCategory,
+)
 
 S = Booking.Status
 D = Departure.Status
@@ -45,6 +52,9 @@ def home(request):
                                                 S.AWAITING_PAYMENT]).order_by("-updated_at")[:20],
         "is_new": not request.user.bookings.exists() and not upcoming_departures.exists(),
         "partner_offers": request.user.external_tours.filter(status=ExternalTour.Status.PENDING),
+        "no_pictures": not request.user.pictures.filter(in_library=True).exists(),
+        "past_departures": request.user.departures.filter(Q(end_date__lt=today) | Q(status=D.CANCELLED))
+                                                  .order_by("-start_date")[:20],
     })
 
 
@@ -61,7 +71,7 @@ def _detail_context(booking, **forms):
         "events": booking.events.all(),
         "confirm_form": ConfirmForm(prefix="confirm", initial=ConfirmForm.initial_for(booking)),
         "reject_form": MessageForm(prefix="reject"),
-        "cancel_form": MessageForm(prefix="cancel"),
+        "cancel_form": GuideCancelForm(prefix="cancel"),
         "offer_form": OfferForm(prefix="offer", initial={
             "start_date": booking.start_date, "end_date": booking.end_date, **OfferForm.initial_for(booking),
         }),
@@ -75,6 +85,9 @@ def _detail_context(booking, **forms):
         "today": timezone.localdate(),
         "guide_rate": booking.guide.rate_for(booking.participants),
         "vat": booking.vat_included(),
+        "thread": booking.messages.all(),
+        "message_form": GuideMessageForm(prefix="msg"),
+        "whatsapp": whatsapp_number(booking.guest_phone),
     }
     context.update(forms)
     return context
@@ -84,7 +97,71 @@ def _detail_context(booking, **forms):
 def booking_detail(request, pk):
     booking = _own_booking(request, pk)
     AccessLog.record(request, AccessLog.Action.VIEW_BOOKING, f"booking:{booking.pk}")
+    messaging.mark_read(request.user, booking)
     return render(request, "dashboard/booking_detail.html", _detail_context(booking))
+
+
+def whatsapp_number(phone: str) -> str:
+    """+41 791234567 -> 41791234567 for a wa.me link; "" when there is no full international number."""
+    digits = "".join(c for c in phone or "" if c.isdigit())
+    return digits if (phone or "").strip().startswith("+") and len(digits) >= 8 else ""
+
+
+@login_required
+@require_POST
+def booking_message(request, pk):
+    """The guide writes to the guest; the guest gets an email and replies to it."""
+    booking = _own_booking(request, pk)
+    form = GuideMessageForm(request.POST, prefix="msg")
+    if not form.is_valid():
+        return _rerender(request, booking, message_form=form)
+    messaging.send_to_guest(booking, form.cleaned_data["body"])
+    messages.success(request, _("Nachricht gesendet. Die Antwort des Gastes erscheint hier."))
+    return redirect(f"{booking_url(booking)}#nachrichten")
+
+
+def booking_url(booking):
+    from django.urls import reverse
+
+    return reverse("dashboard:booking", args=[booking.pk])
+
+
+@login_required
+@require_POST
+def booking_message_action(request, pk, message_pk, name):
+    """A reply from an unknown address: keep it (it was the guest after all) or delete it."""
+    booking = _own_booking(request, pk)
+    message = get_object_or_404(Message, pk=message_pk, booking=booking, needs_review=True)
+    if name == "freigeben":
+        messaging.approve(message)
+        messages.success(request, _("Nachricht freigegeben."))
+    elif name == "loeschen":
+        message.delete()
+        messages.success(request, _("Nachricht gelöscht."))
+    return redirect(f"{booking_url(booking)}#nachrichten")
+
+
+# --- Notifications -------------------------------------------------------------
+
+
+@login_required
+def notification_open(request, pk):
+    note = get_object_or_404(Notification, pk=pk, guide=request.user)
+    if note.read_at is None:
+        note.read_at = timezone.now()
+        note.save(update_fields=["read_at"])
+    if note.booking_id:
+        anchor = "#nachrichten" if note.kind == Notification.Kind.MESSAGE else ""
+        return redirect(booking_url(note.booking) + anchor)
+    return redirect("dashboard:home")
+
+
+@login_required
+@require_POST
+def notifications_read(request):
+    request.user.notifications.filter(read_at__isnull=True).update(read_at=timezone.now())
+    return redirect(request.POST.get("next") if (request.POST.get("next") or "").startswith("/dashboard/")
+                    else "dashboard:home")
 
 
 def _rerender(request, booking, **forms):
@@ -111,7 +188,7 @@ def booking_action(request, pk, name):
                                        message=d["message"], estimated_expenses=d["estimated_expenses"],
                                        price_breakdown=form.breakdown(booking, days))
         elif name in ("reject", "cancel"):
-            form = MessageForm(post, prefix=name)
+            form = (GuideCancelForm if name == "cancel" else MessageForm)(post, prefix=name)
             if not form.is_valid():
                 return _rerender(request, booking, **{f"{name}_form": form})
             {"reject": services.reject, "cancel": services.guide_cancel}[name](booking, form.cleaned_data["message"])
@@ -187,7 +264,6 @@ def departure_list(request):
     return render(request, "dashboard/departures.html", {
         "upcoming": mine.filter(end_date__gte=today).exclude(status=D.CANCELLED),
         "past": mine.filter(Q(end_date__lt=today) | Q(status=D.CANCELLED)).order_by("-start_date")[:20],
-        "templates": request.user.tours.filter(is_active=True),
         "can_pay": request.user.can_take_card_payments,
     })
 
@@ -204,8 +280,12 @@ def departure_new(request):
     if template_id := request.GET.get("vorlage") or request.POST.get("vorlage"):
         tour = get_object_or_404(Tour, pk=template_id, guide=request.user)
     start = monthgrid.parse_date(request.GET.get("datum"))
-    form = DepartureForm(request.POST or None, request.FILES or None, initial=DepartureForm.initial_from(tour, start),
-                         picture=tour.picture if tour else None)
+    draft = _own_draft(request, Draft.Kind.DEPARTURE)
+    initial = DepartureForm.initial_from(tour, start)
+    if draft and request.method == "GET":
+        initial.update(_draft_initial(draft))
+    form = DepartureForm(request.POST or None, request.FILES or None, initial=initial,
+                         picture=tour.picture if tour else None, guide=request.user)
     if request.method == "POST" and form.is_valid():
         try:
             departure = departures.create_departure(request.user, tour=tour, **_departure_fields(form, request.user),
@@ -213,17 +293,21 @@ def departure_new(request):
         except services.BookingError as exc:
             form.add_error(None, str(exc))
         else:
+            if draft:
+                draft.delete()
             messages.success(request, _("Termin veröffentlicht. Teile jetzt den Link."))
             return redirect("dashboard:departure", pk=departure.pk)
     return render(request, "dashboard/departure_form.html", {
         "form": form, "tour": tour, "departure": None, "can_pay": request.user.can_take_card_payments,
+        "draft": draft, "draft_kind": Draft.Kind.DEPARTURE,
     })
 
 
 @login_required
 def departure_edit(request, pk):
     departure = _own_departure(request, pk)
-    form = DepartureForm(request.POST or None, request.FILES or None, instance=departure, editing=True)
+    form = DepartureForm(request.POST or None, request.FILES or None, instance=departure, editing=True,
+                         guide=request.user)
     if request.method == "POST":
         if form.is_valid():
             try:
@@ -242,8 +326,14 @@ def departure_detail(request, pk):
     """Participants with contacts, emergency contacts and experience, seats, waitlist, payments (R-150)."""
     departure = _own_departure(request, pk)
     AccessLog.record(request, AccessLog.Action.VIEW_PARTICIPANTS, f"departure:{departure.pk}")
-    registrations = departure.registrations.exclude(status=S.EXPIRED).order_by("created_at")
+    registrations = departure.registrations.exclude(status=S.EXPIRED).order_by("created_at").annotate(
+        unread=Count("messages", filter=Q(messages__direction=Message.Direction.FROM_GUEST,
+                                          messages__read_at__isnull=True)),
+        message_count=Count("messages"),
+    )
     return render(request, "dashboard/departure_detail.html", {
+        "message_all_form": GuideMessageForm(prefix="all"),
+        "seated": registrations.filter(status__in=Booking.SEAT_STATUSES).count(),
         "departure": departure,
         "registrations": registrations,
         "waitlist": departure.waitlist.all(),
@@ -251,7 +341,7 @@ def departure_detail(request, pk):
         "seats_free": departure.seats_free,
         "move_form": MoveDepartureForm(prefix="move", initial={"start_date": departure.start_date,
                                                                "end_date": departure.end_date}),
-        "cancel_form": MessageForm(prefix="cancel"),
+        "cancel_form": GuestsMessageForm(prefix="cancel"),
     })
 
 
@@ -264,10 +354,20 @@ def departure_action(request, pk, name):
             departures.confirm_departure(departure)
             messages.success(request, _("Der Termin findet statt. Alle Angemeldeten wurden informiert."))
         elif name == "cancel":
-            form = MessageForm(request.POST, prefix="cancel")
-            form.is_valid()
-            departures.cancel_departure(departure, form.cleaned_data.get("message", ""))
-            messages.success(request, _("Termin abgesagt. Alle erhalten den vollen Betrag zurück."))
+            form = GuestsMessageForm(request.POST, prefix="cancel")
+            if not form.is_valid():
+                messages.error(request, _("Nicht abgesagt: Bitte bestätige die Absage mit dem Häkchen."))
+            else:
+                departures.cancel_departure(departure, form.cleaned_data.get("message", ""))
+                messages.success(request, _("Termin abgesagt. Alle erhalten den vollen Betrag zurück."))
+        elif name == "nachricht-an-alle":
+            form = GuideMessageForm(request.POST, prefix="all")
+            if not form.is_valid():
+                messages.error(request, _("Bitte schreibe eine Nachricht."))
+            else:
+                count = messaging.send_to_all(departure, form.cleaned_data["body"])
+                messages.success(request, _("Nachricht an %(count)s Angemeldete gesendet. Jede Antwort erscheint bei "
+                                            "der jeweiligen Person.") % {"count": count})
         elif name == "move":
             form = MoveDepartureForm(request.POST, prefix="move")
             if not form.is_valid():
@@ -285,20 +385,141 @@ def departure_action(request, pk, name):
 
 @login_required
 def tours(request):
-    return render(request, "dashboard/tours.html", {"tours": request.user.tours.select_related("picture")})
+    return render(request, "dashboard/tours.html", {
+        "tours": request.user.tours.select_related("picture"),
+        "drafts": request.user.drafts.all(),
+    })
 
 
 @login_required
 def tour_edit(request, pk=None):
     tour = get_object_or_404(Tour, pk=pk, guide=request.user) if pk else Tour(guide=request.user)
-    form = TourForm(request.POST or None, request.FILES or None, instance=tour)
+    draft = None if pk else _own_draft(request, Draft.Kind.TOUR)
+    form = TourForm(request.POST or None, request.FILES or None, instance=tour, guide=request.user,
+                    initial=_draft_initial(draft) if draft and request.method == "GET" else None)
     if request.method == "POST" and form.is_valid():
         tour = form.save(commit=False)
         tour.picture = form.picture(request.user)
         tour.save()
+        if draft:
+            draft.delete()
         messages.success(request, _("Vorlage gespeichert."))
         return redirect("dashboard:tours")
-    return render(request, "dashboard/tour_form.html", {"form": form, "tour": tour})
+    return render(request, "dashboard/tour_form.html", {
+        "form": form, "tour": tour, "draft": draft, "draft_kind": None if tour.pk else Draft.Kind.TOUR,
+    })
+
+
+# --- Drafts --------------------------------------------------------------------
+
+DRAFT_MAX_FIELDS = 60
+DRAFT_MAX_VALUE = 6000
+DRAFT_SKIP = {"csrfmiddlewaretoken", "entwurf", "photo", "remove_photo"}
+
+
+def _own_draft(request, kind):
+    pk = request.GET.get("entwurf") or request.POST.get("entwurf")
+    if not pk or not str(pk).isdigit():
+        return None
+    return request.user.drafts.filter(pk=pk, kind=kind).first()
+
+
+def _draft_initial(draft) -> dict:
+    return {k: v for k, v in draft.data.items() if k != "vorlage"}
+
+
+@login_required
+@require_POST
+def draft_save(request, kind):
+    """Called by static/js/autosave.js while the guide types. Returns the draft's id for the next save."""
+    if kind not in Draft.Kind.values:
+        return JsonResponse({"error": "kind"}, status=400)
+    if not allow(f"draft:{request.user.pk}", limit=240, window_seconds=10 * 60):
+        return JsonResponse({"error": "rate"}, status=429)
+    data = {k: v[:DRAFT_MAX_VALUE] for k, v in list(request.POST.items())[:DRAFT_MAX_FIELDS]
+            if k not in DRAFT_SKIP and isinstance(v, str)}
+    draft = _own_draft(request, kind) or Draft(guide=request.user, kind=kind)
+    draft.data = data
+    draft.save()
+    return JsonResponse({"id": draft.pk, "saved": timezone.localtime(draft.updated_at).strftime("%H:%M")})
+
+
+@login_required
+def draft_open(request, pk):
+    draft = get_object_or_404(Draft, pk=pk, guide=request.user)
+    from django.urls import reverse
+
+    if draft.kind == Draft.Kind.TOUR:
+        return redirect(f"{reverse('dashboard:tour_new')}?entwurf={draft.pk}")
+    template = draft.data.get("vorlage", "")
+    extra = f"&vorlage={template}" if template.isdigit() else ""
+    return redirect(f"{reverse('dashboard:departure_new')}?entwurf={draft.pk}{extra}")
+
+
+@login_required
+@require_POST
+def draft_delete(request, pk):
+    draft = get_object_or_404(Draft, pk=pk, guide=request.user)
+    draft.delete()
+    messages.success(request, _("Entwurf gelöscht."))
+    return redirect("dashboard:tours")
+
+
+# --- Picture library -----------------------------------------------------------
+
+
+@login_required
+def picture_library(request):
+    """The guide's own photos and Tourchef's stock pictures, sorted by kind of tour."""
+    guide = request.user
+    form = LibraryUploadForm(request.POST or None)
+    if request.method == "POST":
+        files = request.FILES.getlist("photos")
+        if not files:
+            form.add_error(None, _("Bitte wähle mindestens ein Bild."))
+        elif len(files) > 20:
+            form.add_error(None, _("Höchstens 20 Bilder auf einmal."))
+        elif form.is_valid():
+            added, failed = 0, []
+            for upload in files:
+                try:
+                    if upload.size > pictures.MAX_UPLOAD_BYTES:
+                        raise pictures.PictureError(_("Das Bild ist zu gross (höchstens 8 MB)."))
+                    pictures.store(guide, pictures.shrink(upload.read()), in_library=True,
+                                   category=form.cleaned_data["category"], title=form.cleaned_data["title"])
+                    added += 1
+                except pictures.PictureError as exc:
+                    failed.append(f"{upload.name[:60]}: {exc}")
+            if added:
+                messages.success(request, _("%(count)s Bild(er) gespeichert.") % {"count": added})
+            for error in failed:
+                messages.error(request, error)
+            return redirect("dashboard:pictures")
+    library = list(Picture.library_for(guide))
+    kinds = dict(TourCategory.choices)
+    return render(request, "dashboard/pictures.html", {
+        "form": form,
+        "groups": library_groups(library),
+        "missing_kinds": [kinds[c] for c in kinds if not any(p.category == c and not p.is_stock for p in library)],
+        "category_choices": [("", "–")] + list(TourCategory.choices),
+    })
+
+
+@login_required
+@require_POST
+def picture_action(request, key, name):
+    pic = get_object_or_404(Picture, key=key, guide=request.user)
+    if name == "loeschen":
+        pic.delete()  # tours using it keep their text, just without a picture
+        messages.success(request, _("Bild gelöscht."))
+    elif name == "tourenart":
+        form = PictureCategoryForm(request.POST)
+        if form.is_valid():
+            pic.category = form.cleaned_data["category"]
+            pic.in_library = True
+            pic.save(update_fields=["category", "in_library"])
+            messages.success(request, _("Gespeichert."))
+    return redirect("dashboard:pictures")
 
 
 @login_required
@@ -426,7 +647,8 @@ def _read_tour_page(form, data):
         start, end = info.dates[0]
         data["ext-start_date"], data["ext-end_date"] = start.isoformat(), end.isoformat()
     if not data.get("ext-picture_key"):
-        picture = pictures.from_url(form.guide, info.image) if info.image else None
+        own = form.own_picture()  # the guide's own picture of this kind of tour beats the provider's
+        picture = own or (pictures.from_url(form.guide, info.image) if info.image else None)
         data["ext-picture_key"] = picture.key if picture else ExternalTourForm.NO_PICTURE
     return info.dates
 

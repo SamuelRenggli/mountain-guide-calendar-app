@@ -152,6 +152,8 @@ def test_guide_cannot_reach_other_guides_data(client, stripe_guide, other_guide,
                 reverse("dashboard:booking_action", args=[registration.pk, "refund"]),
                 reverse("dashboard:departure_action", args=[departure.pk, "cancel"]),
                 reverse("dashboard:departure_action", args=[departure.pk, "confirm"]),
+                reverse("dashboard:departure_action", args=[departure.pk, "nachricht-an-alle"]),
+                reverse("dashboard:booking_message", args=[booking.pk]),
                 reverse("dashboard:tour_delete", args=[tour.pk])):
         assert client.post(url).status_code == 404, url
     booking.refresh_from_db()

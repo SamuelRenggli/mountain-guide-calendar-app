@@ -1,1 +1,1 @@
-{% for message in messages %}<div class="alert {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
+{% for message in messages %}<div class="alert {{ message.tags }}" role="status">{{ message }}</div>{% if message.level >= 40 %}<div class="toast toast-error" role="alert" data-toast>{{ message }}<button type="button" class="toast-close" data-toast-close aria-label="×">×</button></div>{% endif %}{% endfor %}

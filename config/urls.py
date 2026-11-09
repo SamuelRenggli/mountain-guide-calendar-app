@@ -5,6 +5,7 @@ from django.http import HttpResponse
 from django.urls import include, path
 from django.views.generic import RedirectView
 
+from bookings import views_inbound as inbound_views
 from core import views as core_views
 
 
@@ -24,5 +25,6 @@ urlpatterns = [
     path("", include("bookings.urls_widget")),
     path("b/", include("bookings.urls_guest")),
     path("zahlungen/", include("payments.urls")),
+    path("eingang/mail/", inbound_views.mail, name="inbound_mail"),
     path("rechtliches/<slug:page>/", core_views.legal, name="legal"),
 ]

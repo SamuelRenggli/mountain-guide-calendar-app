@@ -18,8 +18,8 @@ from django.db import IntegrityError, transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from . import availability, emails
-from .models import Booking, BookingEvent, InvoiceLine, money
+from . import availability, emails, messaging
+from .models import Booking, BookingEvent, InvoiceLine, Notification, money
 
 S = Booking.Status
 Actor = BookingEvent.Actor
@@ -106,6 +106,7 @@ def create_request(
         freeze_terms(booking, guide)
         _save_holding_dates(booking)
         log(booking, Actor.GUEST, "", S.REQUESTED)
+        messaging.notify(guide, Notification.Kind.REQUEST, booking)
         transaction.on_commit(lambda: emails.request_created(booking))
     return booking
 

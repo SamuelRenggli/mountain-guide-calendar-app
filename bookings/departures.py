@@ -20,8 +20,8 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
-from . import emails
-from .models import Booking, BookingEvent, Departure, Tour, WaitlistEntry, money
+from . import emails, messaging
+from .models import Booking, BookingEvent, Departure, Notification, Tour, WaitlistEntry, money
 from .services import BookingError, InvalidTransition, cancellation_percent, freeze_terms, log, transition
 
 S = Booking.Status
@@ -143,11 +143,15 @@ def cancel_departure(departure: Departure, message: str = "", actor=Actor.GUIDE)
             _schedule_refund(booking, booking.refundable)
             if not was_paying:
                 cancelled.append(booking)
+                if message:
+                    messaging.record_sent(booking, message)  # the cancel email carries it; keep it in the history
         departure.waitlist.all().delete()
     automatic = actor == Actor.SYSTEM
     transaction.on_commit(lambda: [emails.departure_cancelled(b, automatic=automatic) for b in cancelled])
     if automatic:
         transaction.on_commit(lambda: emails.departure_auto_cancelled_guide(departure, len(cancelled)))
+    else:
+        transaction.on_commit(lambda: emails.departure_cancelled_guide(departure, len(cancelled)))
     return departure
 
 
@@ -172,6 +176,8 @@ def move_departure(departure: Departure, *, start_date, end_date, message: str =
         for booking in departure.registrations.filter(status__in=Booking.SEAT_STATUSES):
             moved.append(transition(booking, {booking.status}, S.RESCHEDULE_PROPOSED, Actor.GUIDE, note,
                                     start_date=start_date, end_date=end_date, guide_message=message, deadline=deadline))
+            if message:
+                messaging.record_sent(booking, message)
     transaction.on_commit(lambda: [emails.new_date_proposed(b) for b in moved])
     return departure
 
@@ -233,6 +239,7 @@ def registration_paid(booking: Booking, *, session_id: str, payment_intent: str,
                                                    and departure.seats_free >= locked.participants):
             locked = transition(locked, {locked.status}, S.PAID, Actor.STRIPE, f"Stripe Checkout {session_id}", **paid)
             departure.waitlist.filter(email__iexact=locked.guest_email).delete()
+            messaging.notify(locked.guide, Notification.Kind.BOOKING, locked)
             transaction.on_commit(lambda: emails.registration_confirmed(locked))
             return locked
         # Too late: nothing to sign up for any more.

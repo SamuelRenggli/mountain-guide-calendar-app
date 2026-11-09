@@ -16,6 +16,7 @@
         {% if user.is_staff %}<a href="{% url 'dashboard:pilot_stats' %}" {% if request.resolver_match.url_name == 'pilot_stats' %}class="active"{% endif %}>{% translate "Pilot" %}</a>{% endif %}
       </nav>
     {% endif %}
+    {% if user.is_authenticated and nav_sections %}{% include "dashboard/_notifications.html" %}{% endif %}
     {% if user.is_authenticated %}
       <form method="post" action="{% url 'accounts:logout' %}" class="inline">{% csrf_token %}
         <button class="link-button" type="submit">{% translate "Abmelden" %}</button>
@@ -34,6 +35,7 @@
     {% block content %}{% endblock %}
   </main>
   {% include "_footer.html" %}
+  <script src="{% static 'js/ui.js' %}"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

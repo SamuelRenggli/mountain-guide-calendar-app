@@ -4,7 +4,10 @@
 {% block content %}
 <p class="small"><a href="{% url 'dashboard:tours' %}">← {% translate "Tour ausschreiben" %}</a></p>
 <h1>{% if tour.pk %}{% translate "Vorlage bearbeiten" %}{% else %}{% translate "Neue Vorlage" %}{% endif %}</h1>
-<form method="post" class="card form-mobile" enctype="multipart/form-data">{% csrf_token %}
+{% if draft_kind %}<form method="post" class="card form-mobile" enctype="multipart/form-data" data-autosave="{% url 'dashboard:draft_save' draft_kind %}">{% csrf_token %}
+  <input type="hidden" name="entwurf" value="{{ draft.pk|default:'' }}" data-draft-id>
+  <p class="small muted autosave-status" data-autosave-status aria-live="polite" data-saved="{% translate 'Entwurf gespeichert' %}" data-failed="{% translate 'Entwurf konnte nicht gespeichert werden. Bitte prüfe die Verbindung.' %}">{% if draft %}{% blocktranslate with day=draft.updated_at|date:"d.m.Y H:i" trimmed %}Entwurf vom {{ day }} geladen. Wird beim Tippen automatisch gespeichert.{% endblocktranslate %}{% else %}{% translate "Wird beim Tippen automatisch als Entwurf gespeichert." %}{% endif %}</p>
+{% else %}<form method="post" class="card form-mobile" enctype="multipart/form-data">{% csrf_token %}{% endif %}
   {% if form.current_picture %}<img class="preview" src="{{ form.current_picture.url }}" alt="">{% endif %}
   {% include "_form.html" %}
   <button class="btn" type="submit">{% translate "Speichern" %}</button>

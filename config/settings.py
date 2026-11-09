@@ -164,6 +164,13 @@ EMAIL_BACKEND = (
 )
 ADMINS = [("Admin", email) for email in env_list("ADMIN_EMAILS")]
 
+# Messages between guide and guest. Each booking gets its own reply address, e.g. antwort+4821k7qz@tourchef.ch.
+# The mail service (Mailgun route) posts incoming replies to /eingang/mail/. Without a domain, replies go straight to
+# the guide's own address and are not shown in the dashboard.
+REPLY_EMAIL_DOMAIN = env("REPLY_EMAIL_DOMAIN", "")
+REPLY_EMAIL_LOCAL = env("REPLY_EMAIL_LOCAL", "antwort")
+MAILGUN_WEBHOOK_SIGNING_KEY = env("MAILGUN_WEBHOOK_SIGNING_KEY", "")
+
 # --- Security ---
 NUM_PROXIES = env_int("NUM_PROXIES", 0)  # reverse proxies in front of the app (for client IP)
 SESSION_COOKIE_HTTPONLY = True

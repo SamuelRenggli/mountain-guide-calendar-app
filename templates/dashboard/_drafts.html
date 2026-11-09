@@ -1,0 +1,22 @@
+{% load i18n %}{% if drafts %}
+<section class="card">
+  <h2>{% translate "Entwürfe" %}</h2>
+  <p class="small muted">{% translate "Wird beim Tippen automatisch gespeichert. Hier machst du weiter, wo du aufgehört hast." %}</p>
+  <div class="table-wrap"><table>
+    <tbody>
+    {% for draft in drafts %}
+      <tr>
+        <td><a href="{% url 'dashboard:draft' draft.pk %}">{{ draft.title }}</a> <span class="small muted">{{ draft.get_kind_display }}{% if draft.start_date %} · {{ draft.start_date }}{% endif %}</span></td>
+        <td class="small muted">{% blocktranslate with day=draft.updated_at|date:"d.m.Y H:i" trimmed %}gespeichert {{ day }}{% endblocktranslate %}</td>
+        <td class="row">
+          <a class="btn btn-small" href="{% url 'dashboard:draft' draft.pk %}">{% translate "Weitermachen" %}</a>
+          <form method="post" action="{% url 'dashboard:draft_delete' draft.pk %}" class="inline">{% csrf_token %}
+            <button class="btn btn-danger btn-small" type="submit">{% translate "Verwerfen" %}</button>
+          </form>
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% endif %}

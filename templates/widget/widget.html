@@ -57,7 +57,7 @@
 </details>
 
 {% if form %}
-<form method="post" action="{% url 'widget:request' guide.slug %}" class="booking-form" id="booking-form">
+<form method="post" action="{% url 'widget:request' guide.slug %}" class="booking-form" id="booking-form" data-scroll>
   <h3>
     {% if start == end %}{% blocktranslate with day=start|date:"l, d.m.Y" trimmed %}Anfrage für {{ day }}{% endblocktranslate %}
     {% else %}{% blocktranslate with first=start|date:"d.m." last=end|date:"d.m.Y" trimmed %}Anfrage für {{ first }} – {{ last }}{% endblocktranslate %}{% endif %}

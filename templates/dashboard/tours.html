@@ -3,9 +3,10 @@
 {% block title %}{% translate "Tour ausschreiben" %} – Tourchef{% endblock %}
 {% block content %}
 <div class="spread"><h1>{% translate "Tour ausschreiben" %}</h1>
-  <div class="row"><a class="btn" href="{% url 'dashboard:departure_new' %}">{% translate "Schnellerfassung" %}</a><a class="btn btn-secondary" href="{% url 'dashboard:tour_new' %}">{% translate "Neue Vorlage" %}</a></div></div>
-<p class="muted small">{% translate "Vorlagen sparen Tipparbeit: Aus einer Vorlage schreibst du einen Termin mit einem Klick aus." %}</p>
-<h2>{% translate "Tour-Vorlagen" %}</h2>
+  <a class="btn" href="{% url 'dashboard:departure_new' %}">{% translate "Neue Tour ausschreiben" %}</a></div>
+<p class="muted small">{% translate "Hake beim Ausschreiben «Als Vorlage speichern» an, dann schreibst du die gleiche Tour später mit einem Klick wieder aus." %}</p>
+{% include "dashboard/_drafts.html" %}
+<h2>{% translate "Deine Vorlagen" %}</h2>
 <section class="card">
   {% if tours %}
   <div class="table-wrap"><table>
@@ -29,7 +30,7 @@
     </tbody>
   </table></div>
   {% else %}
-  <p class="empty">{% translate "Noch keine Vorlagen. Bei der Schnellerfassung eines Termins kannst du ihn als Vorlage speichern." %}</p>
+  <p class="empty">{% translate "Noch keine Vorlagen." %}</p>
   {% endif %}
 </section>
 {% endblock %}

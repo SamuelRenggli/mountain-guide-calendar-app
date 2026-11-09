@@ -58,9 +58,6 @@
   <div class="alert success">{% translate "Bestätigt – die Tage sind für dich reserviert. Nach der Tour erhältst du die Rechnung per E-Mail." %}</div>
 {% elif booking.status == "paid" and booking.is_registration %}
   {% if returned_from_payment %}<div class="alert success">{% translate "Danke! Deine Zahlung ist eingegangen, du bist angemeldet. Die Bestätigung kommt per E-Mail." %}</div>{% endif %}
-  {% with d=booking.departure %}
-  {% if d.equipment %}<section class="card"><h2>{% translate "Ausrüstung" %}</h2><p class="pre">{{ d.equipment }}</p></section>{% endif %}
-  {% endwith %}
 {% elif booking.status == "payment_pending" %}
   <div class="alert info">{% translate "Deine Zahlung wird verarbeitet. Diese Seite zeigt «Bezahlt», sobald sie bestätigt ist." %}</div>
 {% endif %}
@@ -68,6 +65,25 @@
 {% if booking.status == "confirmed" or booking.status == "paid" or booking.status == "reschedule" %}
   <p class="small">{% translate "Kontakt" %}: {{ booking.guide.display_name }}, <a href="mailto:{{ booking.guide.email|urlencode:'@' }}">{{ booking.guide.email }}</a> {{ booking.guide.phone }}</p>
 {% endif %}
+
+<section class="card" id="nachrichten">
+  <h2>{% blocktranslate with name=booking.guide.display_name trimmed %}Nachrichten mit {{ name }}{% endblocktranslate %}</h2>
+  {% if thread %}
+  <ol class="thread">
+    {% for m in thread %}
+    <li class="msg {% if m.from_guest %}msg-out{% else %}msg-in{% endif %}">
+      <div class="msg-meta small muted">{% if m.from_guest %}{% translate "Du" %}{% else %}{{ booking.guide.display_name }}{% endif %} · {{ m.created_at|date:"d.m.Y H:i" }}</div>
+      <div class="pre">{{ m.body }}</div>
+    </li>
+    {% endfor %}
+  </ol>
+  {% endif %}
+  <form method="post" action="{% url 'guest:message' booking.token %}">{% csrf_token %}
+    {% include "_form.html" with form=message_form %}
+    <button class="btn btn-secondary" type="submit">{% translate "Senden" %}</button>
+  </form>
+  <p class="small muted">{% translate "Du kannst auch einfach auf eine E-Mail deines Bergführers antworten." %}</p>
+</section>
 
 {% if booking.is_invoiced %}
   <section class="card">

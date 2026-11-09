@@ -27,15 +27,18 @@
     <dl class="facts">
       <dt>{% translate "Name" %}</dt><dd>{{ booking.guest_name }}</dd>
       <dt>{% translate "E-Mail" %}</dt><dd><a href="mailto:{{ booking.guest_email|urlencode:'@' }}">{{ booking.guest_email }}</a></dd>
-      <dt>{% translate "Telefon" %}</dt><dd>{{ booking.guest_phone|default:"–" }}</dd>
+      <dt>{% translate "Telefon" %}</dt><dd>{% if booking.guest_phone %}<a href="tel:{{ booking.guest_phone|cut:' ' }}">{{ booking.guest_phone }}</a>{% if whatsapp %} · <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}{% else %}–{% endif %}</dd>
       {% if booking.is_registration %}
       <dt>{% translate "Notfallkontakt" %}</dt><dd>{{ booking.emergency_contact|default:"–" }}</dd>
       <dt>{% translate "Erfahrung" %}</dt><dd class="pre">{{ booking.experience|default:"–" }}</dd>
       {% endif %}
     </dl>
     {% if booking.guest_message %}<h3>{% translate "Tourenwunsch" %}</h3><p class="pre">{{ booking.guest_message }}</p>{% endif %}
+    <p><a class="btn btn-small btn-secondary" href="#nachrichten">{% translate "Nachricht schreiben" %}</a></p>
   </section>
 </div>
+
+{% include "dashboard/_thread.html" %}
 
 {% if booking.status == "requested" and booking.is_window %}
 <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" class="card" data-pricing>{% csrf_token %}
@@ -128,7 +131,7 @@
   <button class="btn btn-danger" type="submit">{% translate "Anfrage ablehnen" %}</button>
 </form>
 {% elif booking.status == "confirmed" and not booking.is_registration %}
-<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'cancel' %}" class="card">{% csrf_token %}
+<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'cancel' %}" class="card" data-confirm="{% translate 'Tour wirklich absagen? Der Gast wird informiert. Das lässt sich nicht rückgängig machen.' %}">{% csrf_token %}
   <h2>{% translate "Tour ohne Ersatzdatum absagen" %}</h2>
   <p class="small muted">{% translate "Für den Gast kostenlos." %}</p>
   {% include "_form.html" with form=cancel_form %}

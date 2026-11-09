@@ -8,8 +8,11 @@
   window.addEventListener("load", reportHeight);
   if ("ResizeObserver" in window) new ResizeObserver(reportHeight).observe(document.body);
 
+  // Scroll to the form only after picking dates or when it shows errors; a tour page starts with its description.
   var form = document.getElementById("booking-form");
-  if (form) form.scrollIntoView({ block: "nearest" });
+  if (form && (form.hasAttribute("data-scroll") || form.querySelector(".has-error, .alert.error"))) {
+    form.scrollIntoView({ block: "nearest" });
+  }
 
   function chf(value) {
     return value.toLocaleString("de-CH", { minimumFractionDigits: 0, maximumFractionDigits: 2 });

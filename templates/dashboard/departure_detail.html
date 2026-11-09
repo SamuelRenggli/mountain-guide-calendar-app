@@ -53,7 +53,7 @@
   <h2>{% translate "Teilnehmende" %}</h2>
   {% if registrations %}
   <div class="table-wrap"><table>
-    <thead><tr><th>{% translate "Name" %}</th><th>{% translate "Plätze" %}</th><th>{% translate "Kontakt" %}</th><th>{% translate "Notfallkontakt" %}</th><th>{% translate "Erfahrung" %}</th><th>{% translate "Zahlung" %}</th></tr></thead>
+    <thead><tr><th>{% translate "Name" %}</th><th>{% translate "Plätze" %}</th><th>{% translate "Kontakt" %}</th><th>{% translate "Notfallkontakt" %}</th><th>{% translate "Erfahrung" %}</th><th>{% translate "Zahlung" %}</th><th>{% translate "Nachrichten" %}</th></tr></thead>
     <tbody>
     {% for b in registrations %}
       <tr>
@@ -63,12 +63,22 @@
         <td class="small">{{ b.emergency_contact|default:"–" }}</td>
         <td class="small pre">{{ b.experience|default:"–" }}</td>
         <td>{% include "_status.html" with booking=b %}<br><span class="small muted">CHF {{ b.amount_paid }}{% if b.refunded_amount %} · {% blocktranslate with r=b.refunded_amount trimmed %}zurück {{ r }}{% endblocktranslate %}{% endif %}</span></td>
+        <td><a class="btn btn-small btn-secondary" href="{% url 'dashboard:booking' b.pk %}#nachrichten">{% translate "Nachricht" %}</a>{% if b.unread %} <span class="badge badge-requested">{% blocktranslate count n=b.unread trimmed %}{{ n }} neu{% plural %}{{ n }} neu{% endblocktranslate %}</span>{% elif b.message_count %}<br><span class="small muted">{% blocktranslate count n=b.message_count trimmed %}{{ n }} Nachricht{% plural %}{{ n }} Nachrichten{% endblocktranslate %}</span>{% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>
   </table></div>
   {% else %}<p class="empty">{% translate "Noch keine Anmeldungen." %}</p>{% endif %}
 </section>
+
+{% if seated %}
+<form method="post" action="{% url 'dashboard:departure_action' departure.pk 'nachricht-an-alle' %}" class="card" id="nachricht-an-alle">{% csrf_token %}
+  <h2>{% translate "Nachricht an alle Angemeldeten" %}</h2>
+  <p class="small muted">{% blocktranslate count n=seated trimmed %}Geht per E-Mail an {{ n }} angemeldete Person. Antworten erscheinen bei der jeweiligen Person im Verlauf.{% plural %}Geht per E-Mail an {{ n }} angemeldete Personen. Jede bekommt sie einzeln, Antworten erscheinen bei der jeweiligen Person im Verlauf.{% endblocktranslate %}</p>
+  {% include "_form.html" with form=message_all_form %}
+  <button class="btn" type="submit">{% translate "An alle senden" %}</button>
+</form>
+{% endif %}
 
 {% if waitlist %}
 <section class="card">
@@ -87,7 +97,7 @@
     {% include "_form.html" with form=move_form %}
     <button class="btn btn-secondary" type="submit">{% translate "Ersatzdatum senden" %}</button>
   </form>
-  <form method="post" action="{% url 'dashboard:departure_action' departure.pk 'cancel' %}" class="card">{% csrf_token %}
+  <form method="post" action="{% url 'dashboard:departure_action' departure.pk 'cancel' %}" class="card" data-confirm="{% translate 'Termin wirklich absagen? Alle Angemeldeten werden informiert und erhalten ihr Geld zurück. Das lässt sich nicht rückgängig machen.' %}">{% csrf_token %}
     <h2>{% translate "Termin absagen" %}</h2>
     <p class="small muted">{% translate "Alle Angemeldeten erhalten den vollen Betrag automatisch zurück und werden per E-Mail informiert." %}</p>
     {% include "_form.html" with form=cancel_form %}

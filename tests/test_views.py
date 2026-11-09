@@ -30,7 +30,7 @@ def widget_post(client, guide, start, end=None, **extra):
 
 
 def signup_post(client, departure, **extra):
-    data = {"seats": 2, "guest_name": "Neu", "guest_email": "neu@example.com", "guest_phone": "079 1",
+    data = {"seats": 2, "guest_name": "Neu", "guest_email": "neu@example.com", "guest_phone_0": "41", "guest_phone_1": "079 123 45 67",
             "emergency_contact": "Mama 079 2", "experience": "Allalin", "language": "de", "accept_terms": "on",
             "website": "", "ts": aged_token()}
     data.update(extra)
@@ -145,7 +145,7 @@ def test_signup_redirects_to_stripe(client, stripe_guide, make_departure):
     assert (booking.status, booking.participants, booking.emergency_contact) == (S.PAYMENT_PENDING, 2, "Mama 079 2")
 
 
-@pytest.mark.parametrize("missing", ["guest_phone", "emergency_contact", "experience", "accept_terms"])
+@pytest.mark.parametrize("missing", ["guest_phone_1", "emergency_contact", "experience", "accept_terms"])
 def test_signup_requires_safety_data_and_terms(client, stripe_guide, make_departure, missing):
     """R-120, R-002."""
     response = signup_post(client, make_departure(stripe_guide), **{missing: ""})
@@ -333,8 +333,12 @@ def test_guide_cancels_departure_from_dashboard(client, stripe_guide, make_depar
     departure = make_departure(stripe_guide)
     booking = make_registration(departure)
     client.force_login(stripe_guide)
+    url = reverse("dashboard:departure_action", args=[departure.pk, "cancel"])
     with mock.patch("payments.stripe_service.process_refund"):
-        client.post(reverse("dashboard:departure_action", args=[departure.pk, "cancel"]), {"cancel-message": "Wetter"})
+        client.post(url, {"cancel-message": "Wetter"})
+        booking.refresh_from_db()
+        assert booking.status == S.PAID, "without the confirmation tick nothing happens"
+        client.post(url, {"cancel-message": "Wetter", "cancel-sure": "on"})
     booking.refresh_from_db()
     assert booking.status == S.CANCELLED and booking.refund_due == Decimal("480.00")
 

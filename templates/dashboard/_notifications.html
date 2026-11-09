@@ -1,0 +1,18 @@
+{% load i18n %}<details class="notifications{% if notification_count %} has-unread{% endif %}">
+  <summary aria-label="{% translate 'Benachrichtigungen' %}">
+    <span class="bell" aria-hidden="true">🔔</span>
+    {% if notification_count %}<span class="notif-text">{{ notifications.0.text }}</span>{% if notification_count > 1 %}<span class="notif-count">{{ notification_count }}</span>{% endif %}{% endif %}
+  </summary>
+  <div class="notif-panel">
+    {% if notifications %}
+      <ul>{% for note in notifications %}
+        <li><a href="{% url 'dashboard:notification' note.pk %}"><strong>{{ note.text }}</strong>{% if note.booking %}<br><span class="small muted">{{ note.booking.title }} · {{ note.created_at|date:"d.m. H:i" }}</span>{% endif %}</a></li>
+      {% endfor %}</ul>
+      <form method="post" action="{% url 'dashboard:notifications_read' %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}">
+        <button class="link-button small" type="submit">{% translate "Alle als gelesen markieren" %}</button>
+      </form>
+    {% else %}
+      <p class="small muted">{% translate "Keine neuen Benachrichtigungen." %}</p>
+    {% endif %}
+  </div>
+</details>

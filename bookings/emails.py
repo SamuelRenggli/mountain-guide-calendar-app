@@ -168,6 +168,11 @@ MESSAGES = {
         _("Hallo {guide}\n\nDie Entscheid-Frist ist ohne Entscheid abgelaufen. Der Termin wurde deshalb abgesagt, "
           "{count} angemeldete Gäste erhalten ihr Geld zurück.\n\n{departure_link}"),
     ),
+    "departure_cancelled_guide": (
+        _("Termin abgesagt: {tour} am {start}"),
+        _("Hallo {guide}\n\nDu hast den Termin abgesagt. {count} angemeldete Gäste wurden per E-Mail informiert und "
+          "erhalten den vollen Betrag automatisch zurück.\n\n{departure_link}"),
+    ),
     "decision_reminder": (
         _("Entscheid fällig: {tour} am {start}"),
         _("Hallo {guide}\n\nBis {decision_deadline} musst du entscheiden, ob «{tour}» stattfindet.\n\n"
@@ -511,6 +516,10 @@ def _send_guide(key, d, **extra):
 
 def departure_auto_cancelled_guide(d, count):
     _send_guide("departure_auto_cancelled_guide", d, count=count)
+
+
+def departure_cancelled_guide(d, count):
+    _send_guide("departure_cancelled_guide", d, count=count)
 
 
 def decision_reminder(d):

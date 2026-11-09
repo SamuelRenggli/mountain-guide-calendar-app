@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib import messages
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone, translation
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
@@ -14,7 +15,8 @@ from django.views.decorators.http import require_POST
 from core.ratelimit import allow, client_ip
 from payments import stripe_service
 
-from . import services
+from . import messaging, services
+from .forms import GuestMessageForm
 from .models import Booking
 
 S = Booking.Status
@@ -36,7 +38,7 @@ def _booking(request, token):
 
 
 @never_cache
-def detail(request, token):
+def detail(request, token, message_form=None, status=200):
     booking = _booking(request, token)
     can_cancel = booking.status in ((S.PAID, S.RESCHEDULE_PROPOSED) if booking.is_registration
                                     else (S.REQUESTED, S.OFFERED, S.CONFIRMED))
@@ -52,7 +54,9 @@ def detail(request, token):
         "fee": round(fee_base * fee_percent / 100, 2),
         "refund": round(fee_base - fee_base * fee_percent / 100, 2),
         "vat": booking.vat_included(),
-    })
+        "thread": booking.messages.filter(needs_review=False),
+        "message_form": message_form or GuestMessageForm(),
+    }, status=status)
     response.headers["X-Robots-Tag"] = "noindex"
     return response
 
@@ -78,6 +82,21 @@ def action(request, token, name):
     except services.BookingError as exc:
         messages.error(request, str(exc))
     return redirect("guest:detail", token=token)
+
+
+@require_POST
+def message(request, token):
+    """The guest writes to the guide on the booking page."""
+    booking = _booking(request, token)
+    form = GuestMessageForm(request.POST)
+    if not form.is_valid():
+        return detail(request, token, message_form=form, status=400)
+    if not allow(f"guestmsg:{booking.pk}", limit=20, window_seconds=60 * 60):
+        messages.error(request, _("Zu viele Nachrichten. Bitte versuche es später erneut."))
+        return redirect("guest:detail", token=token)
+    messaging.receive_from_guest_page(booking, form.cleaned_data["body"])
+    messages.success(request, _("Nachricht gesendet."))
+    return redirect(reverse("guest:detail", args=[token]) + "#nachrichten")
 
 
 @require_POST

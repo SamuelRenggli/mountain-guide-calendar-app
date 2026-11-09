@@ -40,15 +40,18 @@ def shrink(raw: bytes) -> tuple[bytes, int, int]:
         raise PictureError(_("Das Bild konnte nicht gelesen werden.")) from exc
 
 
-def from_bytes(guide, raw: bytes, source_url: str = "") -> Picture:
+def from_bytes(guide, raw: bytes, source_url: str = "", **extra) -> Picture:
     if len(raw) > MAX_UPLOAD_BYTES:
         raise PictureError(_("Das Bild ist zu gross (höchstens 8 MB)."))
-    return store(guide, shrink(raw), source_url)
+    return store(guide, shrink(raw), source_url, **extra)
 
 
-def store(guide, shrunk: tuple[bytes, int, int], source_url: str = "") -> Picture:
+def store(guide, shrunk: tuple[bytes, int, int], source_url: str = "", *, in_library=False, category="",
+          title="") -> Picture:
+    """guide=None stores a Tourchef stock picture."""
     data, width, height = shrunk
-    return Picture.objects.create(guide=guide, data=data, width=width, height=height, source_url=source_url[:1000])
+    return Picture.objects.create(guide=guide, data=data, width=width, height=height, source_url=source_url[:1000],
+                                  in_library=in_library or guide is None, category=category or "", title=title[:120])
 
 
 def from_url(guide, url: str) -> Picture | None:

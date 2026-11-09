@@ -2,10 +2,13 @@
 {% load i18n %}
 {% block title %}{% translate "Termin" %} – Tourchef{% endblock %}
 {% block content %}
-<p class="small"><a href="{% if departure %}{% url 'dashboard:departure' departure.pk %}{% else %}{% url 'dashboard:departures' %}{% endif %}">← {% translate "Ausgeschriebene Touren" %}</a></p>
-<h1>{% if departure %}{% translate "Termin bearbeiten" %}{% elif tour %}{% blocktranslate with title=tour.title trimmed %}Ausschreiben: {{ title }}{% endblocktranslate %}{% else %}{% translate "Termin ausschreiben" %}{% endif %}</h1>
+<p class="small">{% if departure %}<a href="{% url 'dashboard:departure' departure.pk %}">← {% translate "Ausgeschriebene Touren" %}</a>{% else %}<a href="{% url 'dashboard:tours' %}">← {% translate "Tour ausschreiben" %}</a>{% endif %}</p>
+<h1>{% if departure %}{% translate "Termin bearbeiten" %}{% elif tour %}{% blocktranslate with title=tour.title trimmed %}Ausschreiben: {{ title }}{% endblocktranslate %}{% else %}{% translate "Tour ausschreiben" %}{% endif %}</h1>
 {% if not can_pay %}<div class="alert warning">{% translate "Verbinde zuerst Stripe in den Einstellungen – ohne Online-Zahlung können sich Gäste nicht anmelden." %}</div>{% endif %}
-<form method="post" class="card form-mobile" enctype="multipart/form-data">{% csrf_token %}
+{% if draft_kind %}<form method="post" class="card form-mobile" enctype="multipart/form-data" data-autosave="{% url 'dashboard:draft_save' draft_kind %}">{% csrf_token %}
+  <input type="hidden" name="entwurf" value="{{ draft.pk|default:'' }}" data-draft-id>
+  <p class="small muted autosave-status" data-autosave-status aria-live="polite" data-saved="{% translate 'Entwurf gespeichert' %}" data-failed="{% translate 'Entwurf konnte nicht gespeichert werden. Bitte prüfe die Verbindung.' %}">{% if draft %}{% blocktranslate with day=draft.updated_at|date:"d.m.Y H:i" trimmed %}Entwurf vom {{ day }} geladen. Wird beim Tippen automatisch gespeichert.{% endblocktranslate %}{% else %}{% translate "Wird beim Tippen automatisch als Entwurf gespeichert." %}{% endif %}</p>
+{% else %}<form method="post" class="card form-mobile" enctype="multipart/form-data">{% csrf_token %}{% endif %}
   {% if tour %}<input type="hidden" name="vorlage" value="{{ tour.pk }}">{% endif %}
   {% if form.current_picture %}<img class="preview" src="{{ form.current_picture.url }}" alt="">{% endif %}
   {% include "_form.html" %}

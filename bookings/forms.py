@@ -11,6 +11,7 @@ from accounts.models import LANGUAGE_CHOICES
 from . import pictures
 from .models import (
     BlockedPeriod, Departure, ExternalTour, InvoiceLine, OpenPeriod, Partner, PartnerPeriod, Picture, Tour,
+    TourCategory,
 )
 
 _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
@@ -38,6 +39,88 @@ def single_line(value: str) -> str:
     if _CONTROL_CHARS.search(value):
         raise forms.ValidationError(_("Ungültige Zeichen."))
     return value
+
+
+# Country codes offered in front of the phone number; Switzerland first. Numbers typed with + or 00 keep their own code.
+COUNTRY_CODES = [
+    ("41", "CH +41"), ("49", "DE +49"), ("43", "AT +43"), ("33", "FR +33"), ("39", "IT +39"), ("423", "LI +423"),
+    ("44", "UK +44"), ("31", "NL +31"), ("32", "BE +32"), ("352", "LU +352"), ("34", "ES +34"), ("45", "DK +45"),
+    ("46", "SE +46"), ("47", "NO +47"), ("420", "CZ +420"), ("48", "PL +48"), ("1", "US/CA +1"),
+]
+
+
+class PhoneWidget(forms.MultiWidget):
+    def __init__(self, attrs=None):
+        super().__init__([
+            forms.Select(choices=COUNTRY_CODES, attrs={"class": "phone-code", "autocomplete": "tel-country-code"}),
+            forms.TextInput(attrs={"class": "phone-number", "type": "tel", "autocomplete": "tel-national",
+                                   "inputmode": "tel", "placeholder": "79 123 45 67"}),
+        ], attrs)
+
+    def value_from_datadict(self, data, files, name):
+        if f"{name}_1" not in data and name in data:  # a single phone field (older embedded form)
+            return ["", data.get(name, "")]
+        return super().value_from_datadict(data, files, name)
+
+    def value_omitted_from_data(self, data, files, name):
+        return name not in data and super().value_omitted_from_data(data, files, name)
+
+    def decompress(self, value):
+        if value and value.startswith("+"):
+            code, _sep, number = value[1:].partition(" ")
+            if code in dict(COUNTRY_CODES) and number:
+                return [code, number]
+        return ["41", value or ""]
+
+
+class PhoneField(forms.MultiValueField):
+    """Country code plus number, stored as "+41 791234567" (WhatsApp and SMS links need the full number)."""
+
+    widget = PhoneWidget
+
+    def __init__(self, **kwargs):
+        super().__init__(fields=[forms.ChoiceField(choices=COUNTRY_CODES, required=False),
+                                 forms.CharField(max_length=30, required=False)],
+                         require_all_fields=False, **kwargs)
+
+    def compress(self, data_list):
+        code, number = (list(data_list or []) + ["", ""])[:2]
+        number = (number or "").strip()
+        if not number:
+            if self.required:
+                raise forms.ValidationError(_("Bitte gib eine Telefonnummer an."))
+            return ""
+        if _CONTROL_CHARS.search(number) or re.search(r"[^\d\s+()./-]", number):
+            raise forms.ValidationError(_("Bitte nur Ziffern eingeben."))
+        digits = re.sub(r"\D", "", number)
+        if number.startswith("+") or number.startswith("00"):
+            full = digits[2:] if number.startswith("00") else digits
+            if not 7 <= len(full) <= 15:
+                raise forms.ValidationError(_("Diese Telefonnummer ist zu kurz oder zu lang."))
+            known = next((c for c, _label in sorted(COUNTRY_CODES, key=lambda x: -len(x[0])) if full.startswith(c)), "")
+            return f"+{known} {full[len(known):]}" if known else f"+{full}"
+        code = code or "41"
+        national = digits if code == "39" else digits.lstrip("0")  # Italy keeps the leading 0
+        if not 7 <= len(code + national) <= 15:
+            raise forms.ValidationError(_("Diese Telefonnummer ist zu kurz oder zu lang."))
+        return f"+{code} {national}"
+
+
+class MeetingTimeField(forms.TimeField):
+    """A plain text field: the browser's time picker shows AM/PM or refuses input depending on browser and language.
+    Accepts 10:30, 10.30, 1030, 10h30 and 7."""
+
+    def __init__(self, **kwargs):
+        kwargs.setdefault("label", _("Zeit"))
+        kwargs.setdefault("widget", forms.TextInput(attrs={"inputmode": "numeric", "placeholder": "07:30",
+                                                           "autocomplete": "off", "class": "time-input"}))
+        super().__init__(input_formats=["%H:%M", "%H.%M", "%H%M", "%Hh%M", "%H:%M:%S", "%H"], **kwargs)
+        self.widget.format = "%H:%M"
+
+    def to_python(self, value):
+        if isinstance(value, str):
+            value = value.strip().lower().replace(" ", "").removesuffix("uhr").removesuffix("h")
+        return super().to_python(value)
 
 
 class PublicForm(forms.Form):
@@ -95,7 +178,8 @@ class BookingRequestForm(PublicForm):
                                       widget=forms.NumberInput(attrs={"data-group-size": ""}))
     guest_name = forms.CharField(label=_("Name"), max_length=100)
     guest_email = forms.EmailField(label=_("E-Mail"))
-    guest_phone = forms.CharField(label=_("Telefon"), max_length=30, required=False)
+    guest_phone = PhoneField(label=_("Telefon"), required=False,
+                             help_text=_("Mit Vorwahl, damit dich dein Bergführer auch per WhatsApp erreicht."))
     language = forms.ChoiceField(choices=LANGUAGE_CHOICES, widget=forms.HiddenInput)
     accept_terms = _terms_field()
 
@@ -113,7 +197,8 @@ class RegistrationForm(PublicForm):
     seats = forms.IntegerField(label=_("Anzahl Plätze"), min_value=1, max_value=50, initial=1)
     guest_name = forms.CharField(label=_("Name"), max_length=100)
     guest_email = forms.EmailField(label=_("E-Mail"))
-    guest_phone = forms.CharField(label=_("Telefon"), max_length=30)
+    guest_phone = PhoneField(label=_("Telefon"),
+                             help_text=_("Mit Vorwahl, damit dich dein Bergführer auch per WhatsApp erreicht."))
     emergency_contact = forms.CharField(
         label=_("Notfallkontakt"), max_length=200, help_text=_("Name und Telefonnummer einer Person, die nicht mitkommt."),
     )
@@ -155,12 +240,23 @@ class PhotoMixin:
     """An optional tour photo: upload a new one, keep the current one or remove it.
     Call picture(guide, current) after is_valid() to get the Picture to store."""
 
-    def add_photo_fields(self, current=None):
+    def add_photo_fields(self, current=None, guide=None):
         self.current_picture = current
+        self.library_groups = []
+        if guide is not None:
+            library = list(Picture.library_for(guide))
+            self.library_groups = library_groups(library)
+            if library:
+                self.fields["library_picture"] = forms.ChoiceField(
+                    label=_("Bild aus deiner Bibliothek"), required=False,
+                    choices=[("", "")] + [(p.key, p.key) for p in library],
+                )
         self.fields["photo"] = forms.FileField(
             label=_("Bild"), required=False,
-            widget=forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,image/webp"}),
-            help_text=_("Erscheint im Buchungskalender. JPG, PNG oder WebP, höchstens 8 MB."),
+            widget=forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,image/webp",
+                                                   "data-too-big": _("Das Bild ist zu gross (höchstens 8 MB).")}),
+            help_text=_("Neues Bild hochladen. Erscheint im Buchungskalender und kommt in deine Bibliothek. "
+                        "JPG, PNG oder WebP, höchstens 8 MB."),
         )
         if current:
             self.fields["remove_photo"] = forms.BooleanField(label=_("Bild entfernen"), required=False)
@@ -176,33 +272,84 @@ class PhotoMixin:
                 raise forms.ValidationError(str(exc)) from exc
         return upload
 
+    def library_choice(self, guide):
+        key = self.cleaned_data.get("library_picture")
+        return Picture.library_for(guide).filter(key=key).first() if key else None
+
     def picture(self, guide, current=None):
+        """Upload first, then a picture picked from the library, then removing, else the current one."""
         current = self.current_picture if current is None else current
         if getattr(self, "_shrunk", None):
-            return pictures.store(guide, self._shrunk)
+            return pictures.store(guide, self._shrunk, in_library=True, category=self.cleaned_data.get("category") or "")
+        if picked := self.library_choice(guide):
+            return picked
         if self.cleaned_data.get("remove_photo"):
             return None
         return current
 
     def detail_data(self) -> dict:
-        return {k: v for k, v in self.cleaned_data.items() if k not in ("photo", "remove_photo")}
+        return {k: v for k, v in self.cleaned_data.items() if k not in ("photo", "remove_photo", "library_picture")}
+
+
+def library_groups(library) -> list:
+    """[(label, [pictures])] by kind of tour; own pictures before Tourchef's."""
+    labels = dict(TourCategory.choices)
+    groups = {}
+    for pic in sorted(library, key=lambda p: p.is_stock):
+        groups.setdefault(pic.category, []).append(pic)
+    order = [c for c, _label in TourCategory.choices] + [""]
+    return [(labels.get(c) or _("Ohne Tourenart"), groups[c]) for c in order if c in groups]
+
+
+class LibraryUploadForm(forms.Form):
+    """Add photos to the picture library, sorted by kind of tour. The files come from request.FILES."""
+
+    category = forms.ChoiceField(label=_("Tourenart"), choices=[("", "–")] + list(TourCategory.choices),
+                                 required=False)
+    title = forms.CharField(label=_("Bezeichnung (optional)"), max_length=120, required=False,
+                            help_text=_("z. B. Piz Palü, Nordwand"))
+
+    def clean_title(self):
+        return single_line(self.cleaned_data["title"])
+
+
+class PictureCategoryForm(forms.Form):
+    category = forms.ChoiceField(choices=[("", "–")] + list(TourCategory.choices), required=False)
+
+
+class GuideMessageForm(forms.Form):
+    body = forms.CharField(
+        label=_("Nachricht"), max_length=5000,
+        widget=forms.Textarea(attrs={"rows": 4, "maxlength": 5000}),
+        error_messages={"required": _("Bitte schreibe eine Nachricht.")},
+    )
+
+
+class GuestMessageForm(forms.Form):
+    body = forms.CharField(
+        label=_("Deine Nachricht"), max_length=3000,
+        widget=forms.Textarea(attrs={"rows": 3, "maxlength": 3000}),
+        error_messages={"required": _("Bitte schreibe eine Nachricht.")},
+    )
 
 
 class TourForm(PhotoMixin, forms.ModelForm):
+    meeting_time = MeetingTimeField(required=False)
+
     class Meta:
         model = Tour
-        fields = ("title", "duration_days", "price_per_person", "min_participants", "max_participants", "description",
+        fields = ("title", "category", "duration_days", "price_per_person", "min_participants", "max_participants", "description",
                   "requirements", "equipment", "included", "not_included", "location", "meeting_point", "meeting_time",
                   "is_active")
         widgets = {
             "description": forms.Textarea(attrs={"rows": 4}), "requirements": TEXTAREA, "equipment": TEXTAREA,
-            "included": TEXTAREA, "not_included": TEXTAREA, "meeting_time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
+            "included": TEXTAREA, "not_included": TEXTAREA,
         }
         help_texts = {"is_active": _("Inaktive Vorlagen erscheinen nicht mehr beim Ausschreiben.")}
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, guide=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_photo_fields(self.instance.picture if self.instance.pk else None)
+        self.add_photo_fields(self.instance.picture if self.instance.pk else None, guide=guide)
 
     def clean(self):
         cleaned = super().clean()
@@ -215,31 +362,31 @@ class TourForm(PhotoMixin, forms.ModelForm):
 class DepartureForm(PhotoMixin, forms.ModelForm):
     """Publish a date from a template or as a quick entry (R-100–R-104). Works on a phone."""
 
+    meeting_time = MeetingTimeField()
     save_as_template = forms.BooleanField(label=_("Als Vorlage speichern"), required=False,
                                           help_text=_("Damit du diese Tour später mit einem Klick wieder ausschreiben kannst."))
 
     class Meta:
         model = Departure
-        fields = ("title", "start_date", "end_date", "price_per_person", "min_participants", "max_participants",
+        fields = ("title", "category", "start_date", "end_date", "price_per_person", "min_participants", "max_participants",
                   "signup_deadline", "decision_deadline", "meeting_point", "meeting_time", "description",
                   "requirements", "equipment", "included", "not_included", "location")
         widgets = {
             "start_date": _date_input(), "end_date": _date_input(),
             "signup_deadline": _datetime_input(), "decision_deadline": _datetime_input(),
-            "meeting_time": forms.TimeInput(attrs={"type": "time"}, format="%H:%M"),
             "description": forms.Textarea(attrs={"rows": 4}), "requirements": TEXTAREA, "equipment": TEXTAREA,
             "included": TEXTAREA, "not_included": TEXTAREA,
         }
 
     REQUIRED = ("meeting_point", "meeting_time")  # R-101
 
-    def __init__(self, *args, editing=False, picture=None, **kwargs):
+    def __init__(self, *args, editing=False, picture=None, guide=None, **kwargs):
         super().__init__(*args, **kwargs)
         for name in self.REQUIRED:
             self.fields[name].required = True
         if editing:
             del self.fields["save_as_template"]
-        self.add_photo_fields(self.instance.picture if self.instance.pk else picture)
+        self.add_photo_fields(self.instance.picture if self.instance.pk else picture, guide=guide)
 
     @staticmethod
     def initial_from(tour: Tour | None, start=None) -> dict:
@@ -258,13 +405,33 @@ class DepartureForm(PhotoMixin, forms.ModelForm):
 class MoveDepartureForm(forms.Form):
     start_date = forms.DateField(label=_("Neues Startdatum"), widget=_date_input())
     end_date = forms.DateField(label=_("Neues Enddatum"), widget=_date_input())
-    message = forms.CharField(label=_("Nachricht an die Gäste"), max_length=2000, required=False, widget=TEXTAREA)
+    message = forms.CharField(label=_("Nachricht an die Gäste (optional)"), max_length=2000, required=False,
+                              widget=TEXTAREA)
 
 
 class MessageForm(forms.Form):
     message = forms.CharField(
         label=_("Nachricht an den Gast (optional)"), max_length=2000, required=False, widget=TEXTAREA,
     )
+
+
+def _sure_field(label):
+    return forms.BooleanField(label=label, error_messages={"required": _("Bitte bestätige die Absage.")})
+
+
+class GuestsMessageForm(forms.Form):
+    """Cancel a scheduled date: one message to everyone signed up. Needs a tick, then a confirm dialog."""
+
+    message = forms.CharField(
+        label=_("Nachricht an die Gäste (optional)"), max_length=2000, required=False, widget=TEXTAREA,
+    )
+    sure = _sure_field(_("Ja, ich sage den Termin für alle Angemeldeten ab."))
+
+
+class GuideCancelForm(MessageForm):
+    """Cancel one booked tour. Needs a tick, then a confirm dialog."""
+
+    sure = _sure_field(_("Ja, ich sage die Tour ab."))
 
 
 class RefundExtraForm(forms.Form):
@@ -441,13 +608,14 @@ class ExternalTourForm(PhotoMixin, forms.ModelForm):
 
     class Meta:
         model = ExternalTour
-        fields = ("url", "title", "provider", "start_date", "end_date", "show_to_guests", "note")
+        fields = ("url", "title", "provider", "category", "start_date", "end_date", "show_to_guests", "note")
         widgets = {"start_date": _date_input(), "end_date": _date_input(), "note": forms.Textarea(attrs={"rows": 2})}
         help_texts = {
             "url": _("Link zum Tourenangebot, z. B. auf der Website der Bergschule. Titel, Datum und Bild werden "
                      "von der Seite übernommen."),
             "title": _("Leer lassen: wird von der verlinkten Seite übernommen."),
             "start_date": _("Leer lassen: wird von der verlinkten Seite übernommen."),
+            "category": _("Mit Tourenart wird dein eigenes Bild dieser Art verwendet statt des Bildes vom Anbieter."),
         }
 
     def __init__(self, *args, guide=None, **kwargs):
@@ -455,8 +623,9 @@ class ExternalTourForm(PhotoMixin, forms.ModelForm):
         self.guide = guide
         for name in ("title", "start_date", "end_date"):
             self.fields[name].required = False
-        self.add_photo_fields()
-        self.fields["photo"].help_text = _("Leer lassen: das Vorschaubild der verlinkten Seite wird übernommen.")
+        self.add_photo_fields(guide=guide)
+        self.fields["photo"].help_text = _("Leer lassen: ein eigenes Bild aus der Bibliothek oder das Vorschaubild "
+                                           "der verlinkten Seite wird übernommen.")
 
     @property
     def picture_key_given(self) -> bool:
@@ -492,11 +661,24 @@ class ExternalTourForm(PhotoMixin, forms.ModelForm):
                 self.add_error("start_date", _("Auf der Seite wurde kein Datum gefunden. Bitte selbst eingeben."))
         return not self.errors
 
+    def own_picture(self):
+        """The guide's own picture instead of the provider's: picked from the library, or the newest of its kind."""
+        if picked := self.library_choice(self.guide):
+            return picked
+        category = self.cleaned_data.get("category")
+        if not category:
+            return None
+        library = Picture.library_for(self.guide).filter(category=category)
+        return library.filter(guide=self.guide).first() or library.first()
+
     def picture(self, guide, current=None):
         key = self.cleaned_data.get("picture_key")
         if key and key != self.NO_PICTURE:
-            current = Picture.objects.filter(guide=guide, key=key).first()
-        return super().picture(guide, current) if current or getattr(self, "_shrunk", None) else None
+            current = (Picture.library_for(guide).filter(key=key).first()
+                       or Picture.objects.filter(guide=guide, key=key).first())
+        if getattr(self, "_shrunk", None) or self.library_choice(guide):
+            return super().picture(guide, current)
+        return current
 
     def clean_url(self):
         url = self.cleaned_data["url"].strip()

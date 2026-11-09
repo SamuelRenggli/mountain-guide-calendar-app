@@ -32,27 +32,60 @@ def new_picture_key() -> str:
     return secrets.token_urlsafe(16)
 
 
+class TourCategory(models.TextChoices):
+    """Kinds of tours. Sorts the picture library; Tourchef provides one stock picture per kind."""
+
+    FREERIDE = "freeride", _("Freeride")
+    SKITOUR_DAY = "skitour_tag", _("Skitour Eintag")
+    SKITOUR_WEEK = "skitour_woche", _("Skitourenwoche")
+    SPRING = "fruehling", _("Frühling")
+    GLACIER_TREK = "gletschertrekking", _("Gletschertrekking")
+    SPORT_CLIMBING = "sportklettern", _("Sportklettern")
+    MOUNTAIN_ROCK = "bergtour_fels", _("Bergtour Fels")
+    MOUNTAIN_ICE = "bergtour_eis", _("Bergtour Eis und Gipfel")
+
+
 class Picture(models.Model):
     """A tour photo, shrunk to a web-sized JPEG and kept in the database (no file storage needed). Served
-    publicly under its random key, so guests' browsers never load images from other websites."""
+    publicly under its random key, so guests' browsers never load images from other websites.
 
-    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pictures")
+    The guide's picture library holds their own photos (in_library). Preview images read from a provider's page
+    are not in the library. Pictures without a guide are Tourchef stock pictures every guide can use."""
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="pictures",
+                              null=True, blank=True)
     key = models.CharField(max_length=32, unique=True, default=new_picture_key, editable=False)
     data = models.BinaryField()
     width = models.PositiveIntegerField(default=0)
     height = models.PositiveIntegerField(default=0)
     source_url = models.URLField(max_length=1000, blank=True)
+    category = models.CharField(_("Tourenart"), max_length=20, choices=TourCategory.choices, blank=True)
+    title = models.CharField(_("Bezeichnung"), max_length=120, blank=True)
+    in_library = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
 
     @property
     def url(self) -> str:
         return f"/bild/{self.key}.jpg"
+
+    @property
+    def is_stock(self) -> bool:
+        return self.guide_id is None
+
+    @classmethod
+    def library_for(cls, guide):
+        """The guide's own library plus Tourchef's stock pictures."""
+        return cls.objects.filter(Q(guide=guide, in_library=True) | Q(guide__isnull=True)).defer("data")
 
 
 class TourDetails(models.Model):
     """What a guest needs to know about a tour. Shared by templates (Tour) and scheduled dates (Departure)."""
 
     title = models.CharField(_("Titel"), max_length=200)
+    category = models.CharField(_("Tourenart"), max_length=20, choices=TourCategory.choices, blank=True)
     description = models.TextField(_("Beschreibung"), blank=True, validators=[MaxLengthValidator(5000)])
     requirements = models.TextField(_("Anforderungen"), blank=True, validators=[MaxLengthValidator(2000)],
                                     help_text=_("Niveau, Kondition, Erfahrung"))
@@ -74,7 +107,7 @@ class TourDetails(models.Model):
     )
     picture = models.ForeignKey(Picture, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
 
-    DETAIL_FIELDS = ("title", "description", "requirements", "equipment", "included", "not_included", "location",
+    DETAIL_FIELDS = ("title", "category", "description", "requirements", "equipment", "included", "not_included", "location",
                      "meeting_point", "meeting_time", "price_per_person", "min_participants", "max_participants", "picture")
 
     class Meta:
@@ -217,6 +250,14 @@ def new_token() -> str:
     return secrets.token_urlsafe(32)  # 256 bits
 
 
+REPLY_CODE_ALPHABET = "abcdefghjkmnpqrstuvwxyz23456789"  # no look-alikes (l/1, o/0)
+
+
+def new_reply_code() -> str:
+    """Short random part of a booking's reply address (antwort+4821k7qz@…), so booking numbers can't be guessed."""
+    return "".join(secrets.choice(REPLY_CODE_ALPHABET) for _ in range(4))
+
+
 class Partner(models.Model):
     """An external provider (e.g. a mountaineering school) the guide works for. The token link is the partner's
     only key: whoever has it sees the periods released to this partner and can place an offer there."""
@@ -270,6 +311,7 @@ class ExternalTour(models.Model):
                                 related_name="external_tours")
     provider = models.CharField(_("Anbieter"), max_length=200, blank=True)
     title = models.CharField(_("Titel"), max_length=300)
+    category = models.CharField(_("Tourenart"), max_length=20, choices=TourCategory.choices, blank=True)
     url = models.URLField(_("Link zum Angebot"), max_length=1000, blank=True)
     start_date = models.DateField(_("Von"))
     end_date = models.DateField(_("Bis"))
@@ -366,6 +408,7 @@ class Booking(models.Model):
     status = models.CharField(max_length=20, choices=Status.choices, default=Status.REQUESTED, db_index=True)
     deadline = models.DateTimeField(null=True, blank=True)  # when the current status expires
     token = models.CharField(max_length=64, unique=True, default=new_token, editable=False)
+    reply_code = models.CharField(max_length=8, default=new_reply_code, editable=False)
 
     # Weather cancellation with a replacement date (R-025/R-026): costs the guest pays if the new date doesn't work
     incurred_costs = models.DecimalField(max_digits=9, decimal_places=2, default=0)
@@ -496,6 +539,85 @@ class InvoiceLine(models.Model):
     @property
     def amount(self) -> Decimal:
         return money(self.quantity * self.unit_price)
+
+
+class Draft(models.Model):
+    """What the guide typed into a new scheduled date or template, saved while typing so nothing gets lost.
+    Deleted once the date is published or the template saved. Uploaded photos are not part of a draft."""
+
+    class Kind(models.TextChoices):
+        DEPARTURE = "departure", _("Termin")
+        TOUR = "tour", _("Vorlage")
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="drafts")
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    data = models.JSONField(default=dict)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-updated_at"]
+
+    @property
+    def title(self) -> str:
+        return (self.data.get("title") or "").strip() or str(_("Ohne Titel"))
+
+    @property
+    def start_date(self) -> str:
+        return self.data.get("start_date", "")
+
+
+class Message(models.Model):
+    """One message between guide and guest about a booking. The guide writes in the dashboard, the guest gets an
+    email and simply replies to it (or writes on the guest page); replies land here."""
+
+    class Direction(models.TextChoices):
+        TO_GUEST = "out", _("An den Gast")
+        FROM_GUEST = "in", _("Vom Gast")
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="messages")
+    direction = models.CharField(max_length=3, choices=Direction.choices)
+    body = models.TextField(validators=[MaxLengthValidator(10000)])
+    sender_email = models.EmailField(blank=True)
+    # A reply from an address that isn't the guest's: shown to the guide for review, never to the guest.
+    needs_review = models.BooleanField(default=False)
+    email_message_id = models.CharField(max_length=255, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    @property
+    def from_guest(self) -> bool:
+        return self.direction == self.Direction.FROM_GUEST
+
+
+class Notification(models.Model):
+    """Shown top right in the dashboard until the guide opens it."""
+
+    class Kind(models.TextChoices):
+        BOOKING = "booking", _("Neue Buchung")
+        REQUEST = "request", _("Neue Anfrage")
+        MESSAGE = "message", _("Neue Nachricht")
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="notifications", null=True, blank=True)
+    kind = models.CharField(max_length=10, choices=Kind.choices)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        indexes = [models.Index(fields=["guide", "read_at"])]
+
+    @property
+    def text(self) -> str:
+        guest = self.booking.guest_name if self.booking_id else ""
+        if self.kind == self.Kind.BOOKING:
+            return _("Du hast eine neue Buchung: %(guest)s") % {"guest": guest}
+        if self.kind == self.Kind.REQUEST:
+            return _("Du hast eine neue Anfrage: %(guest)s") % {"guest": guest}
+        return _("Neue Nachricht von %(guest)s") % {"guest": guest}
 
 
 class BookingEvent(models.Model):

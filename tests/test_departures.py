@@ -247,8 +247,10 @@ def test_cancel_departure_refunds_everyone(stripe_guide, make_departure, make_re
     pending.refresh_from_db()
     assert (a.status, a.refund_due) == (S.CANCELLED, Decimal("960.00"))
     assert pending.status == S.EXPIRED
-    assert [m.to[0] for m in mailoutbox] == ["a@example.com"]
+    assert [m.to[0] for m in mailoutbox] == ["a@example.com", stripe_guide.email]
     assert "CHF 960.00" in mailoutbox[0].body and "Zu viel Neuschnee" in mailoutbox[0].body
+    assert "1 angemeldete" in mailoutbox[1].body, "the guide gets a confirmation"
+    assert a.messages.get().body == "Zu viel Neuschnee", "the message stays in the guest's history"
     assert services.availability.range_bookable(stripe_guide, in_days(3), in_days(3)), "days free for requests again"
 
 

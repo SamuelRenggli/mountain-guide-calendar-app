@@ -16,9 +16,9 @@ _ = translation.gettext_lazy
 NAV = [
     ("tours", _("Meine Touren"), "dashboard:home", [
         (_("Anfragen & Angebote"), "dashboard:home", {"home", "booking", "invoice"}),
-        (_("Tour ausschreiben"), "dashboard:tours", {"tours", "tour_new", "tour_edit"}),
-        (_("Ausgeschriebene Touren"), "dashboard:departures",
-         {"departures", "departure", "departure_new", "departure_edit"}),
+        (_("Tour ausschreiben"), "dashboard:tours", {"tours", "tour_new", "tour_edit", "departure_new"}),
+        (_("Ausgeschriebene Touren"), "dashboard:departures", {"departures", "departure", "departure_edit"}),
+        (_("Bilder"), "dashboard:pictures", {"pictures"}),
     ]),
     ("calendar", _("Kalender"), "dashboard:calendar", [
         (_("Übersicht"), "dashboard:calendar", {"calendar"}),
@@ -42,4 +42,11 @@ def nav(request):
         sections.append({"label": label, "url_name": url_name, "active": active})
         if active and len(section_tabs) > 1:
             tabs = [{"label": t, "url_name": u, "active": current in names} for t, u, names in section_tabs]
-    return {"nav_sections": sections, "nav_tabs": tabs}
+    return {"nav_sections": sections, "nav_tabs": tabs, **notifications(request)}
+
+
+def notifications(request) -> dict:
+    """Top right in the dashboard: "Du hast eine neue Buchung" and friends, until the guide opens them."""
+    unread = list(request.user.notifications.filter(read_at__isnull=True).select_related("booking")[:8])
+    return {"notifications": unread, "notification_count": request.user.notifications.filter(
+        read_at__isnull=True).count() if len(unread) == 8 else len(unread)}
