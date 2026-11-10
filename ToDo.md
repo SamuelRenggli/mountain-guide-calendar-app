@@ -64,13 +64,17 @@ The pilot test with one guide is described in [TEST_PLAN.md](TEST_PLAN.md).
 
 ## 4. Stripe (start in TEST mode)
 
-- [ ] Stripe account for the platform; Connect enabled (Express accounts, country Switzerland).
+- [x] Stripe account for the platform; Connect enabled (Express accounts, country Switzerland). (Sandbox, 04.11.2026)
+- [x] Accounts v1 support enabled (Settings → Developers → API policies). Stripe blocks v1 account creation for new
+      Connect platforms by default; without it "Mit Stripe verbinden" fails.
+- [ ] Before going live: enable Accounts v1 support in live mode too, or move account creation in
+      `payments/stripe_service.py` (`onboarding_url`) to Accounts v2 (`POST /v2/core/accounts`).
 - [ ] Connect settings: platform name, logo, support email (guides see this during onboarding).
-- [ ] Payment methods: cards and TWINT on (also for connected accounts) — scheduled dates accept only these.
-- [ ] Webhook endpoint `https://buchen.example.ch/zahlungen/stripe/webhook/`, events from **your account**:
+- [x] Payment methods: cards and TWINT on (also for connected accounts) — scheduled dates accept only these.
+- [x] Webhook endpoint `https://buchen.example.ch/zahlungen/stripe/webhook/`, events from **your account**:
       `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.expired`,
       `checkout.session.async_payment_failed` → secret into `STRIPE_WEBHOOK_SECRET`.
-- [ ] Second endpoint, same URL, events from **connected accounts**: `account.updated`
+- [x] Second endpoint, same URL, events from **connected accounts**: `account.updated`
       → secret into `STRIPE_CONNECT_WEBHOOK_SECRET`.
 - [ ] Decide the platform fee (`PLATFORM_FEE_PERCENT`, currently 0).
 - [ ] After the pilot test passes: switch to live keys and create the two webhooks again in live mode.

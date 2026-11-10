@@ -14,7 +14,7 @@ Base address: **https://tourchef-447564206646.europe-west6.run.app/**
 | Privacy policy | https://tourchef-447564206646.europe-west6.run.app/rechtliches/datenschutz/ |
 | Legal notice | https://tourchef-447564206646.europe-west6.run.app/rechtliches/impressum/ |
 | Terms of use | https://tourchef-447564206646.europe-west6.run.app/rechtliches/nutzungsbedingungen/ |
-| Health check | https://tourchef-447564206646.europe-west6.run.app/healthz |
+| Quick "is it up?" check | the login page (`/healthz` doesn't work on Cloud Run: Google reserves paths ending in `z`) |
 | Admin | `<base address>/<ADMIN_URL>` — the path is in `.env.cloudrun` (kept out of this file on purpose) |
 
 Scheduled dates have their own address `/t/<id>/`, shown on the date's page in the dashboard (Termine → date →
@@ -30,6 +30,7 @@ Scheduled dates have their own address `/t/<id>/`, shown on the date's page in t
 ## Notes
 
 - The first visit after a quiet period takes a few seconds (the app scales to zero).
-- No emails go out yet and online payment isn't set up — see
+- Online payment works in Stripe **test mode** (sandbox, set up 04.11.2026). Test card `4242 4242 4242 4242`.
+- No emails go out yet — see
   [Problems-with-the-current-setup.md](Problems-with-the-current-setup.md).
 - Logs: `gcloud run services logs read tourchef --region=europe-west6 --limit=50`

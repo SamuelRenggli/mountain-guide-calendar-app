@@ -11,7 +11,7 @@ before relying on a number.
 | Problem | Effect | Fix |
 |---|---|---|
 | `EMAIL_HOST` is empty in `.env.cloudrun` | No email is sent; they only appear in the Cloud Run log. Guests get no confirmations or links to their booking, guides get no notice of new requests, password reset doesn't work. | SMTP provider, e.g. Brevo (free: 300 emails/day). Sending address on your own domain with SPF, DKIM and DMARC, otherwise mails land in spam. |
-| `STRIPE_SECRET_KEY` is empty | Nobody can pay online; guides can't publish scheduled dates (they require Stripe). | Stripe test keys first, then live. Add webhook events `checkout.session.expired` and `checkout.session.async_payment_failed`; turn on TWINT for connected accounts. |
+| Stripe runs in test mode only | Payments work end to end with test cards; no real money moves. | Before live: create the live keys and both webhooks again in live mode, enable Accounts v1 support there too (or move to Accounts v2), set Connect branding to "Tourchef". |
 | `OPERATOR_ADDRESS`, `PRIVACY_EMAIL` not set | Legal notice and privacy policy show placeholders. | Set both before the first real guest books, then `bash deploy/push-config.sh`. |
 
 ## 2. Money (Stripe)
