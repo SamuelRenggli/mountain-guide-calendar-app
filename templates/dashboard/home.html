@@ -13,11 +13,6 @@
   4. <a href="{% url 'dashboard:settings' %}">{% translate "Widget auf deiner Website einbauen" %}</a> ·
   5. <a href="{% url 'dashboard:pictures' %}">{% translate "Bilder für deine Tourenarten hochladen" %}</a> <span class="small muted">({% translate "optional" %})</span>
 </div>
-{% elif no_pictures %}
-<div class="alert info small">
-  {% translate "Optional: Lade Bilder für deine Tourenarten hoch (Freeride, Skitour, Gletschertrekking …). Dann wählst du beim Ausschreiben nur noch aus. Bis dahin kannst du die Tourchef-Bilder verwenden." %}
-  <a href="{% url 'dashboard:pictures' %}">{% translate "Bilder hochladen" %}</a>
-</div>
 {% endif %}
 
 {% if partner_offers %}

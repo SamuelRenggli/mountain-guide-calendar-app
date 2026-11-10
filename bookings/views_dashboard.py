@@ -72,7 +72,6 @@ def home(request):
                                                 S.AWAITING_PAYMENT]).order_by("-updated_at")[:50],
         "is_new": not request.user.bookings.exists() and not upcoming_departures.exists(),
         "partner_offers": request.user.external_tours.filter(status=ExternalTour.Status.PENDING),
-        "no_pictures": not request.user.pictures.filter(in_library=True).exists(),
         "past_departures": request.user.departures.filter(Q(end_date__lt=today) | Q(status=D.CANCELLED))
                                                   .order_by("-start_date")[:50],
     })
