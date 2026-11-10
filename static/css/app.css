@@ -91,6 +91,8 @@ dl.facts dd { margin: 0; }
 .pre { white-space: pre-wrap; }
 .empty { color: var(--muted); font-style: italic; }
 code.embed { display: block; padding: .75rem; background: #f0f2f0; border-radius: 6px; font-size: .8rem; word-break: break-all; }
+.share-row { display: flex; gap: .5rem; align-items: center; }
+.share-row code.embed { flex: 1; min-width: 0; }
 
 /* Badges */
 .badge { display: inline-block; padding: .1rem .5rem; border-radius: 999px; font-size: .78rem; font-weight: 600; background: #eee; }
@@ -303,3 +305,6 @@ input[type=datetime-local], input[type=time] { width: 100%; padding: .55rem .65r
 .field input.phone-number { width: calc(100% - 8.1rem); display: inline-block; }
 .field input.time-input { max-width: 8rem; }
 .autosave-status { margin-top: 0; }
+details.fold > summary { list-style: none; display: inline-block; }
+details.fold > summary::-webkit-details-marker { display: none; }
+details.fold[open] > summary { margin-bottom: 1rem; }

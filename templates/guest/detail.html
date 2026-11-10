@@ -16,6 +16,8 @@
       <dt>{% translate "Treffpunkt" %}</dt><dd>{{ d.meeting_point }}{% if d.meeting_time %}, {{ d.meeting_time|time:"H:i" }}{% endif %}</dd>
       <dt>{% translate "Entscheid" %}</dt><dd>{% if d.status == "confirmed" %}{% translate "Die Tour findet statt." %}{% elif d.status == "cancelled" %}{% translate "Abgesagt" %}{% else %}{% blocktranslate with day=d.decision_deadline|date:"d.m.Y H:i" trimmed %}bis {{ day }}{% endblocktranslate %}{% endif %}</dd>
       {% endwith %}
+    {% elif booking.decision_date and booking.status == "confirmed" %}
+      <dt>{% translate "Entscheid" %}</dt><dd>{% blocktranslate with day=booking.decision_date|date:"d.m.Y" trimmed %}bis {{ day }} (Wetter, Verhältnisse){% endblocktranslate %}</dd>
     {% endif %}
     {% if booking.deadline %}<dt>{% translate "Antwort bis" %}</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
     {% if booking.refunded_amount or booking.refund_due %}<dt>{% translate "Rückzahlung" %}</dt><dd>CHF {{ booking.refunded_amount }}{% if booking.refund_due %} <span class="small muted">{% blocktranslate with due=booking.refund_due trimmed %}(+ CHF {{ due }} in Bearbeitung){% endblocktranslate %}</span>{% endif %}</dd>{% endif %}

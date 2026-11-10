@@ -14,13 +14,8 @@
     <dl class="facts">
       <dt>{% if booking.is_window %}{% translate "Zeitfenster" %}{% else %}{% translate "Datum" %}{% endif %}</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
       <dt>{% if booking.is_registration %}{% translate "Plätze" %}{% else %}{% translate "Teilnehmende" %}{% endif %}</dt><dd>{{ booking.participants }}</dd>
-      <dt>{% translate "Preis" %}</dt><dd>{% include "_price.html" %}</dd>
-      {% if booking.deadline %}<dt>{% translate "Frist" %}</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
-      {% if booking.paid_at %}<dt>{% translate "Bezahlt" %}</dt><dd>CHF {{ booking.amount_paid }}, {{ booking.paid_at|date:"d.m.Y H:i" }} ({{ booking.get_payment_method_display }})</dd>{% endif %}
-      {% if booking.refunded_amount or booking.refund_due %}<dt>{% translate "Zurückbezahlt" %}</dt><dd>CHF {{ booking.refunded_amount }}{% if booking.refund_due %} <span class="small muted">{% blocktranslate with due=booking.refund_due trimmed %}(+ CHF {{ due }} ausstehend){% endblocktranslate %}</span>{% endif %}</dd>{% endif %}
-      {% if booking.terms_accepted_at %}<dt>{% translate "Bedingungen" %}</dt><dd class="small">{% blocktranslate with day=booking.terms_accepted_at|date:"d.m.Y H:i" free=booking.cancel_free_days partial=booking.cancel_partial_days percent=booking.cancel_partial_percent trimmed %}akzeptiert {{ day }} (Storno: bis {{ free }} Tage 0 %, bis {{ partial }} Tage {{ percent }} %){% endblocktranslate %}</dd>{% endif %}
+      {% if booking.decision_date %}<dt>{% translate "Entscheid-Frist" %}</dt><dd>{{ booking.decision_date|date:"d.m.Y" }}</dd>{% endif %}
     </dl>
-    {% include "_breakdown.html" %}
   </section>
   <section class="card">
     <h2>{% translate "Gast" %}</h2>
@@ -49,21 +44,20 @@
   <button class="btn" type="submit">{% translate "Angebot senden" %}</button>
 </form>
 {% elif booking.status == "requested" %}
-<div class="grid-2">
-  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'confirm' %}" class="card" data-pricing data-days="{{ booking.days }}">{% csrf_token %}
-    <h2>{% translate "Bestätigen" %}</h2>
-    <p class="small muted">{% translate "Der Gast sieht deinen Preis und, falls gewählt, die Aufteilung. Spesen rechnest du nach der Tour ab." %}</p>
-    {% include "_form.html" with form=confirm_form %}
-    {% include "dashboard/_suggestion.html" %}
-    <button class="btn" type="submit">{% translate "Anfrage bestätigen" %}</button>
-  </form>
-  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" class="card" data-pricing>{% csrf_token %}
-    <h2>{% translate "Anderes Datum oder anderen Preis vorschlagen" %}</h2>
+<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'confirm' %}" class="card">{% csrf_token %}
+  <h2>{% translate "Bestätigen" %}</h2>
+  <p class="small muted">{% blocktranslate count n=booking.days trimmed %}Preis = Tagesansatz × {{ n }} Tag. Spesen rechnest du nach der Tour ab.{% plural %}Preis = Tagesansatz × {{ n }} Tage. Spesen rechnest du nach der Tour ab.{% endblocktranslate %}</p>
+  {% include "_form.html" with form=confirm_form %}
+  <button class="btn" type="submit">{% translate "Anfrage bestätigen" %}</button>
+</form>
+<details class="card fold"{% if offer_form.errors %} open{% endif %}>
+  <summary class="btn btn-secondary">{% translate "Anderes Datum oder anderen Preis vorschlagen" %}</summary>
+  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" data-pricing>{% csrf_token %}
     {% include "_form.html" with form=offer_form %}
-  {% include "dashboard/_suggestion.html" %}
+    {% include "dashboard/_suggestion.html" %}
     <button class="btn btn-secondary" type="submit">{% translate "Gegenangebot senden" %}</button>
   </form>
-</div>
+</details>
 {% elif booking.status == "offered" %}
 <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" class="card" data-pricing>{% csrf_token %}
   <h2>{% translate "Gegenangebot anpassen" %}</h2>
@@ -138,6 +132,18 @@
   <button class="btn btn-danger" type="submit">{% translate "Tour absagen" %}</button>
 </form>
 {% endif %}
+
+<section class="card">
+  <h2>{% translate "Preis und Bedingungen" %}</h2>
+  <dl class="facts">
+      <dt>{% translate "Preis" %}</dt><dd>{% include "_price.html" %}</dd>
+      {% if booking.deadline %}<dt>{% translate "Frist" %}</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
+      {% if booking.paid_at %}<dt>{% translate "Bezahlt" %}</dt><dd>CHF {{ booking.amount_paid }}, {{ booking.paid_at|date:"d.m.Y H:i" }} ({{ booking.get_payment_method_display }})</dd>{% endif %}
+      {% if booking.refunded_amount or booking.refund_due %}<dt>{% translate "Zurückbezahlt" %}</dt><dd>CHF {{ booking.refunded_amount }}{% if booking.refund_due %} <span class="small muted">{% blocktranslate with due=booking.refund_due trimmed %}(+ CHF {{ due }} ausstehend){% endblocktranslate %}</span>{% endif %}</dd>{% endif %}
+      {% if booking.terms_accepted_at %}<dt>{% translate "Bedingungen" %}</dt><dd class="small">{% blocktranslate with day=booking.terms_accepted_at|date:"d.m.Y H:i" free=booking.cancel_free_days partial=booking.cancel_partial_days percent=booking.cancel_partial_percent trimmed %}akzeptiert {{ day }} (Storno: bis {{ free }} Tage 0 %, bis {{ partial }} Tage {{ percent }} %){% endblocktranslate %}</dd>{% endif %}
+  </dl>
+  {% include "_breakdown.html" %}
+</section>
 
 <section class="card">
   <h2>{% translate "Verlauf" %}</h2>

@@ -154,7 +154,8 @@ def _price_note(price, rows, estimated_expenses) -> str:
 # --- Guide actions ---------------------------------------------------------
 
 
-def confirm(booking: Booking, message: str = "", *, price, price_breakdown=(), estimated_expenses=None) -> Booking:
+def confirm(booking: Booking, message: str = "", *, price, price_breakdown=(), estimated_expenses=None,
+            decision_date=None) -> Booking:
     """Confirm the requested days at the price the guide quotes (expenses are billed after the tour)."""
     if booking.is_window:
         raise BookingError(_("Die Anfrage hat ein Zeitfenster: Bitte schlage genaue Daten vor."))
@@ -162,6 +163,7 @@ def confirm(booking: Booking, message: str = "", *, price, price_breakdown=(), e
     booking = transition(
         booking, {S.REQUESTED}, S.CONFIRMED, Actor.GUIDE, f"{_price_note(price, rows, estimated_expenses)}. {message}".strip(),
         price=price, price_breakdown=rows, estimated_expenses=estimated_expenses, guide_message=message, deadline=None,
+        decision_date=decision_date,
     )
     transaction.on_commit(lambda: emails.confirmed(booking))
     return booking

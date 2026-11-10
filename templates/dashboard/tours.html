@@ -10,7 +10,7 @@
 <section class="card">
   {% if tours %}
   <div class="table-wrap"><table>
-    <thead><tr><th>{% translate "Titel" %}</th><th>{% translate "Dauer" %}</th><th>{% translate "Preis pro Person" %}</th><th>{% translate "Gruppe" %}</th><th>{% translate "Aktiv" %}</th><th></th></tr></thead>
+    <thead><tr><th>{% translate "Titel" %}</th><th>{% translate "Dauer" %}</th><th>{% translate "Preis pro Person" %}</th><th>{% translate "Gruppe" %}</th><th></th></tr></thead>
     <tbody>
     {% for tour in tours %}
       <tr>
@@ -18,9 +18,8 @@
         <td>{% blocktranslate count n=tour.duration_days trimmed %}{{ n }} Tag{% plural %}{{ n }} Tage{% endblocktranslate %}</td>
         <td>CHF {{ tour.price_per_person|floatformat:"-2" }}</td>
         <td>{{ tour.min_participants }}–{{ tour.max_participants }}</td>
-        <td>{% if tour.is_active %}{% translate "Ja" %}{% else %}{% translate "Nein" %}{% endif %}</td>
         <td class="row">
-          {% if tour.is_active %}<a class="btn btn-small" href="{% url 'dashboard:departure_new' %}?vorlage={{ tour.pk }}">{% translate "Ausschreiben" %}</a>{% endif %}
+          <a class="btn btn-small" href="{% url 'dashboard:departure_new' %}?vorlage={{ tour.pk }}">{% translate "Ausschreiben" %}</a>
           <form method="post" action="{% url 'dashboard:tour_delete' tour.pk %}" class="inline">{% csrf_token %}
             <button class="btn btn-danger btn-small" type="submit">{% translate "Löschen" %}</button>
           </form>

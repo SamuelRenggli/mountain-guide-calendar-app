@@ -1,5 +1,6 @@
 import re
 from datetime import datetime, time, timedelta
+from decimal import Decimal
 
 from django import forms
 from django.core import signing
@@ -11,7 +12,7 @@ from accounts.models import LANGUAGE_CHOICES
 from . import pictures
 from .models import (
     BlockedPeriod, Departure, ExternalTour, InvoiceLine, OpenPeriod, Partner, PartnerPeriod, Picture, Tour,
-    TourCategory,
+    TourCategory, money,
 )
 
 _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
@@ -258,8 +259,6 @@ class PhotoMixin:
             help_text=_("Neues Bild hochladen. Erscheint im Buchungskalender und kommt in deine Bibliothek. "
                         "JPG, PNG oder WebP, höchstens 8 MB."),
         )
-        if current:
-            self.fields["remove_photo"] = forms.BooleanField(label=_("Bild entfernen"), required=False)
 
     def clean_photo(self):
         upload = self.cleaned_data.get("photo")
@@ -339,13 +338,11 @@ class TourForm(PhotoMixin, forms.ModelForm):
     class Meta:
         model = Tour
         fields = ("title", "category", "duration_days", "price_per_person", "min_participants", "max_participants", "description",
-                  "requirements", "equipment", "included", "not_included", "location", "meeting_point", "meeting_time",
-                  "is_active")
+                  "requirements", "equipment", "included", "not_included", "location", "meeting_point", "meeting_time")
         widgets = {
             "description": forms.Textarea(attrs={"rows": 4}), "requirements": TEXTAREA, "equipment": TEXTAREA,
             "included": TEXTAREA, "not_included": TEXTAREA,
         }
-        help_texts = {"is_active": _("Inaktive Vorlagen erscheinen nicht mehr beim Ausschreiben.")}
 
     def __init__(self, *args, guide=None, **kwargs):
         super().__init__(*args, **kwargs)
@@ -380,11 +377,11 @@ class DepartureForm(PhotoMixin, forms.ModelForm):
 
     REQUIRED = ("meeting_point", "meeting_time")  # R-101
 
-    def __init__(self, *args, editing=False, picture=None, guide=None, **kwargs):
+    def __init__(self, *args, editing=False, from_template=False, picture=None, guide=None, **kwargs):
         super().__init__(*args, **kwargs)
         for name in self.REQUIRED:
             self.fields[name].required = True
-        if editing:
+        if editing or from_template:
             del self.fields["save_as_template"]
         self.add_photo_fields(self.instance.picture if self.instance.pk else picture, guide=guide)
 
@@ -441,7 +438,7 @@ class RefundExtraForm(forms.Form):
 
 def _money(label, **kwargs):
     return forms.DecimalField(label=label, min_value=0, max_digits=9, decimal_places=2,
-                              widget=forms.NumberInput(attrs={"step": "0.05"}), **kwargs)
+                              widget=forms.NumberInput(attrs={"step": "any"}), **kwargs)
 
 
 def _price(label=None):
@@ -489,8 +486,41 @@ class PricingForm(forms.Form):
                          guide_rate=d["guide_rate"], aspirant_rate=d["aspirant_rate"])
 
 
-class ConfirmForm(PricingForm):
-    pass
+class ConfirmForm(forms.Form):
+    """Confirm the request as asked: day rate x days, a decision date and a note. Other dates or prices: OfferForm."""
+
+    guide_rate = _money(_("Tagesansatz Bergführer (CHF)"), help_text=_("Aus deinen Stufen nach Gruppengrösse."))
+    decision_date = forms.DateField(
+        label=_("Entscheid-Frist"), widget=_date_input(),
+        help_text=_("Bis dann entscheidest du definitiv, ob die Tour stattfindet (Wetter, Verhältnisse). Der Gast sieht das Datum."),
+    )
+    estimated_expenses = _money(_("Geschätzte Spesen (CHF, unverbindlich)"), required=False,
+                                help_text=_("Nur zur Information für den Gast, z. B. Reise, Hütte, Bahn. "
+                                            "Abgerechnet wird nach der Tour."))
+    message = forms.CharField(label=_("Nachricht an den Gast (optional)"), max_length=2000, required=False,
+                              widget=TEXTAREA)
+
+    def __init__(self, *args, booking=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.booking = booking
+
+    @classmethod
+    def initial_for(cls, booking) -> dict:
+        today = timezone.localdate()
+        return {"guide_rate": booking.guide.rate_for(booking.participants),
+                "decision_date": max(booking.start_date - timedelta(days=2), today),
+                "estimated_expenses": booking.estimated_expenses}
+
+    def clean_decision_date(self):
+        day = self.cleaned_data["decision_date"]
+        if day < timezone.localdate():
+            raise forms.ValidationError(_("Das Datum liegt in der Vergangenheit."))
+        if self.booking and day > self.booking.start_date:
+            raise forms.ValidationError(_("Die Entscheid-Frist muss vor dem Tourenbeginn liegen."))
+        return day
+
+    def price(self, booking):
+        return money(self.cleaned_data["guide_rate"] * Decimal(str(booking.days)))
 
 
 class OfferForm(PricingForm):

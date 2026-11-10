@@ -69,7 +69,7 @@ def _detail_context(booking, **forms):
     context = {
         "booking": booking,
         "events": booking.events.all(),
-        "confirm_form": ConfirmForm(prefix="confirm", initial=ConfirmForm.initial_for(booking)),
+        "confirm_form": ConfirmForm(prefix="confirm", initial=ConfirmForm.initial_for(booking), booking=booking),
         "reject_form": MessageForm(prefix="reject"),
         "cancel_form": GuideCancelForm(prefix="cancel"),
         "offer_form": OfferForm(prefix="offer", initial={
@@ -175,13 +175,13 @@ def booking_action(request, pk, name):
     post = request.POST
     try:
         if name in ("confirm", "offer"):
-            form = (ConfirmForm if name == "confirm" else OfferForm)(post, prefix=name)
+            form = ConfirmForm(post, prefix=name, booking=booking) if name == "confirm" else OfferForm(post, prefix=name)
             if not form.is_valid():
                 return _rerender(request, booking, **{f"{name}_form": form})
             d = form.cleaned_data
             if name == "confirm":
-                services.confirm(booking, d["message"], price=d["price"], estimated_expenses=d["estimated_expenses"],
-                                 price_breakdown=form.breakdown(booking, booking.days))
+                services.confirm(booking, d["message"], price=form.price(booking), estimated_expenses=d["estimated_expenses"],
+                                 decision_date=d["decision_date"])
             else:
                 days = (d["end_date"] - d["start_date"]).days + 1
                 services.counter_offer(booking, start_date=d["start_date"], end_date=d["end_date"], price=d["price"],
@@ -284,12 +284,12 @@ def departure_new(request):
     initial = DepartureForm.initial_from(tour, start)
     if draft and request.method == "GET":
         initial.update(_draft_initial(draft))
-    form = DepartureForm(request.POST or None, request.FILES or None, initial=initial,
+    form = DepartureForm(request.POST or None, request.FILES or None, initial=initial, from_template=tour is not None,
                          picture=tour.picture if tour else None, guide=request.user)
     if request.method == "POST" and form.is_valid():
         try:
             departure = departures.create_departure(request.user, tour=tour, **_departure_fields(form, request.user),
-                                                    save_as_template=form.cleaned_data["save_as_template"])
+                                                    save_as_template=form.cleaned_data.get("save_as_template", False))
         except services.BookingError as exc:
             form.add_error(None, str(exc))
         else:

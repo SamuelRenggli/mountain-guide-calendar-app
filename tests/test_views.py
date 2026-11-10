@@ -243,20 +243,32 @@ def test_guest_page_in_booking_language(client, guide, make_booking):
 # --- Dashboard --------------------------------------------------------------------------------
 
 
-def test_guide_confirms_with_breakdown(client, guide, make_booking, mailoutbox, django_capture_on_commit_callbacks):
+def test_guide_confirms_with_day_rate_and_decision_date(client, guide, make_booking, mailoutbox,
+                                                        django_capture_on_commit_callbacks):
+    """Confirming takes the request as asked: day rate x days, no breakdown; the guest sees the decision date."""
     booking = make_booking(guide, in_days(10), end_date=in_days(11))
     client.force_login(guide)
-    data = {"confirm-price": "2000", "confirm-guide_rate": "750", "confirm-extra_guides": "0",
-            "confirm-aspirants": "1", "confirm-aspirant_rate": "500", "confirm-estimated_expenses": "150",
-            "confirm-show_breakdown": "on", "confirm-message": "Bis bald"}
+    data = {"confirm-guide_rate": "750", "confirm-decision_date": in_days(8).isoformat(),
+            "confirm-estimated_expenses": "150", "confirm-message": "Bis bald"}
     with django_capture_on_commit_callbacks(execute=True):
         response = client.post(reverse("dashboard:booking_action", args=[booking.pk, "confirm"]), data)
     assert response.status_code == 302
     booking.refresh_from_db()
-    assert (booking.status, booking.price, booking.estimated_expenses) == (S.CONFIRMED, 2000, 150)
-    assert [r["amount"] for r in booking.price_breakdown] == ["1500.00", "1000.00"]
+    assert (booking.status, booking.price, booking.estimated_expenses) == (S.CONFIRMED, 1500, 150)
+    assert booking.price_breakdown == [] and booking.decision_date == in_days(8)
+    assert f"{in_days(8):%d.%m.%Y}" in mailoutbox[-1].body
     guest_html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
-    assert "Aspirant" in guest_html and "Spesen geschätzt ca. CHF 150" in guest_html
+    assert "Spesen geschätzt ca. CHF 150" in guest_html and f"{in_days(8):%d.%m.%Y}" in guest_html
+
+
+def test_confirm_rejects_decision_date_after_start(client, guide, make_booking):
+    booking = make_booking(guide, in_days(10))
+    client.force_login(guide)
+    data = {"confirm-guide_rate": "750", "confirm-decision_date": in_days(11).isoformat()}
+    response = client.post(reverse("dashboard:booking_action", args=[booking.pk, "confirm"]), data)
+    booking.refresh_from_db()
+    assert response.status_code == 400 and booking.status == S.REQUESTED
+    assert "vor dem Tourenbeginn" in response.content.decode()
 
 
 def test_guide_offers_other_dates(client, guide, make_booking):
@@ -316,6 +328,7 @@ def test_departure_from_template_is_prefilled(client, stripe_guide, tour):
     html = client.get(reverse("dashboard:departure_new"), {"vorlage": tour.pk, "datum": in_days(30).isoformat()}).content.decode()
     assert 'value="Piz Palü"' in html and 'value="Diavolezza Talstation"' in html
     assert f'name="end_date" value="{in_days(31).isoformat()}"' in html, "end follows the template's duration"
+    assert 'name="save_as_template"' not in html, "already a template"
 
 
 def test_departure_detail_lists_participants_and_logs_access(client, stripe_guide, make_departure, make_registration):

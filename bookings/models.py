@@ -388,6 +388,8 @@ class Booking(models.Model):
     # How the guide arrived at the price (R-022): [{"label", "persons", "days", "rate", "amount"}]
     price_breakdown = models.JSONField(default=list, blank=True)
     estimated_expenses = models.DecimalField(max_digits=9, decimal_places=2, null=True, blank=True)  # R-023
+    # Confirmed requests: by this day the guide decides for sure whether the tour takes place (weather, conditions).
+    decision_date = models.DateField(null=True, blank=True)
     invoiced_at = models.DateTimeField(null=True, blank=True)
 
     guest_name = models.CharField(max_length=100)

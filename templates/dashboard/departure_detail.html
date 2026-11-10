@@ -10,9 +10,11 @@
 
 <section class="card">
   <h2>{% translate "Link zum Teilen" %}</h2>
-  <code class="embed" id="share-url">{{ departure.public_url }}</code>
+  <div class="share-row">
+    <code class="embed" id="share-url">{{ departure.public_url }}</code>
+    <button class="btn" type="button" data-share="#share-url" data-share-title="{{ departure.title }}">{% translate "Teilen" %}</button>
+  </div>
   <p class="row">
-    <button class="btn btn-small" type="button" data-share="#share-url" data-share-title="{{ departure.title }}">{% translate "Teilen" %}</button>
     <button class="btn btn-secondary btn-small" type="button" data-copy="#share-url">{% translate "Link kopieren" %}</button>
     <a class="small" href="{{ departure.public_url }}" target="_blank" rel="noopener">{% translate "Ansehen" %}</a>
   </p>

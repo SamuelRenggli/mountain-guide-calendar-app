@@ -195,6 +195,7 @@ MESSAGES = {
 SUMMARY = _("Tour:          {tour}\nDatum:         {dates}\nTeilnehmende:  {participants}\nPreis:         {price}")
 GUEST_CONTACT = _("Gast:          {guest}\nE-Mail:        {guest_email}\nTelefon:       {guest_phone}")
 GUIDE_NOTE = _("\nNachricht von {guide}:\n{message}\n")
+DECISION_NOTE = _("\nDefinitiver Entscheid, ob die Tour stattfindet (Wetter, Verhältnisse): bis {day}.\n")
 PRICE_BASE = _("CHF {rate} pro Tag + Spesen")
 PRICE_QUOTED = _("CHF {price} + Spesen")
 PRICE_EXPENSES = _("CHF {price} + Spesen (geschätzt ca. CHF {expenses}, unverbindlich)")
@@ -366,6 +367,8 @@ def _context(b) -> dict:
     ctx["guest_contact"] = GUEST_CONTACT.format(**ctx)
     ctx["guide_note"] = GUIDE_NOTE.format(guide=ctx["guide"], message=b.guide_message) if b.guide_message else ""
     ctx["breakdown"] = _breakdown(b)
+    if b.decision_date and not b.is_invoiced:
+        ctx["breakdown"] += DECISION_NOTE.format(day=f"{b.decision_date:%d.%m.%Y}")
     ctx["billing_hint"] = BILLING_HINT.format(**ctx)
     ctx["vat_line"] = _vat_line(b)
     ctx["invoice"] = _invoice(b) if b.is_invoiced else ""
