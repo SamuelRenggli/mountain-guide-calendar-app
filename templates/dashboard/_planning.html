@@ -1,0 +1,24 @@
+{% load i18n %}{% if booking.status != "requested" and booking.status != "rejected" and booking.status != "expired" %}
+<section class="card" id="angaben">
+  <div class="spread">
+    <h2>{% translate "Angaben für die Tourenplanung" %}</h2>
+    {% if profile %}<span class="small muted">{% blocktranslate with day=profile.updated_at|date:"d.m.Y" trimmed %}vom Gast, Stand {{ day }}{% endblocktranslate %}</span>{% endif %}
+  </div>
+  {% if profile and profile.is_filled %}
+  <dl class="facts">
+    <dt>{% translate "Rechnungsadresse" %}</dt><dd class="pre">{{ profile.billing_address|default:"–" }}</dd>
+    <dt>{% translate "Notfallkontakt" %}</dt><dd>{{ profile.emergency_contact|default:"–" }}</dd>
+    <dt>{% translate "Ernährung" %}</dt><dd>{{ profile.get_diet_display|default:"–" }}</dd>
+    <dt>{% translate "Allergien, Gesundheit" %}</dt><dd class="pre">{{ profile.allergies|default:"–" }}</dd>
+    <dt>{% translate "Alpenverein" %}</dt><dd>{{ profile.get_club_display|default:"–" }}{% if profile.club_number %}, Nr. {{ profile.club_number }}{% endif %}{% if profile.club and profile.club != "none" %} <span class="small muted">{% if profile.has_reciprocal_rights %}({% translate "Gegenrecht in SAC-Hütten" %}){% else %}({% translate "kein Gegenrecht" %}){% endif %}</span>{% endif %}</dd>
+    <dt>{% translate "ÖV-Abo" %}</dt><dd>{{ profile.get_travel_card_display|default:"–" }}</dd>
+    <dt>{% translate "Auto" %}</dt><dd>{% if profile.car_seats is None %}{% translate "kein Auto" %}{% elif profile.car_seats == 0 %}{% translate "Auto, keine freien Plätze" %}{% else %}{% blocktranslate count n=profile.car_seats trimmed %}Auto, {{ n }} freier Platz{% plural %}Auto, {{ n }} freie Plätze{% endblocktranslate %}{% endif %}</dd>
+  </dl>
+  {% else %}
+  <p class="small muted">{% translate "Rechnungsadresse, Notfallkontakt, Ernährung, Allergien, Alpenverein (Gegenrecht), GA/Halbtax und Auto: Der Gast trägt das auf seiner Buchungsseite ein – einmal, bei der nächsten Tour ist es schon ausgefüllt." %}</p>
+  {% endif %}
+  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'ask_details' %}" class="inline">{% csrf_token %}
+    <button class="btn btn-secondary btn-small" type="submit">{% if profile and profile.is_filled %}{% translate "Gast bitten, die Angaben zu prüfen" %}{% else %}{% translate "Gast um diese Angaben bitten" %}{% endif %}</button>
+  </form>
+</section>
+{% endif %}

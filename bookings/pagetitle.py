@@ -30,6 +30,7 @@ class PageInfo:
     provider: str = ""
     image: str = ""  # absolute https URL of the preview image, or ""
     dates: list[tuple[date, date]] = field(default_factory=list)  # upcoming tour dates, sorted
+    logo: str = ""  # absolute https URL of the provider's logo or app icon, or ""
 
 
 class _Parser(HTMLParser):
@@ -38,6 +39,7 @@ class _Parser(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.meta = {}
+        self.icons = {}  # rel -> href (first one wins)
         self.title = ""
         self.json_ld = []
         self.text = []
@@ -50,6 +52,14 @@ class _Parser(HTMLParser):
             content = (attrs.get("content") or "").strip()
             if key and content:
                 self.meta.setdefault(key, content)
+            return
+        if tag == "link":
+            rel = (attrs.get("rel") or "").lower()
+            href = (attrs.get("href") or "").strip()
+            if href and not href.lower().endswith(".svg"):
+                for kind in ("apple-touch-icon", "icon"):
+                    if kind in rel.split() or (kind == "apple-touch-icon" and kind in rel):
+                        self.icons.setdefault(kind, href)
             return
         if tag in ("br", "p", "div", "li", "tr", "td", "h1", "h2", "h3", "h4"):
             self.text.append("\n")
@@ -200,15 +210,16 @@ def _first_str(value) -> str:
     return value if isinstance(value, str) else ""
 
 
-def _structured(json_ld: list[str]) -> tuple[list[tuple[date, date]], str, str, str]:
-    """Dates, name, image and organizer from schema.org Event data."""
-    dates, name, image, organizer = [], "", "", ""
+def _structured(json_ld: list[str]) -> tuple[list[tuple[date, date]], str, str, str, str]:
+    """Dates, name, image and organizer from schema.org Event data, and an Organization logo."""
+    dates, name, image, organizer, logo = [], "", "", "", ""
     for block in json_ld:
         try:
             data = json.loads(block)
         except ValueError:
             continue
         for node in _walk(data):
+            logo = logo or _first_str(node.get("logo"))
             start = _iso_date(node.get("startDate"))
             if not start:
                 continue
@@ -218,7 +229,7 @@ def _structured(json_ld: list[str]) -> tuple[list[tuple[date, date]], str, str, 
             name = name or _first_str(node.get("name"))
             image = image or _first_str(node.get("image"))
             organizer = organizer or _first_str(node.get("organizer"))
-    return dates, name, image, organizer
+    return dates, name, image, organizer, logo
 
 
 def _upcoming(dates, today):
@@ -237,16 +248,19 @@ def parse(page: bytes, url: str = "", today: date | None = None) -> PageInfo:
     except Exception:  # broken markup: keep what was found so far
         pass
     meta = parser.meta
-    ld_dates, ld_name, ld_image, ld_org = _structured(parser.json_ld)
+    ld_dates, ld_name, ld_image, ld_org, ld_logo = _structured(parser.json_ld)
 
     title = meta.get("og:title") or ld_name or parser.title
     image = meta.get("og:image") or meta.get("og:image:url") or meta.get("twitter:image") or ld_image
     image = urljoin(url, html.unescape(image.strip())) if image else ""
+    logo = ld_logo or parser.icons.get("apple-touch-icon") or parser.icons.get("icon") or ""
+    logo = urljoin(url, html.unescape(logo.strip())) if logo else ""
     dates = _upcoming(ld_dates, today) or _upcoming(dates_in_text("".join(parser.text), today), today)
     return PageInfo(
         title=_clean(title, 300),
         provider=_clean(meta.get("og:site_name") or ld_org, 200),
         image=image if image.startswith("https://") else "",
+        logo=logo if logo.startswith("https://") else "",
         dates=dates,
     )
 

@@ -11,7 +11,7 @@ from accounts.models import LANGUAGE_CHOICES
 
 from . import pictures
 from .models import (
-    BlockedPeriod, Departure, ExternalTour, InvoiceLine, OpenPeriod, Partner, PartnerPeriod, Picture, Tour,
+    BlockedPeriod, Departure, ExternalTour, GuestProfile, InvoiceLine, OpenPeriod, Partner, PartnerPeriod, Picture, Tour,
     TourCategory, money,
 )
 
@@ -254,10 +254,10 @@ class PhotoMixin:
                 )
         self.fields["photo"] = forms.FileField(
             label=_("Bild"), required=False,
-            widget=forms.ClearableFileInput(attrs={"accept": "image/jpeg,image/png,image/webp",
+            widget=forms.ClearableFileInput(attrs={"accept": pictures.ACCEPT,
                                                    "data-too-big": _("Das Bild ist zu gross (höchstens 8 MB).")}),
             help_text=_("Neues Bild hochladen. Erscheint im Buchungskalender und kommt in deine Bibliothek. "
-                        "JPG, PNG oder WebP, höchstens 8 MB."),
+                        "JPG, PNG, WebP oder HEIC, höchstens 8 MB."),
         )
 
     def clean_photo(self):
@@ -266,6 +266,7 @@ class PhotoMixin:
             if upload.size > pictures.MAX_UPLOAD_BYTES:
                 raise forms.ValidationError(_("Das Bild ist zu gross (höchstens 8 MB)."))
             try:
+                upload.seek(0)  # the same upload is read again when the form is checked a second time
                 self._shrunk = pictures.shrink(upload.read())
             except pictures.PictureError as exc:
                 raise forms.ValidationError(str(exc)) from exc
@@ -300,20 +301,14 @@ def library_groups(library) -> list:
     return [(labels.get(c) or _("Ohne Tourenart"), groups[c]) for c in order if c in groups]
 
 
-class LibraryUploadForm(forms.Form):
-    """Add photos to the picture library, sorted by kind of tour. The files come from request.FILES."""
+class PictureCategoryForm(forms.Form):
+    """Kind of tour and description of one picture in the library."""
 
-    category = forms.ChoiceField(label=_("Tourenart"), choices=[("", "–")] + list(TourCategory.choices),
-                                 required=False)
-    title = forms.CharField(label=_("Bezeichnung (optional)"), max_length=120, required=False,
-                            help_text=_("z. B. Piz Palü, Nordwand"))
+    category = forms.ChoiceField(choices=[("", "–")] + list(TourCategory.choices), required=False)
+    title = forms.CharField(max_length=120, required=False)
 
     def clean_title(self):
         return single_line(self.cleaned_data["title"])
-
-
-class PictureCategoryForm(forms.Form):
-    category = forms.ChoiceField(choices=[("", "–")] + list(TourCategory.choices), required=False)
 
 
 class GuideMessageForm(forms.Form):
@@ -330,6 +325,47 @@ class GuestMessageForm(forms.Form):
         widget=forms.Textarea(attrs={"rows": 3, "maxlength": 3000}),
         error_messages={"required": _("Bitte schreibe eine Nachricht.")},
     )
+
+
+CAR_CHOICES = [("", _("Kein Auto")), ("0", _("Auto, aber keine freien Plätze"))] + [
+    (str(n), _("Auto mit %(n)s freien Plätzen") % {"n": n} if n > 1 else _("Auto mit 1 freien Platz")) for n in range(1, 7)
+]
+
+
+class GuestDetailsForm(forms.ModelForm):
+    """What the guide needs for planning, entered by the guest on the booking page (no login). Saved per guide and
+    email address, so it's filled in already for the next tour with the same guide."""
+
+    car = forms.ChoiceField(label=_("Auto"), choices=CAR_CHOICES, required=False,
+                            help_text=_("Falls wir gemeinsam anreisen: Könntest du fahren?"))
+
+    class Meta:
+        model = GuestProfile
+        fields = ("billing_address", "emergency_contact", "diet", "allergies", "club", "club_number", "travel_card")
+        widgets = {"billing_address": forms.Textarea(attrs={"rows": 3}), "allergies": forms.Textarea(attrs={"rows": 2})}
+        help_texts = {
+            "emergency_contact": _("Name und Telefon einer Person, die wir im Notfall erreichen."),
+            "allergies": _("Nur was für die Tour wichtig ist, z. B. Nussallergie, Asthma, Medikamente."),
+            "club": _("Mitglieder von Alpenvereinen mit Gegenrecht zahlen in SAC-Hütten den Mitgliederpreis."),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name in ("billing_address", "emergency_contact"):
+            self.fields[name].required = True
+        self.fields["diet"].choices = [("", "–")] + list(GuestProfile.Diet.choices)
+        self.fields["club"].choices = [("", "–")] + list(GuestProfile.Club.choices)
+        self.fields["travel_card"].choices = [("", "–")] + list(GuestProfile.TravelCard.choices)
+        seats = self.instance.car_seats
+        self.fields["car"].initial = "" if seats is None else str(seats)
+
+    def clean_emergency_contact(self):
+        return single_line(self.cleaned_data["emergency_contact"])
+
+    def save(self, commit=True):
+        car = self.cleaned_data.get("car")
+        self.instance.car_seats = int(car) if car not in (None, "") else None
+        return super().save(commit)
 
 
 class TourForm(PhotoMixin, forms.ModelForm):
@@ -448,95 +484,67 @@ def _price(label=None):
     return field
 
 
-class PricingForm(forms.Form):
-    """Price plus how it is made up (R-022) and an estimate of expenses (R-023)."""
+class AcceptForm(forms.Form):
+    """The guide takes a request: days (as asked, more, or other ones), price (day rate x days or an own price),
+    estimated expenses and a note. The guest then confirms."""
 
-    guide_rate = _money(_("Tagesansatz Bergführer (CHF)"), help_text=_("Aus deinen Stufen nach Gruppengrösse."))
-    extra_guides = forms.IntegerField(label=_("Zusätzliche Bergführer"), min_value=0, max_value=9, initial=0,
-                                      help_text=_("Zum gleichen Tagesansatz."))
-    aspirants = forms.IntegerField(label=_("Aspiranten"), min_value=0, max_value=9, initial=0)
-    aspirant_rate = _money(_("Tagesansatz Aspirant (CHF)"))
-    price = _price()
-    estimated_expenses = _money(_("Geschätzte Spesen (CHF, unverbindlich)"), required=False,
-                                help_text=_("v. a. Reise, Hütte, Bahn. Der Gast sieht sie als Schätzung."))
-    show_breakdown = forms.BooleanField(label=_("Aufteilung nach Person und Tagesansatz dem Gast zeigen"), required=False,
-                                        initial=True)
+    start_date = forms.DateField(label=_("Erster Tag"), widget=_date_input())
+    end_date = forms.DateField(label=_("Letzter Tag"), widget=_date_input(),
+                               help_text=_("Du kannst Tage dazunehmen oder ein anderes Datum wählen. Die Tage werden "
+                                           "provisorisch reserviert, bis der Gast zusagt."))
+    guide_rate = _money(_("Tagesansatz (CHF)"), help_text=_("Aus deinen Stufen nach Gruppengrösse."))
+    price = _money(_("Preis ohne Spesen (CHF)"), required=False,
+                   help_text=_("Leer lassen: Tagesansatz × Tage. Oder einen eigenen Preis eintragen."))
+    estimated_expenses = _money(_("Geschätzte Spesen (CHF)"), required=False,
+                                help_text=_("Grobe Schätzung für den Gast, z. B. Reise, Hütte, Bahn. Abgerechnet werden "
+                                            "die effektiven Spesen nach der Tour."))
+    decision_date = forms.DateField(
+        label=_("Entscheid-Frist"), widget=_date_input(),
+        help_text=_("Bis dann entscheidest du definitiv, ob die Tour stattfindet (Wetter, Verhältnisse)."),
+    )
     message = forms.CharField(label=_("Nachricht an den Gast (optional)"), max_length=2000, required=False,
-                              widget=TEXTAREA)
+                              widget=TEXTAREA,
+                              help_text=_("z. B. warum du einen Tag dazunimmst oder ein anderes Datum vorschlägst."))
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        for name in ("guide_rate", "extra_guides", "aspirants", "aspirant_rate"):  # read by static/js/pricing.js
-            self.fields[name].widget.attrs[f"data-calc-{name.replace('_', '-')}"] = ""
-
-    @classmethod
-    def initial_for(cls, booking) -> dict:
-        return {"price": booking.price or None, "estimated_expenses": booking.estimated_expenses,
-                "guide_rate": booking.guide.rate_for(booking.participants),
-                "aspirant_rate": booking.guide.aspirant_day_rate, "show_breakdown": True}
-
-    def breakdown(self, booking, days) -> list:
-        from .services import breakdown
-
-        d = self.cleaned_data
-        if not d.get("show_breakdown"):
-            return []
-        return breakdown(booking.guide, days=days, participants=booking.participants,
-                         extra_guides=d.get("extra_guides") or 0, aspirants=d.get("aspirants") or 0,
-                         guide_rate=d["guide_rate"], aspirant_rate=d["aspirant_rate"])
-
-
-class ConfirmForm(forms.Form):
-    """Confirm the request as asked: day rate x days, a decision date and a note. Other dates or prices: OfferForm."""
-
-    guide_rate = _money(_("Tagesansatz Bergführer (CHF)"), help_text=_("Aus deinen Stufen nach Gruppengrösse."))
-    decision_date = forms.DateField(
-        label=_("Entscheid-Frist"), widget=_date_input(),
-        help_text=_("Bis dann entscheidest du definitiv, ob die Tour stattfindet (Wetter, Verhältnisse). Der Gast sieht das Datum."),
-    )
-    estimated_expenses = _money(_("Geschätzte Spesen (CHF, unverbindlich)"), required=False,
-                                help_text=_("Nur zur Information für den Gast, z. B. Reise, Hütte, Bahn. "
-                                            "Abgerechnet wird nach der Tour."))
-    message = forms.CharField(label=_("Nachricht an den Gast (optional)"), max_length=2000, required=False,
-                              widget=TEXTAREA)
-
-    def __init__(self, *args, booking=None, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.booking = booking
+        self.fields["guide_rate"].widget.attrs["data-calc-guide-rate"] = ""  # read by static/js/pricing.js
+        self.fields["price"].widget.attrs["data-price"] = ""
 
     @classmethod
     def initial_for(cls, booking) -> dict:
         today = timezone.localdate()
-        return {"guide_rate": booking.guide.rate_for(booking.participants),
-                "decision_date": max(booking.start_date - timedelta(days=2), today),
-                "estimated_expenses": booking.estimated_expenses}
-
-    def clean_decision_date(self):
-        day = self.cleaned_data["decision_date"]
-        if day < timezone.localdate():
-            raise forms.ValidationError(_("Das Datum liegt in der Vergangenheit."))
-        if self.booking and day > self.booking.start_date:
-            raise forms.ValidationError(_("Die Entscheid-Frist muss vor dem Tourenbeginn liegen."))
-        return day
-
-    def price(self, booking):
-        return money(self.cleaned_data["guide_rate"] * Decimal(str(booking.days)))
-
-
-class OfferForm(PricingForm):
-    start_date = forms.DateField(label=_("Startdatum"), widget=_date_input())
-    end_date = forms.DateField(label=_("Enddatum"), widget=_date_input())
-    field_order = ["start_date", "end_date", "guide_rate", "extra_guides", "aspirants", "aspirant_rate", "price",
-                   "estimated_expenses", "show_breakdown", "message"]
+        return {"start_date": booking.start_date, "end_date": booking.end_date,
+                "guide_rate": booking.guide.rate_for(booking.participants),
+                "price": booking.price if booking.has_price else None,
+                "estimated_expenses": booking.estimated_expenses,
+                "decision_date": booking.decision_date or max(booking.start_date - timedelta(days=2), today),
+                "message": booking.guide_message if booking.status == "offered" else ""}
 
     def clean(self):
         cleaned = super().clean()
-        s, e = cleaned.get("start_date"), cleaned.get("end_date")
+        s, e, decide = cleaned.get("start_date"), cleaned.get("end_date"), cleaned.get("decision_date")
+        today = timezone.localdate()
+        if s and s < today:
+            self.add_error("start_date", _("Das Datum liegt in der Vergangenheit."))
         if s and e and e < s:
             self.add_error("end_date", _("Das Ende muss nach dem Beginn liegen."))
-        if not cleaned.get("message", "").strip():
-            self.add_error("message", _("Bitte erkläre dem Gast kurz deinen Vorschlag."))
+        if decide and decide < today:
+            self.add_error("decision_date", _("Das Datum liegt in der Vergangenheit."))
+        elif decide and s and decide > s:
+            self.add_error("decision_date", _("Die Entscheid-Frist muss vor dem Tourenbeginn liegen."))
         return cleaned
+
+    @property
+    def days(self) -> int:
+        d = self.cleaned_data
+        return (d["end_date"] - d["start_date"]).days + 1
+
+    def final_price(self):
+        d = self.cleaned_data
+        if d.get("price") is not None:
+            return money(d["price"])
+        return money(d["guide_rate"] * Decimal(self.days))
 
 
 class ChangeBookingForm(forms.Form):
@@ -641,11 +649,11 @@ class ExternalTourForm(PhotoMixin, forms.ModelForm):
         fields = ("url", "title", "provider", "category", "start_date", "end_date", "show_to_guests", "note")
         widgets = {"start_date": _date_input(), "end_date": _date_input(), "note": forms.Textarea(attrs={"rows": 2})}
         help_texts = {
-            "url": _("Link zum Tourenangebot, z. B. auf der Website der Bergschule. Titel, Datum und Bild werden "
-                     "von der Seite übernommen."),
+            "url": _("Link zum Tourenangebot, z. B. auf der Website der Bergschule. Titel, Anbieter und Datum "
+                     "werden von der Seite übernommen."),
             "title": _("Leer lassen: wird von der verlinkten Seite übernommen."),
             "start_date": _("Leer lassen: wird von der verlinkten Seite übernommen."),
-            "category": _("Mit Tourenart wird dein eigenes Bild dieser Art verwendet statt des Bildes vom Anbieter."),
+            "category": _("Ohne eigenes Bild wird ein Bild dieser Tourenart aus deiner Bibliothek verwendet."),
         }
 
     def __init__(self, *args, guide=None, **kwargs):
@@ -654,8 +662,8 @@ class ExternalTourForm(PhotoMixin, forms.ModelForm):
         for name in ("title", "start_date", "end_date"):
             self.fields[name].required = False
         self.add_photo_fields(guide=guide)
-        self.fields["photo"].help_text = _("Leer lassen: ein eigenes Bild aus der Bibliothek oder das Vorschaubild "
-                                           "der verlinkten Seite wird übernommen.")
+        self.fields["photo"].help_text = _("Leer lassen: ein Bild dieser Tourenart aus deiner Bibliothek, sonst das "
+                                           "Logo des Anbieters.")
 
     @property
     def picture_key_given(self) -> bool:

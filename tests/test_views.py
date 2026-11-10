@@ -1,4 +1,5 @@
 import time
+from datetime import timedelta
 from decimal import Decimal
 from unittest import mock
 
@@ -243,50 +244,89 @@ def test_guest_page_in_booking_language(client, guide, make_booking):
 # --- Dashboard --------------------------------------------------------------------------------
 
 
-def test_guide_confirms_with_day_rate_and_decision_date(client, guide, make_booking, mailoutbox,
-                                                        django_capture_on_commit_callbacks):
-    """Confirming takes the request as asked: day rate x days, no breakdown; the guest sees the decision date."""
+def accept_data(start, end, **extra):
+    data = {"accept-start_date": start.isoformat(), "accept-end_date": end.isoformat(), "accept-guide_rate": "750",
+            "accept-decision_date": (start - timedelta(days=2)).isoformat()}
+    data.update({f"accept-{k}": v for k, v in extra.items()})
+    return data
+
+
+def test_guide_accepts_with_day_rate_then_guest_confirms(client, guide, make_booking, mailoutbox,
+                                                         django_capture_on_commit_callbacks):
+    """Accepting: day rate x days (price left empty), decision date, expense estimate. Pending until the guest agrees."""
     booking = make_booking(guide, in_days(10), end_date=in_days(11))
     client.force_login(guide)
-    data = {"confirm-guide_rate": "750", "confirm-decision_date": in_days(8).isoformat(),
-            "confirm-estimated_expenses": "150", "confirm-message": "Bis bald"}
+    page = client.get(reverse("dashboard:booking", args=[booking.pk])).content.decode()
+    assert "Annehmen" in page and "Ablehnen" in page and "Wer" in page and "Wann" in page
+    data = accept_data(in_days(10), in_days(11), estimated_expenses="150", message="Bis bald")
     with django_capture_on_commit_callbacks(execute=True):
-        response = client.post(reverse("dashboard:booking_action", args=[booking.pk, "confirm"]), data)
+        response = client.post(reverse("dashboard:booking_action", args=[booking.pk, "accept"]), data)
     assert response.status_code == 302
     booking.refresh_from_db()
-    assert (booking.status, booking.price, booking.estimated_expenses) == (S.CONFIRMED, 1500, 150)
+    assert (booking.status, booking.price, booking.estimated_expenses) == (S.OFFERED, 1500, 150)
     assert booking.price_breakdown == [] and booking.decision_date == in_days(8)
     assert f"{in_days(8):%d.%m.%Y}" in mailoutbox[-1].body
     guest_html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
-    assert "Spesen geschätzt ca. CHF 150" in guest_html and f"{in_days(8):%d.%m.%Y}" in guest_html
+    assert "Spesen geschätzt ca. CHF 150" in guest_html and "Bezahlt wird erst nach der Tour" in guest_html
+    client.post(reverse("guest:action", args=[booking.token, "annehmen"]))
+    booking.refresh_from_db()
+    assert booking.status == S.CONFIRMED
 
 
-def test_confirm_rejects_decision_date_after_start(client, guide, make_booking):
+def test_accept_rejects_decision_date_after_start(client, guide, make_booking):
     booking = make_booking(guide, in_days(10))
     client.force_login(guide)
-    data = {"confirm-guide_rate": "750", "confirm-decision_date": in_days(11).isoformat()}
-    response = client.post(reverse("dashboard:booking_action", args=[booking.pk, "confirm"]), data)
+    data = accept_data(in_days(10), in_days(10))
+    data["accept-decision_date"] = in_days(11).isoformat()
+    response = client.post(reverse("dashboard:booking_action", args=[booking.pk, "accept"]), data)
     booking.refresh_from_db()
     assert response.status_code == 400 and booking.status == S.REQUESTED
     assert "vor dem Tourenbeginn" in response.content.decode()
 
 
-def test_guide_offers_other_dates(client, guide, make_booking):
+def test_guide_accepts_with_other_dates_and_own_price(client, guide, make_booking):
     booking = make_booking(guide, in_days(10))
     client.force_login(guide)
-    data = {"offer-start_date": in_days(11).isoformat(), "offer-end_date": in_days(12).isoformat(),
-            "offer-price": "1600", "offer-guide_rate": "800", "offer-extra_guides": "0", "offer-aspirants": "0",
-            "offer-aspirant_rate": "500", "offer-message": "Passt besser"}
-    client.post(reverse("dashboard:booking_action", args=[booking.pk, "offer"]), data)
+    client.post(reverse("dashboard:booking_action", args=[booking.pk, "accept"]),
+                accept_data(in_days(11), in_days(12), price="1600", message="Passt besser"))
     booking.refresh_from_db()
-    assert (booking.status, booking.start_date, booking.end_date) == (S.OFFERED, in_days(11), in_days(12))
-    assert booking.price_breakdown == [], "breakdown only when the guide ticks it"
+    assert (booking.status, booking.start_date, booking.end_date, booking.price) == (
+        S.OFFERED, in_days(11), in_days(12), 1600)
+
+
+def test_accepting_onto_a_busy_day_keeps_the_form(client, guide, make_booking):
+    booking = make_booking(guide, in_days(10))
+    make_booking(guide, in_days(11), status=S.CONFIRMED, guest_email="x@example.com")
+    client.force_login(guide)
+    response = client.post(reverse("dashboard:booking_action", args=[booking.pk, "accept"]),
+                           accept_data(in_days(10), in_days(11), message="Zwei Tage?"))
+    assert response.status_code == 400 and "schon belegt" in response.content.decode()
+    booking.refresh_from_db()
+    assert booking.status == S.REQUESTED and booking.end_date == in_days(10)
+
+
+def test_guest_enters_planning_details_once(client, guide, make_booking):
+    from bookings.models import GuestProfile
+
+    booking = make_booking(guide, in_days(10), status=S.CONFIRMED, price=Decimal("750"))
+    url = reverse("guest:details", args=[booking.token])
+    data = {"angaben-billing_address": "Gina Gast, Bahnhofstr. 1, 3000 Bern",
+            "angaben-emergency_contact": "Paul, 079 123 45 67", "angaben-diet": "vegan", "angaben-allergies": "Nüsse",
+            "angaben-club": "DAV", "angaben-club_number": "", "angaben-travel_card": "halbtax", "angaben-car": "3"}
+    assert client.post(url, data).status_code == 302
+    profile = GuestProfile.objects.get()
+    assert (profile.diet, profile.club, profile.car_seats, profile.has_reciprocal_rights) == ("vegan", "DAV", 3, True)
+    client.force_login(guide)
+    page = client.get(reverse("dashboard:booking", args=[booking.pk])).content.decode()
+    assert "Bahnhofstr. 1" in page and "Gegenrecht" in page
+    later = make_booking(guide, in_days(30), status=S.CONFIRMED, price=Decimal("750"))
+    assert "Bahnhofstr. 1" in client.get(reverse("guest:detail", args=[later.token])).content.decode()
 
 
 def test_actions_require_post(client, guide, make_booking):
     booking = make_booking(guide, in_days(10))
     client.force_login(guide)
-    assert client.get(reverse("dashboard:booking_action", args=[booking.pk, "confirm"])).status_code == 405
+    assert client.get(reverse("dashboard:booking_action", args=[booking.pk, "accept"])).status_code == 405
 
 
 def test_guide_bills_after_tour(client, guide, make_booking, mailoutbox, django_capture_on_commit_callbacks):
@@ -411,3 +451,23 @@ def test_pilot_stats_for_staff_only(client, guide, make_booking, make_guide):
     assert "Anna Berg" in html
     row = html[html.index("Anna Berg"):].split("</tr>")[0]
     assert "<td>2</td><td>1</td><td>0</td><td>0</td><td>0</td>" in row.replace("\n", "")
+
+
+def test_dashboard_pages_show_upcoming_guests_and_pictures(client, guide, make_booking, make_departure):
+    from bookings.models import ExternalTour
+
+    confirmed = make_booking(guide, in_days(20), status=S.CONFIRMED, price=Decimal("750"), guest_name="Cora")
+    make_departure(guide, in_days(10))
+    ExternalTour.objects.create(guide=guide, title="Biancograt mit Bergschule", start_date=in_days(5),
+                                end_date=in_days(6), provider="B+T")
+    for i in range(5):
+        make_booking(guide, in_days(40 + i), status=S.CANCELLED, guest_email=f"g{i}@example.com")
+    client.force_login(guide)
+    home = client.get(reverse("dashboard:home")).content.decode()
+    assert home.index("Biancograt mit Bergschule") < home.index(confirmed.title)
+    assert "Kommende Touren" in home and "weitere anzeigen" in home
+    guests = client.get(reverse("dashboard:guests")).content.decode()
+    assert "Cora" in guests and "g1@example.com" not in guests
+    assert client.get(reverse("dashboard:pictures")).status_code == 200
+    ext = client.get(reverse("dashboard:external_tours")).content.decode()
+    assert "Manuelle Eingabe" in ext

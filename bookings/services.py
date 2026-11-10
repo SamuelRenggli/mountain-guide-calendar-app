@@ -1,9 +1,11 @@
 """Booking state machine for custom tour requests. All status changes go through here.
 Scheduled dates (Termine) and their registrations live in departures.py and reuse the helpers below.
 
-    requested ──confirm─────────────▶ confirmed ──invoice (after the tour)──▶ awaiting_payment ──pay──▶ paid
-        │  └──counter_offer──▶ offered ──guest accepts──┘ ▲                    └─invoice again (correction)
-        │                        └──guest declines──▶ declined
+    requested ──accept (price, maybe other days)──▶ offered ──guest accepts──▶ confirmed
+        │                                              │  └──guest declines──▶ declined          │
+        │                                              └──guide adjusts──▶ offered                │
+        │      confirmed ──invoice (after the tour)──▶ awaiting_payment ──pay──▶ paid  ◀─────────┘
+        │                                                └─invoice again (correction)
         │                                    confirmed ──propose_new_date (weather)──▶ reschedule
         │                                                   ├─ guest accepts ──▶ confirmed (new dates)
         │                                                   └─ declines / no reply ──▶ cancelled (or billed costs)
@@ -154,34 +156,38 @@ def _price_note(price, rows, estimated_expenses) -> str:
 # --- Guide actions ---------------------------------------------------------
 
 
-def confirm(booking: Booking, message: str = "", *, price, price_breakdown=(), estimated_expenses=None,
-            decision_date=None) -> Booking:
-    """Confirm the requested days at the price the guide quotes (expenses are billed after the tour)."""
-    if booking.is_window:
-        raise BookingError(_("Die Anfrage hat ein Zeitfenster: Bitte schlage genaue Daten vor."))
-    rows = list(price_breakdown)
-    booking = transition(
-        booking, {S.REQUESTED}, S.CONFIRMED, Actor.GUIDE, f"{_price_note(price, rows, estimated_expenses)}. {message}".strip(),
-        price=price, price_breakdown=rows, estimated_expenses=estimated_expenses, guide_message=message, deadline=None,
-        decision_date=decision_date,
-    )
-    transaction.on_commit(lambda: emails.confirmed(booking))
-    return booking
+def check_days_free(booking: Booking, start_date: date, end_date: date) -> None:
+    """The guide picks days for a request: they must not collide with anything else in their calendar
+    (the request's own days don't count). Weekdays the guide doesn't offer to guests are fine here."""
+    blocking = {availability.BUSY: _("Termin aus deinem Kalender"), availability.BLOCKED: _("gesperrt"),
+                availability.REQUESTED: _("andere Anfrage"), availability.DEPARTURE: _("ausgeschriebene Tour"),
+                availability.EXTERNAL: _("Tour für einen Anbieter"), availability.BOOKED: _("gebuchte Tour")}
+    states = availability.day_states(booking.guide, start_date, end_date, exclude_booking=booking)
+    taken = [(day, blocking[state]) for day, state in states.items() if state in blocking]
+    if taken:
+        raise DatesUnavailable(_("An diesen Tagen bist du schon belegt: %(days)s") % {
+            "days": ", ".join(f"{day:%d.%m.%Y} ({why})" for day, why in taken[:5])})
 
 
-def counter_offer(booking: Booking, *, start_date: date, end_date: date, price, message: str,
-                  price_breakdown=(), estimated_expenses=None) -> Booking:
-    """Offer other dates and/or another price. The guest accepts or declines within GUEST_RESPONSE_DAYS."""
-    if start_date < timezone.localdate():
+def accept_request(booking: Booking, *, start_date: date, end_date: date, price, message: str = "",
+                   estimated_expenses=None, decision_date=None) -> Booking:
+    """The guide takes the request: price, estimated expenses and possibly other or more days. The days are held
+    provisionally; the booking is confirmed once the guest agrees (within GUEST_RESPONSE_DAYS). Can be repeated to
+    adjust the proposal while the guest hasn't answered."""
+    today = timezone.localdate()
+    if start_date < today:
         raise BookingError(_("Das Datum liegt in der Vergangenheit."))
     if end_date < start_date:
         raise BookingError(_("Das Ende muss nach dem Beginn liegen."))
-    rows = list(price_breakdown)
+    if decision_date and decision_date > start_date:
+        raise BookingError(_("Die Entscheid-Frist muss vor dem Tourenbeginn liegen."))
+    check_days_free(booking, start_date, end_date)
+    note = f"{start_date:%d.%m.%Y}–{end_date:%d.%m.%Y}, {_price_note(price, [], estimated_expenses)}"
+    deadline = _deadline(settings.GUEST_RESPONSE_DAYS)
     booking = transition(
-        booking, {S.REQUESTED, S.OFFERED}, S.OFFERED, Actor.GUIDE,
-        f"{start_date:%d.%m.%Y}–{end_date:%d.%m.%Y}, {_price_note(price, rows, estimated_expenses)}. {message}".strip(),
-        start_date=start_date, end_date=end_date, is_window=False, price=price, price_breakdown=rows,
-        estimated_expenses=estimated_expenses, guide_message=message, deadline=_deadline(settings.GUEST_RESPONSE_DAYS),
+        booking, {S.REQUESTED, S.OFFERED}, S.OFFERED, Actor.GUIDE, f"{note}. {message}".strip(),
+        start_date=start_date, end_date=end_date, is_window=False, price=price, price_breakdown=[],
+        estimated_expenses=estimated_expenses, guide_message=message, deadline=deadline, decision_date=decision_date,
     )
     transaction.on_commit(lambda: emails.offer_sent(booking))
     return booking
@@ -255,8 +261,8 @@ def invoice(booking: Booking, lines: list[InvoiceLine], message: str = "") -> Bo
     """Bill the guest after the tour (lines are unsaved). Can be repeated to correct the bill until it is paid."""
     if booking.is_registration:
         raise InvalidTransition()
-    if booking.start_date > timezone.localdate():
-        raise BookingError(_("Abrechnen kannst du erst ab dem ersten Tourentag."))
+    if booking.end_date > timezone.localdate():
+        raise BookingError(_("Abgerechnet wird nach der Tour, ab dem letzten Tourentag."))
     if not lines:
         raise BookingError(_("Die Rechnung hat keine Posten."))
     total = sum((line.amount for line in lines), Decimal("0.00"))

@@ -50,8 +50,93 @@
       if (tooBig.length) {
         showToast((input.dataset.tooBig || "Das Bild ist zu gross (höchstens 8 MB).") + " " +
                   tooBig.map(function (f) { return f.name; }).join(", "));
-        input.value = "";
+        if (!input.multiple) input.value = "";  // several files: the others are still uploaded
       }
+    });
+  });
+
+  // --- Date pairs: the end can't be before the start, and its picker opens at the start --------------
+  document.querySelectorAll("form").forEach(function (form) {
+    var start = form.querySelector('input[type="date"][name$="start_date"]');
+    var end = form.querySelector('input[type="date"][name$="end_date"]');
+    if (!start || !end) return;
+    var previous = start.value;
+    function shifted(value, days) {
+      var d = new Date(value + "T12:00:00");
+      d.setDate(d.getDate() + days);
+      return d.toISOString().slice(0, 10);
+    }
+    function follow() {
+      if (!start.value) { end.removeAttribute("min"); return; }
+      end.min = start.value;
+      var next = end.value;
+      if (previous && end.value && end.value >= previous) {  // keep the length of the tour
+        next = shifted(end.value, Math.round((new Date(start.value) - new Date(previous)) / 86400000));
+      }
+      if (!next || next < start.value) next = start.value;
+      previous = start.value;
+      if (next !== end.value) {
+        end.value = next;
+        end.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    }
+    start.addEventListener("change", follow);
+    if (start.value) end.min = start.value;
+  });
+
+  // --- Two-way choice (accept / decline): one button opens its panel, the other closes ---------------
+  document.querySelectorAll("[data-choice]").forEach(function (group) {
+    var panels = group.querySelectorAll("details");
+    panels.forEach(function (panel) {
+      panel.addEventListener("toggle", function () {
+        if (!panel.open) return;
+        panels.forEach(function (other) { if (other !== panel) other.open = false; });
+      });
+    });
+  });
+
+  // --- Picture library: upload several files one after the other (small requests, progress shown) ---
+  document.querySelectorAll("form[data-multi-upload]").forEach(function (form) {
+    var input = form.querySelector('input[type="file"]');
+    var status = form.querySelector("[data-upload-status]");
+    var csrf = (form.querySelector("[name=csrfmiddlewaretoken]") || {}).value || "";
+    function say(template, done, total) {
+      if (status) status.textContent = template.replace("%(done)s", done).replace("%(total)s", total);
+    }
+    form.addEventListener("submit", function (event) {
+      if (!window.fetch || !input.files || !input.files.length) return;
+      event.preventDefault();
+      var files = Array.prototype.filter.call(input.files, function (f) { return f.size <= MAX_PICTURE_BYTES; });
+      var done = 0;
+      form.querySelector("button[type=submit]").disabled = true;
+      function next(i) {
+        if (i >= files.length) {
+          say(status.dataset.textDone, done, files.length);
+          window.location.replace(window.location.pathname + "?t=" + Date.now() + (done ? "#neu" : ""));
+          return;
+        }
+        say(status.dataset.textProgress, i + 1, files.length);
+        var data = new FormData();
+        data.append("photos", files[i]);
+        fetch(form.action || window.location.href, {
+          method: "POST", body: data, credentials: "same-origin",
+          headers: { "X-CSRFToken": csrf, "Accept": "application/json" }
+        }).then(function (response) {
+          return response.json().catch(function () { return { added: 0, errors: [files[i].name] }; });
+        }).then(function (result) {
+          done += result.added || 0;
+          (result.errors || []).forEach(function (error) { showToast(error); });
+        }).catch(function () {
+          showToast(files[i].name);
+        }).finally(function () { next(i + 1); });
+      }
+      next(0);
+    });
+  });
+
+  document.querySelectorAll("[data-confirm-click]").forEach(function (button) {
+    button.addEventListener("click", function (event) {
+      if (!window.confirm(button.getAttribute("data-confirm-click"))) event.preventDefault();
     });
   });
 

@@ -288,7 +288,10 @@ input[type=datetime-local], input[type=time] { width: 100%; padding: .55rem .65r
 .library-grid, .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .75rem; }
 .library-item { margin: 0; }
 .library-item img, .pick img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; display: block; }
-.library-item select { width: auto; padding: .2rem; font-size: .8rem; }
+.library-item select, .library-item input[type="text"] { width: 100%; padding: .25rem .35rem; font-size: .8rem; margin-top: .3rem; }
+.library-edit .row { margin-top: .3rem; justify-content: space-between; }
+details.manual { margin: .5rem 0 1rem; }
+details.manual > summary { list-style: none; display: inline-block; margin-bottom: .5rem; }
 .picture-picker summary { cursor: pointer; font-weight: 600; }
 .pick-group { margin: .75rem 0 .3rem; font-weight: 600; }
 .pick { position: relative; display: block; cursor: pointer; }
@@ -308,3 +311,16 @@ input[type=datetime-local], input[type=time] { width: 100%; padding: .55rem .65r
 details.fold > summary { list-style: none; display: inline-block; }
 details.fold > summary::-webkit-details-marker { display: none; }
 details.fold[open] > summary { margin-bottom: 1rem; }
+
+/* Request at a glance: who, what, when */
+.summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+.summary h2 { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 .3rem; }
+.summary-main { font-weight: 600; font-size: 1.1rem; margin: 0 0 .25rem; }
+.summary p { margin: 0 0 .3rem; }
+/* Accept / decline: two buttons, the open one shows its form below */
+.choice { display: flex; flex-wrap: wrap; gap: .75rem; align-items: flex-start; margin-bottom: 1rem; }
+.choice > details[open] { flex: 1 1 100%; order: 1; }
+.choice > details > .card { margin-top: .75rem; }
+details.more { margin-top: .75rem; }
+.search { margin-bottom: 1rem; }
+.search input { max-width: 20rem; }

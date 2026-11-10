@@ -36,17 +36,19 @@ MESSAGES = {
         _("Hallo {guest}\n\n{guide} hat deine Anfrage bestätigt:\n\n{summary}\n{breakdown}{guide_note}\n{billing_hint}"),
     ),
     "offer_sent": (
-        _("Neuer Vorschlag von {guide}"),
-        _("Hallo {guest}\n\n{guide} schlägt dir Folgendes vor:\n\n{summary}\n{breakdown}{guide_note}\n"
-          "Annehmen oder ablehnen bis {deadline}:\n{guest_link}"),
+        _("{guide} hat deine Anfrage angenommen – bitte bestätigen"),
+        _("Hallo {guest}\n\n{guide} hat deine Anfrage angenommen und schlägt dir Folgendes vor:\n\n{summary}\n"
+          "{breakdown}{guide_note}\n{payment_terms}\n\nBitte sag zu oder ab bis {deadline}:\n{guest_link}"),
     ),
     "offer_accepted_guide": (
-        _("Gegenangebot angenommen"),
-        _("Hallo {guide}\n\n{guest} hat dein Angebot angenommen:\n\n{summary}\n\n{guide_link}"),
+        _("Tour bestätigt: {guest}"),
+        _("Hallo {guide}\n\n{guest} hat deinem Vorschlag zugesagt. Die Tour ist bestätigt:\n\n{summary}\n\n{guide_link}"),
     ),
     "offer_accepted_guest": (
         _("Deine Tour am {start} ist bestätigt"),
-        _("Hallo {guest}\n\nDanke! Deine Buchung ist bestätigt:\n\n{summary}\n\n{billing_hint}"),
+        _("Hallo {guest}\n\nDanke! Deine Tour ist bestätigt:\n\n{summary}\n\n{payment_terms}\n\n"
+          "Für die Planung braucht {guide} noch ein paar Angaben (Rechnungsadresse, Notfallkontakt, Ernährung, "
+          "Alpenverein, Abo, Auto). Bitte trag sie hier ein:\n{details_link}"),
     ),
     "offer_declined": (
         _("Gegenangebot abgelehnt"),
@@ -223,6 +225,9 @@ MESSAGES.update({
 })
 
 BREAKDOWN_ROW = _("{persons} × {role} × {days} Tage × CHF {rate} = CHF {amount}")
+PAYMENT_TERMS = _("Bezahlt wird erst nach der Tour, nach effektivem Aufwand: Seid ihr einen Tag mehr oder weniger "
+                  "unterwegs oder müsst abbrechen, ändert sich der Betrag. Dazu kommen die effektiven Spesen. "
+                  "Bis dahin wird nichts belastet.")
 BILLING_HINT = _("Nach der Tour erhältst du die Rechnung per E-Mail.\nDetails zu deiner Buchung: {guest_link}")
 TOTAL = _("Total")
 VAT_LINE = _("inkl. {rate} % MWST CHF {vat} · MWST-Nr. {vat_number}\n")
@@ -370,6 +375,8 @@ def _context(b) -> dict:
     if b.decision_date and not b.is_invoiced:
         ctx["breakdown"] += DECISION_NOTE.format(day=f"{b.decision_date:%d.%m.%Y}")
     ctx["billing_hint"] = BILLING_HINT.format(**ctx)
+    ctx["payment_terms"] = str(PAYMENT_TERMS)
+    ctx["details_link"] = f"{b.guest_url}#angaben"
     ctx["vat_line"] = _vat_line(b)
     ctx["invoice"] = _invoice(b) if b.is_invoiced else ""
     ctx["payment_instructions"] = _payment_instructions(b, ctx)

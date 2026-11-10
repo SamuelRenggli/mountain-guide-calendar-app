@@ -33,16 +33,20 @@ def new_picture_key() -> str:
 
 
 class TourCategory(models.TextChoices):
-    """Kinds of tours. Sorts the picture library; Tourchef provides one stock picture per kind."""
+    """Kinds of tours. Sorts the picture library; Tourchef provides stock pictures per kind."""
 
     FREERIDE = "freeride", _("Freeride")
-    SKITOUR_DAY = "skitour_tag", _("Skitour Eintag")
-    SKITOUR_WEEK = "skitour_woche", _("Skitourenwoche")
-    SPRING = "fruehling", _("Frühling")
-    GLACIER_TREK = "gletschertrekking", _("Gletschertrekking")
+    SKITOUR_DAY = "skitour_tag", _("Skitour (1 Tag)")
+    SKITOUR_WEEK = "skitour_woche", _("Skitour (mehrtägig)")
+    SPLITBOARD = "splitboard", _("Ski- & Splitboardtour")
+    SNOWSHOE = "schneeschuh", _("Schneeschuhtour")
+    ICE_CLIMBING = "eisklettern", _("Eisklettern & Drytooling")
+    HIGH_TOUR = "hochtour", _("Hochtour klassisch")
+    HIGH_TOUR_ROCK = "hochtour_fels", _("Hochtour mit Fels")
+    ALPINE_CLIMBING = "alpinklettern", _("Alpinklettern")
     SPORT_CLIMBING = "sportklettern", _("Sportklettern")
-    MOUNTAIN_ROCK = "bergtour_fels", _("Bergtour Fels")
-    MOUNTAIN_ICE = "bergtour_eis", _("Bergtour Eis und Gipfel")
+    GLACIER_TREK = "gletschertrekking", _("Gletschertrekking")
+    TREKKING = "trekking", _("Trekking")
 
 
 class Picture(models.Model):
@@ -352,7 +356,7 @@ class Booking(models.Model):
 
     class Status(models.TextChoices):
         REQUESTED = "requested", _("Anfrage offen")
-        OFFERED = "offered", _("Gegenangebot gesendet")
+        OFFERED = "offered", _("Pendent – wartet auf Zusage")
         CONFIRMED = "confirmed", _("Bestätigt")
         RESCHEDULE_PROPOSED = "reschedule", _("Ersatzdatum vorgeschlagen")
         PAYMENT_PENDING = "payment_pending", _("Zahlung läuft")
@@ -640,3 +644,71 @@ class BookingEvent(models.Model):
 
     class Meta:
         ordering = ["created_at", "id"]
+
+
+class GuestProfile(models.Model):
+    """What a guide needs to know for planning a tour with a guest (not asked when booking, but later on the guest
+    page). One per guide and email address, so a returning guest only checks the details instead of typing them
+    again. Together with the bookings this is the guide's guest file (Gäste-Kartei)."""
+
+    class Diet(models.TextChoices):
+        ALL = "all", _("Esse alles")
+        VEGETARIAN = "vegetarian", _("Vegetarisch")
+        VEGAN = "vegan", _("Vegan")
+
+    class Club(models.TextChoices):
+        NONE = "none", _("Kein Alpenverein")
+        SAC = "SAC", "SAC (Schweizer Alpen-Club)"
+        DAV = "DAV", "DAV (Deutscher Alpenverein)"
+        OEAV = "OeAV", "ÖAV (Österreichischer Alpenverein)"
+        AVS = "AVS", "AVS (Alpenverein Südtirol)"
+        CAI = "CAI", "CAI (Club Alpino Italiano)"
+        FFCAM = "FFCAM", "FFCAM (Fédération française des clubs alpins et de montagne)"
+        FEDME = "FEDME", "FEDME (Spanien)"
+        LAV = "LAV", "LAV (Liechtensteiner Alpenverein)"
+        PZS = "PZS", "PZS (Alpenverein Slowenien)"
+        FAT = "FAT", "FAT (Naturfreunde Schweiz, Gegenrecht)"
+        OTHER = "other", _("Anderer Verein")
+
+    # Clubs whose members pay the member rate in SAC huts (Gegenrecht, SAC list 2025).
+    RECIPROCAL_CLUBS = {"SAC", "DAV", "OeAV", "AVS", "CAI", "FFCAM", "FEDME", "LAV", "PZS", "FAT"}
+
+    class TravelCard(models.TextChoices):
+        NONE = "none", _("Kein Abo")
+        HALF_FARE = "halbtax", _("Halbtax")
+        GA = "ga", _("GA")
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="guest_profiles")
+    email = models.EmailField()
+    name = models.CharField(_("Name"), max_length=100)
+    billing_address = EncryptedTextField(_("Rechnungsadresse"), max_length=300)
+    emergency_contact = EncryptedTextField(_("Notfallkontakt"), max_length=200)
+    diet = models.CharField(_("Ernährung"), max_length=12, choices=Diet.choices, blank=True)
+    allergies = EncryptedTextField(_("Allergien, Unverträglichkeiten, Gesundheit"), max_length=500)
+    club = models.CharField(_("Alpenverein"), max_length=8, choices=Club.choices, blank=True)
+    club_number = models.CharField(_("Mitgliedernummer"), max_length=40, blank=True)
+    travel_card = models.CharField(_("ÖV-Abo"), max_length=8, choices=TravelCard.choices, blank=True)
+    car_seats = models.PositiveSmallIntegerField(
+        _("Auto"), null=True, blank=True, validators=[MaxValueValidator(8)],
+        help_text=_("Leer: kein Auto. Sonst: wie viele freie Plätze du mitnehmen könntest."),
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+        constraints = [models.UniqueConstraint(fields=["guide", "email"], name="one_guest_profile_per_guide_email")]
+
+    def __str__(self):
+        return f"{self.name} <{self.email}>"
+
+    @property
+    def is_filled(self) -> bool:
+        return bool(self.billing_address or self.emergency_contact or self.diet or self.club or self.travel_card)
+
+    @property
+    def has_reciprocal_rights(self) -> bool:
+        return self.club in self.RECIPROCAL_CLUBS
+
+    @classmethod
+    def for_booking(cls, booking):
+        return cls.objects.filter(guide_id=booking.guide_id, email__iexact=booking.guest_email).first()

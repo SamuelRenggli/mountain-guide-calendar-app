@@ -68,18 +68,38 @@ def paste(client, url="https://bt.example.ch/palue", **extra):
     return client.post(reverse("dashboard:external_tours"), data)
 
 
-def test_link_alone_fills_title_dates_and_picture(client, guide):
+def test_link_alone_fills_title_dates_and_logo(client, guide):
+    """The provider's photo is theirs: without an own picture the tour shows the provider's logo on a white tile."""
     client.force_login(guide)
-    info = pagetitle.PageInfo("Piz Palü", "Bergschule B+T", "https://bt.example.ch/p.jpg", [(in_days(10), in_days(11))])
-    with mock.patch.object(pagetitle, "fetch", return_value=info), \
-            mock.patch.object(pictures, "safe_get", return_value=jpeg()):
+    info = pagetitle.PageInfo("Piz Palü", "Bergschule B+T", "https://bt.example.ch/p.jpg", [(in_days(10), in_days(11))],
+                              logo="https://bt.example.ch/logo.png")
+    with mock.patch.object(pagetitle, "fetch", return_value=info),             mock.patch.object(pictures, "safe_get", return_value=jpeg(200, 100)) as fetch_image:
         resp = paste(client)
     assert resp.status_code == 302
+    fetch_image.assert_called_once_with("https://bt.example.ch/logo.png", pictures.MAX_UPLOAD_BYTES)
     tour = ExternalTour.objects.get()
     assert (tour.title, tour.provider, tour.start_date, tour.end_date) == ("Piz Palü", "Bergschule B+T", in_days(10),
                                                                            in_days(11))
-    assert tour.picture and max(tour.picture.width, tour.picture.height) == pictures.MAX_SIDE
+    assert (tour.picture.width, tour.picture.height) == pictures.LOGO_TILE
     assert tour.is_public
+
+
+def test_link_with_own_upload_keeps_the_upload(client, guide):
+    client.force_login(guide)
+    info = pagetitle.PageInfo("Piz Palü", "B+T", "", [(in_days(10), in_days(11))], logo="https://bt.example.ch/l.png")
+    upload = SimpleUploadedFile("mein.jpg", jpeg(1600, 1200), content_type="image/jpeg")
+    with mock.patch.object(pagetitle, "fetch", return_value=info),             mock.patch.object(pictures, "safe_get") as fetch_image:
+        resp = paste(client, **{"ext-photo": upload})
+    assert resp.status_code == 302
+    fetch_image.assert_not_called()
+    pic = ExternalTour.objects.get().picture
+    assert (pic.width, pic.height, pic.in_library) == (1200, 900, True)
+
+
+def test_logo_link_is_read_from_the_page():
+    page = (b'<html><head><link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/touch.png">'
+            b'<title>Kurs</title></head></html>')
+    assert pagetitle.parse(page, "https://schule.example.ch/kurs").logo == "https://schule.example.ch/touch.png"
 
 
 def test_several_dates_on_page_let_the_guide_pick(client, guide):

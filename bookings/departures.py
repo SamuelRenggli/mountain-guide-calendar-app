@@ -21,7 +21,7 @@ from django.utils import timezone
 from django.utils.translation import gettext as _
 
 from . import emails, messaging
-from .models import Booking, BookingEvent, Departure, Notification, Tour, WaitlistEntry, money
+from .models import Booking, BookingEvent, Departure, GuestProfile, Notification, Tour, WaitlistEntry, money
 from .services import BookingError, InvalidTransition, cancellation_percent, freeze_terms, log, transition
 
 S = Booking.Status
@@ -372,4 +372,5 @@ def erase_guest_data(guide, email: str) -> int:
             log(booking, Actor.GUIDE, booking.status, booking.status, "Telefon, Notfallkontakt und Erfahrung gelöscht")
             count += 1
     WaitlistEntry.objects.filter(departure__guide=guide, email__iexact=email).delete()
+    count += GuestProfile.objects.filter(guide=guide, email__iexact=email).delete()[0]
     return count

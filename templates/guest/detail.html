@@ -30,11 +30,12 @@
   <p>{% blocktranslate with name=booking.guide.display_name trimmed %}Deine Anfrage wartet auf die Antwort von {{ name }}. Du erhältst eine E-Mail.{% endblocktranslate %}</p>
 {% elif booking.status == "offered" %}
   <section class="card">
-    <h2>{% translate "Neuer Vorschlag" %}</h2>
-    <p>{% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} schlägt die oben stehenden Daten und den Preis vor. Passt das für dich?{% endblocktranslate %}</p>
+    <h2>{% translate "Bitte bestätigen" %}</h2>
+    <p>{% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} hat deine Anfrage angenommen und schlägt dir die Daten und den Preis oben vor. Sagst du zu, ist die Tour fix gebucht.{% endblocktranslate %}</p>
+    <p class="small muted">{% translate "Bezahlt wird erst nach der Tour. Abgerechnet wird nach effektivem Aufwand: Seid ihr einen Tag mehr oder weniger unterwegs oder müsst abbrechen, ändert sich der Betrag. Dazu kommen die effektiven Spesen (Hütte, Bahn, Reise). Bis dahin wird nichts belastet." %}</p>
     <div class="row">
       <form method="post" action="{% url 'guest:action' booking.token 'annehmen' %}" class="inline">{% csrf_token %}
-        <button class="btn" type="submit">{% translate "Annehmen" %}</button>
+        <button class="btn" type="submit">{% translate "Zusagen" %}</button>
       </form>
       <form method="post" action="{% url 'guest:action' booking.token 'ablehnen' %}" class="inline">{% csrf_token %}
         <button class="btn btn-danger" type="submit">{% translate "Ablehnen" %}</button>
@@ -66,6 +67,24 @@
 
 {% if booking.status == "confirmed" or booking.status == "paid" or booking.status == "reschedule" %}
   <p class="small">{% translate "Kontakt" %}: {{ booking.guide.display_name }}, <a href="mailto:{{ booking.guide.email|urlencode:'@' }}">{{ booking.guide.email }}</a> {{ booking.guide.phone }}</p>
+{% endif %}
+
+{% if details_form %}
+<section class="card" id="angaben">
+  <h2>{% translate "Angaben für die Tourenplanung" %}</h2>
+  {% if details_form.instance.pk and not details_form.errors %}
+  <p class="small">{% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} hat deine Angaben. Bitte prüfe, ob sie noch stimmen.{% endblocktranslate %}</p>
+  {% else %}
+  <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Damit {{ name }} die Tour planen kann (Hütte, Anreise, Verpflegung). Wird gespeichert, bei der nächsten Tour ist alles schon ausgefüllt. Nur {{ name }} sieht diese Angaben.{% endblocktranslate %}</p>
+  {% endif %}
+  <details class="fold"{% if not details_form.instance.pk or details_form.errors %} open{% endif %}>
+    <summary class="btn btn-secondary btn-small">{% if details_form.instance.pk %}{% translate "Angaben ändern" %}{% else %}{% translate "Angaben eintragen" %}{% endif %}</summary>
+    <form method="post" action="{% url 'guest:details' booking.token %}">{% csrf_token %}
+      {% include "_form.html" with form=details_form %}
+      <button class="btn" type="submit">{% translate "Speichern" %}</button>
+    </form>
+  </details>
+</section>
 {% endif %}
 
 <section class="card" id="nachrichten">

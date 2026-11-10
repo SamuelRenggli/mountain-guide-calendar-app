@@ -16,8 +16,8 @@ from core.ratelimit import allow, client_ip
 from payments import stripe_service
 
 from . import messaging, services
-from .forms import GuestMessageForm
-from .models import Booking
+from .forms import GuestDetailsForm, GuestMessageForm
+from .models import Booking, GuestProfile
 
 S = Booking.Status
 FINISHED = (S.PAID, S.DECLINED, S.REJECTED, S.CANCELLED, S.EXPIRED)
@@ -37,8 +37,21 @@ def _booking(request, token):
     return booking
 
 
+PLANNING_STATUSES = (S.OFFERED, S.CONFIRMED, S.RESCHEDULE_PROPOSED, S.PAID)
+
+
+def _details_form(booking, data=None):
+    """None when planning details aren't needed (request not taken yet, booking over)."""
+    if booking.status not in PLANNING_STATUSES or booking.end_date < timezone.localdate():
+        return None
+    profile = GuestProfile.for_booking(booking) or GuestProfile(
+        guide=booking.guide, email=booking.guest_email.lower(), name=booking.guest_name,
+        emergency_contact=booking.emergency_contact)
+    return GuestDetailsForm(data, instance=profile, prefix="angaben")
+
+
 @never_cache
-def detail(request, token, message_form=None, status=200):
+def detail(request, token, message_form=None, details_form=None, status=200):
     booking = _booking(request, token)
     can_cancel = booking.status in ((S.PAID, S.RESCHEDULE_PROPOSED) if booking.is_registration
                                     else (S.REQUESTED, S.OFFERED, S.CONFIRMED))
@@ -56,13 +69,15 @@ def detail(request, token, message_form=None, status=200):
         "vat": booking.vat_included(),
         "thread": booking.messages.filter(needs_review=False),
         "message_form": message_form or GuestMessageForm(),
+        "details_form": details_form or _details_form(booking),
     }, status=status)
     response.headers["X-Robots-Tag"] = "noindex"
     return response
 
 
 GUEST_ACTIONS = {
-    "annehmen": (services.accept_offer, lambda: _("Danke! Deine Buchung ist bestätigt.")),
+    "annehmen": (services.accept_offer,
+                 lambda: _("Danke! Deine Tour ist bestätigt. Trag unten noch deine Angaben für die Planung ein.")),
     "ablehnen": (services.decline_offer, lambda: _("Du hast das Angebot abgelehnt.")),
     "ersatzdatum-annehmen": (services.accept_new_date, lambda: _("Danke! Das neue Datum ist bestätigt.")),
     "ersatzdatum-ablehnen": (services.decline_new_date, lambda: _("Die Buchung ist kostenlos storniert.")),
@@ -97,6 +112,21 @@ def message(request, token):
     messaging.receive_from_guest_page(booking, form.cleaned_data["body"])
     messages.success(request, _("Nachricht gesendet."))
     return redirect(reverse("guest:detail", args=[token]) + "#nachrichten")
+
+
+@require_POST
+def details(request, token):
+    """The guest enters or updates the details for planning the tour."""
+    booking = _booking(request, token)
+    form = _details_form(booking, request.POST)
+    if form is None:
+        return redirect("guest:detail", token=token)
+    if not form.is_valid():
+        return detail(request, token, details_form=form, status=400)
+    form.instance.name = booking.guest_name
+    form.save()
+    messages.success(request, _("Danke! Deine Angaben sind gespeichert."))
+    return redirect(reverse("guest:detail", args=[token]) + "#angaben")
 
 
 @require_POST

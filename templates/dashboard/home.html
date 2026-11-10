@@ -34,41 +34,61 @@
 </section>
 
 <section class="card">
-  <h2>{% translate "Ausgeschriebene Touren" %}</h2>
-  {% translate "Keine Termine ausgeschrieben." as empty %}
-  {% include "dashboard/_departure_table.html" with departures=departures empty=empty %}
+  <h2>{% translate "Kommende Touren" %}</h2>
+  <p class="small muted">{% translate "Alles, was ansteht: bestätigte Anfragen, deine ausgeschriebenen Touren und Touren für externe Anbieter." %}</p>
+  {% if upcoming %}
+  <div class="table-wrap"><table>
+    <thead><tr><th>{% translate "Datum" %}</th><th>{% translate "Tour" %}</th><th>{% translate "Art" %}</th><th>{% translate "Status" %}</th></tr></thead>
+    <tbody>
+    {% for e in upcoming %}
+      <tr>
+        <td><a href="{{ e.url }}"{% if e.external %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ e.start|date:"D d.m.Y" }}</a>{% if e.end != e.start %}<br><span class="small muted">{% blocktranslate with day=e.end|date:"d.m.Y" trimmed %}bis {{ day }}{% endblocktranslate %}</span>{% endif %}</td>
+        <td>{{ e.title }}{% if e.who %}<br><span class="small muted">{{ e.who }}</span>{% endif %}</td>
+        <td class="small">{{ e.kind }}</td>
+        <td><span class="badge {{ e.badge }}">{{ e.status }}</span></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% else %}<p class="empty">{% translate "Nichts geplant." %}</p>{% endif %}
+</section>
+
+<section class="card">
+  <h2>{% translate "Warten auf den Gast" %}</h2>
+  <p class="small muted">{% translate "Pendent: Vorschläge, denen der Gast noch zusagen muss, Ersatzdaten und offene Rechnungen." %}</p>
+  {% translate "Nichts offen." as empty %}
+  {% include "dashboard/_booking_table.html" with bookings=waiting_for_guest empty=empty show_deadline=True %}
 </section>
 
 {% if to_invoice %}
 <section class="card">
   <h2>{% translate "Abrechnen" %}</h2>
-  <p class="small muted">{% translate "Touren, die begonnen haben oder vorbei sind. Öffne die Buchung und klicke auf «Abrechnen»." %}</p>
+  <p class="small muted">{% translate "Touren, die vorbei sind. Öffne die Buchung und klicke auf «Abrechnen»." %}</p>
   {% include "dashboard/_booking_table.html" with bookings=to_invoice %}
 </section>
 {% endif %}
 
 <section class="card">
-  <h2>{% translate "Kommende Touren auf Anfrage" %}</h2>
-  {% translate "Noch keine bestätigten Touren." as empty %}
-  {% include "dashboard/_booking_table.html" with bookings=upcoming empty=empty %}
-</section>
-
-<section class="card">
-  <h2>{% translate "Warten auf den Gast" %}</h2>
-  <p class="small muted">{% translate "Vorschläge und Ersatzdaten, auf die der Gast noch antworten muss, und offene Rechnungen." %}</p>
-  {% translate "Nichts offen." as empty %}
-  {% include "dashboard/_booking_table.html" with bookings=waiting_for_guest empty=empty show_deadline=True %}
-</section>
-
-<section class="card">
   <h2>{% translate "Vergangene und abgesagte Termine" %}</h2>
   {% translate "Noch keine." as empty %}
-  {% include "dashboard/_departure_table.html" with departures=past_departures empty=empty %}
+  {% include "dashboard/_departure_table.html" with departures=past_departures|slice:":3" empty=empty %}
+  {% if past_departures|length > 3 %}
+  <details class="fold more">
+    <summary class="btn btn-secondary btn-small">{% blocktranslate count n=past_departures|length|add:"-3" trimmed %}{{ n }} weiterer anzeigen{% plural %}{{ n }} weitere anzeigen{% endblocktranslate %}</summary>
+    {% include "dashboard/_departure_table.html" with departures=past_departures|slice:"3:" %}
+  </details>
+  {% endif %}
 </section>
 
 <section class="card">
   <h2>{% translate "Verlauf" %}</h2>
   {% translate "Noch nichts abgeschlossen." as empty %}
-  {% include "dashboard/_booking_table.html" with bookings=history empty=empty %}
+  {% include "dashboard/_booking_table.html" with bookings=history|slice:":3" empty=empty %}
+  {% if history|length > 3 %}
+  <details class="fold more">
+    <summary class="btn btn-secondary btn-small">{% blocktranslate count n=history|length|add:"-3" trimmed %}{{ n }} weiterer anzeigen{% plural %}{{ n }} weitere anzeigen{% endblocktranslate %}</summary>
+    {% include "dashboard/_booking_table.html" with bookings=history|slice:"3:" %}
+  </details>
+  {% endif %}
 </section>
 {% endblock %}

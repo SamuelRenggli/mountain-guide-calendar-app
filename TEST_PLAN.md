@@ -85,11 +85,14 @@ Use guest inbox 1 (German) unless stated.
 |---|---|---|---|
 | B1 | Widget: pick a day, fill in the form, send | Success page; guest gets "Deine Anfrage bei …"; guide gets "Neue Buchungsanfrage" with all details | |
 | B2 | Widget again: same day | Day is no longer clickable | |
-| B3 | Dashboard → request → **Bestätigen** with a message | Status "Bestätigt – Zahlung offen"; guest email with the pay link and the message | |
+| B3 | Dashboard → request → **Annehmen** (price empty = day rate × days, expenses estimate, message) → send | Status "Pendent – wartet auf Zusage", listed under "Warten auf den Gast"; guest email "… hat deine Anfrage angenommen – bitte bestätigen" with price, estimate, "Bezahlt wird erst nach der Tour" | |
+| B3a | Guest link → **Zusagen** | Status "Bestätigt"; tour under "Kommende Touren"; guest email asks for planning details (#angaben) | |
+| B3b | Guest page → "Angaben eintragen" (address, emergency contact, diet, club, GA/Halbtax, car) | Guide sees them on the booking and under Meine Touren → Gäste; next booking by the same email is prefilled | |
+| B3c | After the last tour day → booking → **Abrechnen** → invoice with actual expenses | Guest gets the bill with pay link (before the last day the button is locked) | |
 | B4 | Guest link → **jetzt bezahlen** → test card `4242 4242 4242 4242` | Back on the guest page; within seconds status "Bezahlt"; both get "Zahlung erhalten" | |
 | B5 | Stripe dashboard → payment | Amount correct, transferred to the guide's connected account, platform fee as configured | |
-| B6 | New request → guide sends **Gegenangebot** (other date, other price) | Guest email with new date/price; old day free again, new day blocked | |
-| B7 | Guest accepts the offer | Guest gets confirmation + pay link; guide gets "Gegenangebot angenommen" | |
+| B6 | New request → **Annehmen** with an extra day, or another date | Extra/new day blocked provisionally; old day free again. A day that is already taken gives an error and keeps the form | |
+| B7 | Guest accepts the proposal | Guest gets confirmation; guide gets "Tour bestätigt: …" | |
 | B8 | Pay with declined card `4000 0000 0000 9995` | Stripe shows the error; booking stays "Zahlung offen" | |
 | B9 | New request → guest declines an offer | Guide informed; days free | |
 | B10 | New request → guide **Ablehnen** with a reason | Guest gets the reason; day free | |

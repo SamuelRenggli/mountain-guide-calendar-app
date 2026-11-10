@@ -29,6 +29,11 @@ BODY_TO_GUEST = _("{body}\n\n--\nAntworte einfach auf diese E-Mail. {guide} sieh
                   "Ganzer Verlauf und deine Buchung: {guest_link}")
 BODY_TO_GUEST_NO_REPLY = _("{body}\n\n--\nAntworte einfach auf diese E-Mail, sie geht direkt an {guide}.\n"
                            "Deine Buchung: {guest_link}")
+ASK_DETAILS = _("Hallo {guest}\n\nFür die Planung unserer Tour «{tour}» ({dates}) brauche ich noch ein paar Angaben: "
+                "Rechnungsadresse, Notfallkontakt, Ernährung und Allergien, Alpenverein (wegen Gegenrecht in den "
+                "Hütten), GA oder Halbtax und ob du mit dem Auto kommen könntest.\n\n"
+                "Bitte trag sie hier ein (dauert zwei Minuten, beim nächsten Mal ist alles schon ausgefüllt):\n"
+                "{details_link}\n\nDanke und bis bald\n{guide}")
 SUBJECT_TO_GUIDE = _("Neue Nachricht von {guest}")
 BODY_TO_GUIDE = _("Hallo {guide}\n\n{guest} schreibt zu «{tour}» ({dates}):\n\n{body}\n\n"
                   "Antworten und ganzer Verlauf:\n{guide_link}")
@@ -101,6 +106,15 @@ def send_to_guest(booking, body: str) -> Message:
                                      email_message_id=_message_id(), read_at=timezone.now())
     transaction.on_commit(lambda: _email_guest(message))
     return message
+
+
+def ask_for_details(booking) -> Message:
+    """Ask the guest for the details needed to plan the tour (guest page, section #angaben), in their language."""
+    lang = booking.language if booking.language in dict(settings.LANGUAGES) else settings.LANGUAGE_CODE
+    with translation.override(lang):
+        body = str(ASK_DETAILS).format(guest=booking.guest_name, tour=booking.title, guide=booking.guide.display_name,
+                                       dates=f"{booking.start_date:%d.%m.%Y}", details_link=f"{booking.guest_url}#angaben")
+    return send_to_guest(booking, body)
 
 
 def record_sent(booking, body: str) -> Message:

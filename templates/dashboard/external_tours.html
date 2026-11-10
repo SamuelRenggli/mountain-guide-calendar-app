@@ -34,7 +34,7 @@
 <div class="grid-2">
   <form method="post" class="card" enctype="multipart/form-data">{% csrf_token %}
     <h2>{% translate "Tour eintragen" %}</h2>
-    <p class="small muted">{% translate "Link einfügen und «Eintragen» – Titel, Datum und Bild holen wir von der Seite. Fehlt etwas, kannst du es ergänzen." %}</p>
+    <p class="small muted">{% translate "Link einfügen und «Eintragen» – Titel, Anbieter und Datum holen wir von der Seite. Fotos des Anbieters übernehmen wir nicht (Urheberrecht): Lade ein eigenes Bild hoch oder wähle eines aus deiner Bibliothek. Sonst zeigen wir das Logo des Anbieters." %}</p>
     {% if found_dates %}
     <div class="alert warning">
       <p>{% translate "Auf der Seite stehen mehrere Termine. Welchen führst du?" %}</p>
@@ -45,7 +45,12 @@
       </div>
     </div>
     {% endif %}
-    {% include "_form.html" with form=form %}
+    {% include "_form.html" with form=form skip="title provider start_date end_date note" %}
+    <details class="fold manual"{% if form.errors or found_dates %} open{% endif %}>
+      <summary class="btn btn-secondary btn-small">{% translate "Manuelle Eingabe" %}</summary>
+      <p class="small muted">{% translate "Nur nötig, wenn der Link fehlt oder etwas nicht richtig übernommen wurde." %}</p>
+      {% for field in form.visible_fields %}{% if field.name in "title provider start_date end_date note" %}{% include "_field.html" %}{% endif %}{% endfor %}
+    </details>
     <button class="btn" type="submit">{% translate "Eintragen" %}</button>
   </form>
 

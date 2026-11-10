@@ -1,0 +1,9 @@
+{% load i18n %}<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'accept' %}" class="card" data-pricing>{% csrf_token %}
+  <p class="small muted">{% translate "Der Gast bekommt deinen Vorschlag mit Datum, ungefähren Kosten und deiner Nachricht. Erst wenn er zusagt, ist die Tour fix. Bezahlt wird nach der Tour, nach effektivem Aufwand." %}</p>
+  {% include "_form.html" with form=accept_form %}
+  <div class="invoice-total small" aria-live="polite">
+    <span>{% translate "Tagesansatz × Tage" %}</span>
+    <span><strong>CHF <span data-calc-result>–</span></strong></span>
+  </div>
+  <button class="btn" type="submit">{{ submit_label }}</button>
+</form>

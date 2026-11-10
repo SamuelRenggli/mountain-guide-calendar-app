@@ -3,44 +3,38 @@
 {% block title %}{% translate "Bilder" %} – Tourchef{% endblock %}
 {% block content %}
 <h1>{% translate "Bildbibliothek" %}</h1>
-<p class="muted">{% translate "Deine Bilder, sortiert nach Tourenart. Beim Ausschreiben wählst du eines davon aus, statt jedes Mal neu hochzuladen. Für jede Tourenart stellt Tourchef zusätzlich ein Bild zur Verfügung." %}</p>
+<p class="muted">{% translate "Deine Bilder, sortiert nach Tourenart. Beim Ausschreiben wählst du eines davon aus, statt jedes Mal neu hochzuladen. Tourchef stellt zusätzlich Bilder für die meisten Tourenarten zur Verfügung." %}</p>
 
-<form method="post" enctype="multipart/form-data" class="card">{% csrf_token %}
+<form method="post" enctype="multipart/form-data" class="card" data-multi-upload>{% csrf_token %}
   <h2>{% translate "Bilder hochladen" %}</h2>
-  {% if missing_kinds %}<p class="small muted">{% translate "Optional. Noch ohne eigenes Bild:" %} {{ missing_kinds|join:", " }}</p>{% endif %}
   <div class="field">
-    <label for="id_photos">{% translate "Bilder" %} *</label>
-    <input type="file" id="id_photos" name="photos" multiple accept="image/jpeg,image/png,image/webp" data-too-big="{% translate 'Das Bild ist zu gross (höchstens 8 MB).' %}">
-    <small class="help">{% translate "Bis 20 Bilder auf einmal, je höchstens 8 MB. Sie werden verkleinert, Standortdaten werden entfernt." %}</small>
+    <label for="id_photos">{% translate "Bilder auswählen" %}</label>
+    <input type="file" id="id_photos" name="photos" multiple accept="{{ accept }}" data-too-big="{% translate 'Das Bild ist zu gross (höchstens 8 MB).' %}">
+    <small class="help">{% translate "Mehrere Bilder auf einmal möglich (JPG, PNG, WebP, HEIC vom iPhone), je höchstens 8 MB. Sie werden verkleinert, Standortdaten werden entfernt. Tourenart und Beschreibung legst du danach unten fest." %}</small>
   </div>
-  {% include "_form.html" %}
+  <p class="small" aria-live="polite" data-upload-status data-text-progress="{% translate 'Lade hoch: %(done)s von %(total)s …' %}" data-text-done="{% translate '%(done)s Bild(er) hochgeladen.' %}"></p>
   <button class="btn" type="submit">{% translate "Hochladen" %}</button>
+  {% if missing_kinds %}<p class="small muted">{% translate "Noch ohne eigenes Bild:" %} {{ missing_kinds|join:", " }}</p>{% endif %}
 </form>
+
+{% if unsorted %}
+<section class="card" id="neu">
+  <h2>{% translate "Neu hochgeladen – bitte zuordnen" %}</h2>
+  <p class="small muted">{% translate "Wähle für jedes Bild die Tourenart und schreib optional eine kurze Beschreibung. Dann «Speichern» – oder «Löschen»." %}</p>
+  <div class="library-grid">
+    {% for pic in unsorted %}{% include "dashboard/_library_item.html" %}{% endfor %}
+  </div>
+</section>
+{% endif %}
 
 {% for label, pics in groups %}
 <section class="card">
   <h2>{{ label }}</h2>
   <div class="library-grid">
-    {% for pic in pics %}
-    <figure class="library-item">
-      <img src="{{ pic.url }}" alt="{{ pic.title }}" loading="lazy">
-      <figcaption class="small">
-        {% if pic.is_stock %}<span class="pick-badge">Tourchef</span>{% else %}
-        {% if pic.title %}{{ pic.title }}<br>{% endif %}
-        <form method="post" action="{% url 'dashboard:picture_action' pic.key 'tourenart' %}" class="row">{% csrf_token %}
-          <select name="category" aria-label="{% translate 'Tourenart' %}">{% for value, name in category_choices %}<option value="{{ value }}"{% if value == pic.category %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
-          <button class="btn btn-small btn-secondary" type="submit">{% translate "Speichern" %}</button>
-        </form>
-        <form method="post" action="{% url 'dashboard:picture_action' pic.key 'loeschen' %}" class="inline">{% csrf_token %}
-          <button class="link-button small" type="submit">{% translate "Löschen" %}</button>
-        </form>
-        {% endif %}
-      </figcaption>
-    </figure>
-    {% endfor %}
+    {% for pic in pics %}{% include "dashboard/_library_item.html" %}{% endfor %}
   </div>
 </section>
 {% empty %}
-<p class="empty">{% translate "Noch keine Bilder." %}</p>
+{% if not unsorted %}<p class="empty">{% translate "Noch keine Bilder." %}</p>{% endif %}
 {% endfor %}
 {% endblock %}

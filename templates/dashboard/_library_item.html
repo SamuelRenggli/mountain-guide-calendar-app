@@ -1,0 +1,15 @@
+{% load i18n %}<figure class="library-item" id="bild-{{ pic.key }}">
+  <img src="{{ pic.url }}" alt="{{ pic.title }}" loading="lazy">
+  <figcaption class="small">
+    {% if pic.is_stock %}<span class="pick-badge">Tourchef</span>{% else %}
+    <form method="post" action="{% url 'dashboard:picture_action' pic.key 'speichern' %}" class="library-edit">{% csrf_token %}
+      <select name="category" aria-label="{% translate 'Tourenart' %}">{% for value, name in category_choices %}<option value="{{ value }}"{% if value == pic.category %} selected{% endif %}>{{ name }}</option>{% endfor %}</select>
+      <input type="text" name="title" value="{{ pic.title }}" maxlength="120" placeholder="{% translate 'Beschreibung, z. B. Piz Palü' %}" aria-label="{% translate 'Beschreibung' %}">
+      <div class="row">
+        <button class="btn btn-small btn-secondary" type="submit">{% translate "Speichern" %}</button>
+        <button class="link-button small" type="submit" formaction="{% url 'dashboard:picture_action' pic.key 'loeschen' %}" data-confirm-click="{% translate 'Bild löschen?' %}">{% translate "Löschen" %}</button>
+      </div>
+    </form>
+    {% endif %}
+  </figcaption>
+</figure>

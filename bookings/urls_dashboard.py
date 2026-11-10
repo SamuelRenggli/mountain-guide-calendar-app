@@ -39,6 +39,7 @@ urlpatterns = [
     path("entwurf/<slug:kind>/speichern/", v.draft_save, name="draft_save"),
     path("entwurf/<int:pk>/", v.draft_open, name="draft"),
     path("entwurf/<int:pk>/loeschen/", v.draft_delete, name="draft_delete"),
+    path("gaeste/", v.guests, name="guests"),
     path("bilder/", v.picture_library, name="pictures"),
     path("bilder/<str:key>/<slug:name>/", v.picture_action, name="picture_action"),
 ]

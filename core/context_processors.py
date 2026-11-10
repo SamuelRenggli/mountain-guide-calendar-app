@@ -18,6 +18,7 @@ NAV = [
         (_("Anfragen & Angebote"), "dashboard:home", {"home", "booking", "invoice"}),
         (_("Tour ausschreiben"), "dashboard:tours", {"tours", "tour_new", "tour_edit", "departure_new"}),
         (_("Ausgeschriebene Touren"), "dashboard:departures", {"departures", "departure", "departure_edit"}),
+        (_("Gäste"), "dashboard:guests", {"guests"}),
         (_("Bilder"), "dashboard:pictures", {"pictures"}),
     ]),
     ("calendar", _("Kalender"), "dashboard:calendar", [

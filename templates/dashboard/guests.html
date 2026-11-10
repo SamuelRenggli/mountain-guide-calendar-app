@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Gäste" %} – Tourchef{% endblock %}
+{% block content %}
+<h1>{% translate "Gäste" %}</h1>
+<p class="muted">{% translate "Alle, die bei dir gebucht haben (bestätigte Touren und bezahlte Anmeldungen). Reine Anfragen kommen nicht in die Kartei. Die Angaben für die Tourenplanung trägt der Gast selbst ein – einmal, danach sind sie bei jeder Tour ausgefüllt." %}</p>
+
+<form method="get" class="row search">
+  <input type="search" name="q" value="{{ query }}" placeholder="{% translate 'Name oder E-Mail' %}" aria-label="{% translate 'Suchen' %}">
+  <button class="btn btn-secondary" type="submit">{% translate "Suchen" %}</button>
+</form>
+
+{% if rows %}
+<div class="table-wrap"><table>
+  <thead><tr><th>{% translate "Gast" %}</th><th>{% translate "Touren" %}</th><th>{% translate "Angaben" %}</th></tr></thead>
+  <tbody>
+  {% for r in rows %}
+    <tr>
+      <td><strong>{{ r.name }}</strong><br><span class="small"><a href="mailto:{{ r.email|urlencode:'@' }}">{{ r.email }}</a>{% if r.phone %} · <a href="tel:{{ r.phone|cut:' ' }}">{{ r.phone }}</a>{% endif %}</span></td>
+      <td class="small">{% for b in r.bookings %}<a href="{% url 'dashboard:booking' b.pk %}">{{ b.start_date|date:"d.m.Y" }}</a> {{ b.title }}{% if b.start_date > today %} <span class="muted">({% translate "kommend" %})</span>{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
+      <td class="small">{% with p=r.profile %}{% if p and p.is_filled %}
+        {% if p.diet %}{{ p.get_diet_display }}{% endif %}{% if p.allergies %} · <strong>{% translate "Allergien" %}</strong>{% endif %}
+        {% if p.club and p.club != "none" %}<br>{{ p.club }}{% if p.has_reciprocal_rights %} ({% translate "Gegenrecht" %}){% endif %}{% endif %}
+        {% if p.travel_card and p.travel_card != "none" %} · {{ p.get_travel_card_display }}{% endif %}
+        {% if p.car_seats %} · {% blocktranslate count n=p.car_seats trimmed %}Auto, {{ n }} Platz{% plural %}Auto, {{ n }} Plätze{% endblocktranslate %}{% endif %}
+      {% else %}<span class="muted">{% translate "noch keine" %}</span>{% endif %}{% endwith %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}
+<p class="empty">{% if query %}{% translate "Niemand gefunden." %}{% else %}{% translate "Noch keine Gäste." %}{% endif %}</p>
+{% endif %}
+{% endblock %}

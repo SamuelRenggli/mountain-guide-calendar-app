@@ -8,71 +8,69 @@
   {% include "_status.html" %}
 </div>
 
-<div class="grid-2">
-  <section class="card">
-    <h2>{% if booking.is_registration %}{% translate "Anmeldung" %}{% else %}{% translate "Buchung" %}{% endif %}</h2>
-    <dl class="facts">
-      <dt>{% if booking.is_window %}{% translate "Zeitfenster" %}{% else %}{% translate "Datum" %}{% endif %}</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
-      <dt>{% if booking.is_registration %}{% translate "Plätze" %}{% else %}{% translate "Teilnehmende" %}{% endif %}</dt><dd>{{ booking.participants }}</dd>
-      {% if booking.decision_date %}<dt>{% translate "Entscheid-Frist" %}</dt><dd>{{ booking.decision_date|date:"d.m.Y" }}</dd>{% endif %}
-    </dl>
-  </section>
-  <section class="card">
-    <h2>{% translate "Gast" %}</h2>
-    <dl class="facts">
-      <dt>{% translate "Name" %}</dt><dd>{{ booking.guest_name }}</dd>
-      <dt>{% translate "E-Mail" %}</dt><dd><a href="mailto:{{ booking.guest_email|urlencode:'@' }}">{{ booking.guest_email }}</a></dd>
-      <dt>{% translate "Telefon" %}</dt><dd>{% if booking.guest_phone %}<a href="tel:{{ booking.guest_phone|cut:' ' }}">{{ booking.guest_phone }}</a>{% if whatsapp %} · <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}{% else %}–{% endif %}</dd>
-      {% if booking.is_registration %}
-      <dt>{% translate "Notfallkontakt" %}</dt><dd>{{ booking.emergency_contact|default:"–" }}</dd>
-      <dt>{% translate "Erfahrung" %}</dt><dd class="pre">{{ booking.experience|default:"–" }}</dd>
-      {% endif %}
-    </dl>
-    {% if booking.guest_message %}<h3>{% translate "Tourenwunsch" %}</h3><p class="pre">{{ booking.guest_message }}</p>{% endif %}
-    <p><a class="btn btn-small btn-secondary" href="#nachrichten">{% translate "Nachricht schreiben" %}</a></p>
-  </section>
+<section class="card summary">
+  <div class="summary-grid">
+    <div>
+      <h2>{% translate "Wer" %}</h2>
+      <p class="summary-main">{{ booking.guest_name }}</p>
+      <p class="small"><a href="mailto:{{ booking.guest_email|urlencode:'@' }}">{{ booking.guest_email }}</a><br>
+      {% if booking.guest_phone %}<a href="tel:{{ booking.guest_phone|cut:' ' }}">{{ booking.guest_phone }}</a>{% if whatsapp %} · <a href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}{% endif %}</p>
+      {% if booking.is_registration %}<p class="small">{% translate "Notfallkontakt" %}: {{ booking.emergency_contact|default:"–" }}</p>{% endif %}
+    </div>
+    <div>
+      <h2>{% translate "Was" %}</h2>
+      <p class="summary-main">{{ booking.title }}</p>
+      <p class="small">{% blocktranslate count n=booking.participants trimmed %}{{ n }} Person{% plural %}{{ n }} Personen{% endblocktranslate %}</p>
+      {% if booking.guest_message %}<p class="small pre">{{ booking.guest_message }}</p>{% endif %}
+      {% if booking.is_registration and booking.experience %}<p class="small pre">{{ booking.experience }}</p>{% endif %}
+    </div>
+    <div>
+      <h2>{% translate "Wann" %}</h2>
+      <p class="summary-main">{{ booking.start_date|date:"D d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"D d.m.Y" }}{% endif %}</p>
+      <p class="small">{% blocktranslate count n=booking.days trimmed %}{{ n }} Tag{% plural %}{{ n }} Tage{% endblocktranslate %}{% if booking.decision_date %} · {% translate "Entscheid bis" %} {{ booking.decision_date|date:"d.m.Y" }}{% endif %}</p>
+      {% if booking.deadline and booking.status == "requested" %}<p class="small muted">{% blocktranslate with day=booking.deadline|date:"d.m.Y H:i" trimmed %}Antworten bis {{ day }}{% endblocktranslate %}</p>{% endif %}
+    </div>
+  </div>
+</section>
+
+{% if booking.status == "requested" %}
+<div class="choice" data-choice>
+  <details class="fold"{% if accept_form.errors %} open{% endif %}>
+    <summary class="btn">{% translate "Annehmen" %}</summary>
+    {% include "dashboard/_accept_form.html" with submit_label=_("Vorschlag an den Gast senden") %}
+  </details>
+  <details class="fold"{% if reject_form.errors %} open{% endif %}>
+    <summary class="btn btn-danger">{% translate "Ablehnen" %}</summary>
+    <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'reject' %}" class="card">{% csrf_token %}
+      <p class="small muted">{% translate "Der Gast erhält eine Absage mit deiner Nachricht. Passt dir ein anderes Datum, schreib es hier hinein – der Gast kann dann neu anfragen." %}</p>
+      {% include "_form.html" with form=reject_form %}
+      <button class="btn btn-danger" type="submit">{% translate "Absage senden" %}</button>
+    </form>
+  </details>
 </div>
-
-{% include "dashboard/_thread.html" %}
-
-{% if booking.status == "requested" and booking.is_window %}
-<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" class="card" data-pricing>{% csrf_token %}
-  <h2>{% translate "Angebot machen" %}</h2>
-  <p class="small muted">{% translate "Der Gast hat ein Zeitfenster angegeben. Schlage genaue Daten und einen Preis vor." %}</p>
-  {% include "_form.html" with form=offer_form %}
-  {% include "dashboard/_suggestion.html" %}
-  <button class="btn" type="submit">{% translate "Angebot senden" %}</button>
-</form>
-{% elif booking.status == "requested" %}
-<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'confirm' %}" class="card">{% csrf_token %}
-  <h2>{% translate "Bestätigen" %}</h2>
-  <p class="small muted">{% blocktranslate count n=booking.days trimmed %}Preis = Tagesansatz × {{ n }} Tag. Spesen rechnest du nach der Tour ab.{% plural %}Preis = Tagesansatz × {{ n }} Tage. Spesen rechnest du nach der Tour ab.{% endblocktranslate %}</p>
-  {% include "_form.html" with form=confirm_form %}
-  <button class="btn" type="submit">{% translate "Anfrage bestätigen" %}</button>
-</form>
-<details class="card fold"{% if offer_form.errors %} open{% endif %}>
-  <summary class="btn btn-secondary">{% translate "Anderes Datum oder anderen Preis vorschlagen" %}</summary>
-  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" data-pricing>{% csrf_token %}
-    {% include "_form.html" with form=offer_form %}
-    {% include "dashboard/_suggestion.html" %}
-    <button class="btn btn-secondary" type="submit">{% translate "Gegenangebot senden" %}</button>
-  </form>
-</details>
 {% elif booking.status == "offered" %}
-<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'offer' %}" class="card" data-pricing>{% csrf_token %}
-  <h2>{% translate "Gegenangebot anpassen" %}</h2>
-  {% include "_form.html" with form=offer_form %}
-  {% include "dashboard/_suggestion.html" %}
-  <button class="btn btn-secondary" type="submit">{% translate "Neues Angebot senden" %}</button>
-</form>
+<div class="alert info">{% blocktranslate with day=booking.deadline|date:"d.m.Y H:i" trimmed %}Pendent: Dein Vorschlag ist beim Gast. Sagt er bis {{ day }} zu, ist die Tour bestätigt. Die Tage sind bis dahin provisorisch reserviert.{% endblocktranslate %}</div>
+<div class="choice" data-choice>
+  <details class="fold"{% if accept_form.errors %} open{% endif %}>
+    <summary class="btn btn-secondary">{% translate "Vorschlag anpassen" %}</summary>
+    {% include "dashboard/_accept_form.html" with submit_label=_("Neuen Vorschlag senden") %}
+  </details>
+  <details class="fold"{% if reject_form.errors %} open{% endif %}>
+    <summary class="btn btn-danger">{% translate "Zurückziehen" %}</summary>
+    <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'reject' %}" class="card">{% csrf_token %}
+      {% include "_form.html" with form=reject_form %}
+      <button class="btn btn-danger" type="submit">{% translate "Absage senden" %}</button>
+    </form>
+  </details>
+</div>
 {% elif booking.status == "confirmed" and not booking.is_registration %}
 <section class="card">
   <h2>{% translate "Abrechnen" %}</h2>
-  {% if booking.start_date <= today %}
-    <p class="small muted">{% translate "Trage Tourenpreis und Spesen ein. Der Gast bekommt die Rechnung per E-Mail." %}</p>
+  {% if booking.end_date <= today %}
+    <p class="small muted">{% translate "Passe Tage und Preis an den effektiven Verlauf an (Tag mehr oder weniger, Abbruch) und trage die effektiven Spesen ein. Der Gast bekommt die Rechnung per E-Mail." %}</p>
     <a class="btn" href="{% url 'dashboard:invoice' booking.pk %}">{% translate "Abrechnen" %}</a>
   {% else %}
-    <p class="small muted">{% blocktranslate with day=booking.start_date|date:"d.m.Y" trimmed %}Ab dem ersten Tourentag ({{ day }}) kannst du hier die Rechnung stellen.{% endblocktranslate %}</p>
+    <p class="small muted">{% blocktranslate with day=booking.end_date|date:"d.m.Y" trimmed %}Abgerechnet wird nach der Tour: ab dem letzten Tourentag ({{ day }}) wird die Abrechnung freigeschaltet. Bricht ihr früher ab, passe zuerst unter «Buchung ändern» das Enddatum an.{% endblocktranslate %}</p>
   {% endif %}
 </section>
 <div class="grid-2">
@@ -92,6 +90,10 @@
 {% elif booking.status == "reschedule" %}
 <div class="alert info">{% blocktranslate with day=booking.deadline|date:"d.m.Y H:i" trimmed %}Ersatzdatum vorgeschlagen. Der Gast antwortet bis {{ day }}.{% endblocktranslate %}</div>
 {% endif %}
+
+{% include "dashboard/_thread.html" %}
+
+{% include "dashboard/_planning.html" %}
 
 {% if booking.is_registration and booking.refundable > 0 and booking.status == "cancelled" or booking.is_registration and booking.refundable > 0 and booking.status == "expired" %}
 <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'refund' %}" class="card">{% csrf_token %}
@@ -118,13 +120,7 @@
 </section>
 {% endif %}
 
-{% if booking.status == "requested" or booking.status == "offered" %}
-<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'reject' %}" class="card">{% csrf_token %}
-  <h2>{% translate "Ablehnen" %}</h2>
-  {% include "_form.html" with form=reject_form %}
-  <button class="btn btn-danger" type="submit">{% translate "Anfrage ablehnen" %}</button>
-</form>
-{% elif booking.status == "confirmed" and not booking.is_registration %}
+{% if booking.status == "confirmed" and not booking.is_registration %}
 <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'cancel' %}" class="card" data-confirm="{% translate 'Tour wirklich absagen? Der Gast wird informiert. Das lässt sich nicht rückgängig machen.' %}">{% csrf_token %}
   <h2>{% translate "Tour ohne Ersatzdatum absagen" %}</h2>
   <p class="small muted">{% translate "Für den Gast kostenlos." %}</p>

@@ -210,11 +210,18 @@ def test_library_upload_and_pick_for_template(client, guide):
     from django.core.files.uploadedfile import SimpleUploadedFile
 
     client.post(reverse("dashboard:pictures"), {
-        "category": TourCategory.SKITOUR_DAY, "title": "Piz Lunghin",
-        "photos": [SimpleUploadedFile("a.jpg", jpeg(), "image/jpeg")],
+        "photos": [SimpleUploadedFile("a.jpg", jpeg(), "image/jpeg"), SimpleUploadedFile("b.jpg", jpeg(), "image/jpeg")],
     })
-    pic = Picture.objects.get()
-    assert (pic.guide, pic.in_library, pic.category) == (guide, True, TourCategory.SKITOUR_DAY)
+    assert Picture.objects.filter(guide=guide, in_library=True, category="").count() == 2
+    assert "Neu hochgeladen" in client.get(reverse("dashboard:pictures")).content.decode()
+    pic, extra = Picture.objects.all()
+    client.post(reverse("dashboard:picture_action", args=[pic.key, "speichern"]),
+                {"category": TourCategory.SKITOUR_DAY, "title": "Piz Lunghin"})
+    pic.refresh_from_db()
+    assert (pic.category, pic.title) == (TourCategory.SKITOUR_DAY, "Piz Lunghin")
+    resp = client.post(reverse("dashboard:pictures"), {"photos": [SimpleUploadedFile("c.jpg", jpeg(), "image/jpeg")]},
+                       HTTP_ACCEPT="application/json")
+    assert resp.json() == {"added": 1, "errors": []}
     stock = pictures.from_bytes(None, jpeg(), category=TourCategory.FREERIDE)
     html = client.get(reverse("dashboard:tour_new")).content.decode()
     assert pic.url in html and stock.url in html

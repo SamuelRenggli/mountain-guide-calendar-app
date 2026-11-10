@@ -23,6 +23,13 @@ def request(guide, start, end=None, **extra):
     return services.create_request(**values)
 
 
+def confirm(booking, price, message="", **extra):
+    """The guide accepts the request as asked and the guest agrees."""
+    offered = services.accept_request(booking, start_date=booking.start_date, end_date=booking.end_date, price=price,
+                                      message=message, **extra)
+    return services.accept_offer(offered)
+
+
 def test_create_request_holds_fixed_dates_and_notifies(guide, mailoutbox, django_capture_on_commit_callbacks):
     with django_capture_on_commit_callbacks(execute=True):
         booking = request(guide, in_days(10), in_days(11))
@@ -66,20 +73,35 @@ def test_overlap_allowed_for_inactive_other_guides_and_registrations(guide, othe
     make_registration(departure, email="zwei@example.com")  # registrations share the date
 
 
-def test_confirm_with_breakdown_and_estimated_expenses(guide, mailoutbox, django_capture_on_commit_callbacks):
-    """R-022, R-023: the guest sees the split by person and day rate and the expense estimate."""
+def test_accept_needs_guest_agreement_and_explains_billing(guide, mailoutbox, django_capture_on_commit_callbacks):
+    """The guide accepts with price and expense estimate: pending until the guest agrees; paid after the tour."""
     booking = request(guide, in_days(10), in_days(11))
-    rows = services.breakdown(guide, days=2, participants=2, extra_guides=1, aspirants=1)
-    assert [(r["role"], r["persons"], r["amount"]) for r in rows] == [("guide", 2, "3000.00"), ("aspirant", 1, "1000.00")]
     with django_capture_on_commit_callbacks(execute=True):
-        booking = services.confirm(booking, "Freue mich!", price=Decimal("4000"), price_breakdown=rows,
-                                   estimated_expenses=Decimal("300"))
+        booking = services.accept_request(booking, start_date=in_days(10), end_date=in_days(11), price=Decimal("1500"),
+                                          message="Freue mich!", estimated_expenses=Decimal("300"),
+                                          decision_date=in_days(8))
+    assert booking.status == S.OFFERED and booking.deadline is not None and booking.decision_date == in_days(8)
+    mail = mailoutbox[-1]
+    assert "hat deine Anfrage angenommen" in mail.subject
+    assert "CHF 1500.00 + Spesen (geschätzt ca. CHF 300, unverbindlich)" in mail.body
+    assert "Bezahlt wird erst nach der Tour" in mail.body and "Freue mich!" in mail.body
+    with django_capture_on_commit_callbacks(execute=True):
+        booking = services.accept_offer(booking)
     assert booking.status == S.CONFIRMED and booking.deadline is None
-    body = mailoutbox[-1].body
-    assert "CHF 4000.00 + Spesen (geschätzt ca. CHF 300, unverbindlich)" in body
-    assert "2 × Bergführer × 2 Tage × CHF 750 = CHF 3000" in body
-    assert "1 × Aspirant × 2 Tage × CHF 500 = CHF 1000" in body
-    assert "Nach der Tour erhältst du die Rechnung" in body
+    guest_mail = [m for m in mailoutbox if m.to == ["gina@example.com"]][-1]
+    assert "#angaben" in guest_mail.body
+
+
+def test_accept_can_add_a_day_but_not_a_busy_one(guide, make_booking):
+    booking = request(guide, in_days(10))
+    make_booking(guide, in_days(12), status=S.CONFIRMED)
+    with pytest.raises(services.DatesUnavailable) as err:
+        services.accept_request(booking, start_date=in_days(10), end_date=in_days(12), price=2250)
+    assert f"{in_days(12):%d.%m.%Y}" in str(err.value)
+    booking = services.accept_request(booking, start_date=in_days(10), end_date=in_days(11), price=1500)
+    assert (booking.start_date, booking.end_date) == (in_days(10), in_days(11))
+    with pytest.raises(services.DatesUnavailable):
+        request(guide, in_days(11))  # the added day is held provisionally
 
 
 def test_day_rate_tiers_by_group_size(guide):
@@ -99,9 +121,13 @@ def expense(description, amount):
 
 
 def test_invoice_after_tour(guide, mailoutbox, django_capture_on_commit_callbacks):
-    booking = services.confirm(request(guide, in_days(10)), price=750)
+    booking = confirm(request(guide, in_days(10)), price=750)
     with pytest.raises(services.BookingError):
         services.invoice(booking, [tour_price("750")])
+    Booking.objects.filter(pk=booking.pk).update(start_date=in_days(-2), end_date=in_days(1))
+    booking.refresh_from_db()
+    with pytest.raises(services.BookingError):
+        services.invoice(booking, [tour_price("750")])  # only after the tour
     Booking.objects.filter(pk=booking.pk).update(start_date=in_days(-2), end_date=in_days(-2))
     booking.refresh_from_db()
     with django_capture_on_commit_callbacks(execute=True):
@@ -117,7 +143,7 @@ def test_invoice_shows_vat_when_guide_is_liable(guide, mailoutbox, django_captur
     """R-202: prices include VAT; the bill shows the share."""
     guide.vat_number, guide.vat_rate = "CHE-123.456.789 MWST", Decimal("8.1")
     guide.save()
-    booking = services.confirm(request(guide, in_days(10)), price=1081)
+    booking = confirm(request(guide, in_days(10)), price=1081)
     Booking.objects.filter(pk=booking.pk).update(start_date=in_days(-1), end_date=in_days(-1))
     booking.refresh_from_db()
     with django_capture_on_commit_callbacks(execute=True):
@@ -127,7 +153,7 @@ def test_invoice_shows_vat_when_guide_is_liable(guide, mailoutbox, django_captur
 
 
 def test_invoice_can_be_corrected_until_paid(guide, mailoutbox, django_capture_on_commit_callbacks):
-    booking = services.confirm(request(guide, in_days(10)), price=750)
+    booking = confirm(request(guide, in_days(10)), price=750)
     Booking.objects.filter(pk=booking.pk).update(start_date=in_days(-1), end_date=in_days(-1))
     booking.refresh_from_db()
     services.invoice(booking, [tour_price("750"), expense("Bahn", "40")])
@@ -142,17 +168,17 @@ def test_invoice_can_be_corrected_until_paid(guide, mailoutbox, django_capture_o
 
 
 def test_invalid_transition(guide):
-    booking = services.confirm(request(guide, in_days(10)), price=750)
+    booking = confirm(request(guide, in_days(10)), price=750)
     with pytest.raises(services.InvalidTransition):
-        services.confirm(booking, price=750)
+        services.accept_request(booking, start_date=in_days(10), end_date=in_days(10), price=750)
     with pytest.raises(services.InvalidTransition):
         services.accept_offer(booking)
 
 
 def test_counter_offer_moves_dates(guide):
     booking = request(guide, in_days(10))
-    offered = services.counter_offer(booking, start_date=in_days(20), end_date=in_days(21), price=Decimal("1500"),
-                                     message="Lieber später")
+    offered = services.accept_request(booking, start_date=in_days(20), end_date=in_days(21), price=Decimal("1500"),
+                                      message="Lieber später")
     assert (offered.status, offered.start_date, offered.end_date) == (S.OFFERED, in_days(20), in_days(21))
     assert services.accept_offer(offered).status == S.CONFIRMED
 
@@ -161,21 +187,21 @@ def test_counter_offer_conflict(guide, make_booking):
     make_booking(guide, in_days(20), status=S.PAID)
     booking = request(guide, in_days(10))
     with pytest.raises(services.DatesUnavailable):
-        services.counter_offer(booking, start_date=in_days(20), end_date=in_days(20), price=1500, message="x")
+        services.accept_request(booking, start_date=in_days(20), end_date=in_days(20), price=1500, message="x")
     booking.refresh_from_db()
     assert booking.start_date == in_days(10)
 
 
 def test_declined_offer_frees_dates(guide):
-    booking = services.counter_offer(request(guide, in_days(10)), start_date=in_days(12), end_date=in_days(12),
-                                     price=750, message="x")
+    booking = services.accept_request(request(guide, in_days(10)), start_date=in_days(12), end_date=in_days(12),
+                                      price=750, message="x")
     services.decline_offer(booking)
     request(guide, in_days(12))
 
 
 def test_guide_changes_confirmed_booking(guide, mailoutbox, django_capture_on_commit_callbacks):
     """R-024: the change is logged and the guest gets an email listing it."""
-    booking = services.confirm(request(guide, in_days(10)), price=750)
+    booking = confirm(request(guide, in_days(10)), price=750)
     with django_capture_on_commit_callbacks(execute=True):
         booking = services.change_booking(booking, start_date=in_days(11), end_date=in_days(12), participants=3,
                                           price=Decimal("1650"))
@@ -190,7 +216,7 @@ def test_guide_changes_confirmed_booking(guide, mailoutbox, django_capture_on_co
 
 def test_weather_replacement_date_accepted(guide, mailoutbox, django_capture_on_commit_callbacks):
     """R-025: the guide proposes another date; the new days are held."""
-    booking = services.confirm(request(guide, in_days(10)), price=750)
+    booking = confirm(request(guide, in_days(10)), price=750)
     with django_capture_on_commit_callbacks(execute=True):
         booking = services.propose_new_date(booking, start_date=in_days(17), end_date=in_days(17), message="Föhnsturm")
     assert (booking.status, booking.start_date) == (S.RESCHEDULE_PROPOSED, in_days(17))
@@ -202,14 +228,14 @@ def test_weather_replacement_date_accepted(guide, mailoutbox, django_capture_on_
 
 
 def test_weather_replacement_declined_is_free(guide):
-    booking = services.confirm(request(guide, in_days(10)), price=750)
+    booking = confirm(request(guide, in_days(10)), price=750)
     booking = services.propose_new_date(booking, start_date=in_days(17), end_date=in_days(17))
     assert services.decline_new_date(booking).status == S.CANCELLED
 
 
 def test_weather_replacement_declined_bills_incurred_costs(guide, mailoutbox, django_capture_on_commit_callbacks):
     """R-026: free, except costs the guide already had and listed."""
-    booking = services.confirm(request(guide, in_days(10)), price=750)
+    booking = confirm(request(guide, in_days(10)), price=750)
     booking = services.propose_new_date(booking, start_date=in_days(17), end_date=in_days(17), incurred_costs=Decimal("60"),
                                         incurred_costs_note="Hüttenanzahlung")
     with django_capture_on_commit_callbacks(execute=True):
@@ -220,7 +246,7 @@ def test_weather_replacement_declined_bills_incurred_costs(guide, mailoutbox, dj
 
 
 def test_unanswered_replacement_date_counts_as_no(guide):
-    booking = services.confirm(request(guide, in_days(10)), price=750)
+    booking = confirm(request(guide, in_days(10)), price=750)
     booking = services.propose_new_date(booking, start_date=in_days(17), end_date=in_days(17))
     Booking.objects.filter(pk=booking.pk).update(deadline=timezone.now() - timedelta(minutes=1))
     assert services.expire_overdue() == 1
@@ -244,16 +270,16 @@ def test_cancellation_uses_terms_accepted_by_guest(guide):
 
 
 def test_late_guest_cancellation_of_request_is_billed(guide):
-    booking = services.confirm(request(guide, in_days(10)), price=Decimal("1000"))
+    booking = confirm(request(guide, in_days(10)), price=Decimal("1000"))
     booking = services.guest_cancel(booking)
     assert (booking.status, booking.price) == (S.AWAITING_PAYMENT, Decimal("500.00"))
-    early = services.guest_cancel(services.confirm(request(guide, in_days(30)), price=1000))
+    early = services.guest_cancel(confirm(request(guide, in_days(30)), price=1000))
     assert early.status == S.CANCELLED
 
 
 def test_guest_cancel_and_guide_cancel(guide):
     assert services.guest_cancel(request(guide, in_days(10))).status == S.CANCELLED
-    assert services.guide_cancel(services.confirm(request(guide, in_days(14)), price=750), "Krank").status == S.CANCELLED
+    assert services.guide_cancel(confirm(request(guide, in_days(14)), price=750), "Krank").status == S.CANCELLED
 
 
 def test_invoiced_booking_cannot_be_cancelled(guide, make_booking):
