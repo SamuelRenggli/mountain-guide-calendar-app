@@ -401,7 +401,10 @@ class Booking(models.Model):
     guest_phone = EncryptedTextField(max_length=30)
     emergency_contact = EncryptedTextField(max_length=200)
     experience = EncryptedTextField(max_length=500)
-    language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default="de")  # guest's email language
+    # Planning details the guest entered on this booking (JSON). The guest page only ever shows these, never what the
+    # guide's guest file holds from earlier tours (questionnaire Q8).
+    guest_details = EncryptedTextField()
+    language =models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default="de")  # guest's email language
     guest_message = models.TextField(blank=True)
     guide_message = models.TextField(blank=True)
 
@@ -419,6 +422,8 @@ class Booking(models.Model):
     # Weather cancellation with a replacement date (R-025/R-026): costs the guest pays if the new date doesn't work
     incurred_costs = models.DecimalField(max_digits=9, decimal_places=2, default=0)
     incurred_costs_note = models.CharField(max_length=200, blank=True)
+    # Cancelled, but billed for a fee or costs: the tour won't happen, so the days are free for others again.
+    days_released = models.BooleanField(default=False)
 
     stripe_checkout_session_id = models.CharField(max_length=255, blank=True)
     stripe_payment_intent_id = models.CharField(max_length=255, blank=True)
@@ -444,7 +449,7 @@ class Booking(models.Model):
                 ],
                 condition=Q(
                     status__in=["requested", "offered", "confirmed", "reschedule", "awaiting_payment", "paid"],
-                    is_window=False, departure__isnull=True,
+                    is_window=False, departure__isnull=True, days_released=False,
                 ),
             ),
         ]
@@ -504,7 +509,7 @@ class Booking(models.Model):
 
     @property
     def has_sensitive_data(self) -> bool:
-        return bool(self.guest_phone or self.emergency_contact or self.experience)
+        return bool(self.guest_phone or self.emergency_contact or self.experience or self.guest_details)
 
     def vat_included(self, amount=None) -> Decimal | None:
         """VAT contained in a gross amount, if the guide charges VAT (R-202)."""
@@ -529,6 +534,18 @@ class WaitlistEntry(models.Model):
     class Meta:
         ordering = ["created_at"]
         constraints = [models.UniqueConstraint(fields=["departure", "email"], name="one_waitlist_entry_per_email")]
+
+
+class Refund(models.Model):
+    """Money sent back to a guest through Stripe. Kept with its date, so the export can book a refund in the month it
+    happened rather than the month of the payment (questionnaire Q7)."""
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="refunds")
+    amount = models.DecimalField(max_digits=9, decimal_places=2)
+    created_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        ordering = ["created_at", "id"]
 
 
 class InvoiceLine(models.Model):

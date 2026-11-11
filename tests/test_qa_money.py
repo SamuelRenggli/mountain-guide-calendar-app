@@ -15,7 +15,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from bookings import departures, emails, export, services
-from bookings.models import Booking, InvoiceLine, money
+from bookings.models import Booking, InvoiceLine, Refund, money
 from payments import stripe_service
 
 from .conftest import in_days
@@ -33,19 +33,19 @@ def _signup(departure, seats=1, lang="de"):
 # --- Money -----------------------------------------------------------------------------
 
 
-@pytest.mark.xfail(strict=True, reason="Entscheid offen: Frage 4 im Doc «Tourchef: Fragen an Bergführer»")
-def test_pending_payment_follows_moved_departure(stripe_guide, make_departure):
-    """Guest is in Stripe checkout while the guide moves the date: the paid registration must carry the new date
-    (and ideally be asked to accept it), otherwise fees/emails use the old date."""
+def test_payment_after_move_is_refunded(stripe_guide, make_departure):
+    """Questionnaire Q4 (answer B): the guest was paying while the guide moved the date. The signup was called off;
+    a payment that still lands is refunded in full instead of registering the guest for the old date."""
     dep = make_departure(stripe_guide)
     booking = _signup(dep)
     new_start = in_days(40)
     departures.move_departure(dep, start_date=new_start, end_date=new_start + timedelta(days=1))
     booking.refresh_from_db()
+    assert booking.status == S.EXPIRED
     paid = departures.registration_paid(booking, session_id="cs_1", payment_intent="pi_1",
                                         amount_cents=booking.amount_cents)
     paid.refresh_from_db()
-    assert paid.start_date == new_start, f"registration still on old date {paid.start_date}"
+    assert paid.status == S.EXPIRED and paid.refund_due == paid.amount_paid > 0
 
 
 def test_second_payment_does_not_swallow_first_refund(stripe_guide, make_departure, make_registration,
@@ -90,13 +90,15 @@ def test_reinvoice_expires_open_checkout(stripe_guide, make_booking):
     assert expire.called, "old checkout (CHF 600) stays payable after the bill was corrected to CHF 700"
 
 
-@pytest.mark.xfail(strict=True, reason="Entscheid offen: Frage 6 im Doc «Tourchef: Fragen an Bergführer»")
-def test_zero_invoice_is_not_payable_online(stripe_guide, make_booking):
-    """A bill over CHF 0 (or below Stripe's CHF 0.50 minimum) should not end up awaiting an online payment."""
+def test_zero_invoice_settles_the_tour(stripe_guide, make_booking, mailoutbox, django_capture_on_commit_callbacks):
+    """Questionnaire Q6 (answer A): a bill over CHF 0 is possible and the tour counts as settled at once."""
     booking = make_booking(stripe_guide, in_days(-1), status=S.CONFIRMED, price=600)
-    with pytest.raises(services.BookingError):
-        services.invoice(booking, [InvoiceLine(kind=InvoiceLine.Kind.TOUR, quantity=1, unit_price=0,
-                                               description="Tour")])
+    with django_capture_on_commit_callbacks(execute=True):
+        booking = services.invoice(booking, [InvoiceLine(kind=InvoiceLine.Kind.TOUR, quantity=1, unit_price=0,
+                                                         description="Tour")])
+    booking.refresh_from_db()
+    assert booking.status == S.PAID and booking.price == 0 and booking.paid_at and booking.is_invoiced
+    assert not mailoutbox  # no bill with a payment link
 
 
 def test_platform_fee_rounding():
@@ -122,21 +124,38 @@ def test_refund_extra_limits(stripe_guide, make_departure, make_registration, dj
 
 
 def test_export_sums(stripe_guide, make_departure, make_registration, make_booking):
+    """Questionnaire Q7: payments with Tourchef fee and payout, refunds as their own negative rows."""
     dep = make_departure(stripe_guide)
-    make_registration(dep, seats=2, refunded_amount=Decimal("100"))
+    reg = make_registration(dep, seats=2, refunded_amount=Decimal("100"), refund_due=Decimal("50"))
+    Refund.objects.create(booking=reg, amount=Decimal("100"))
     b = make_booking(stripe_guide, in_days(-5), status=S.PAID, price=Decimal("850.50"), amount_paid=Decimal("850.50"),
                      paid_at=timezone.now(), payment_method="stripe")
     InvoiceLine.objects.create(booking=b, position=0, kind=InvoiceLine.Kind.TOUR, quantity=1, unit_price=Decimal("750.00"),
                                description="Tour")
     InvoiceLine.objects.create(booking=b, position=1, kind=InvoiceLine.Kind.EXPENSE, quantity=1,
                                unit_price=Decimal("100.50"), description="Hütte")
-    header, rows = export.rows(stripe_guide, in_days(-1), in_days(1))
-    assert len(rows) == 2
+    with mock.patch.object(settings, "PLATFORM_FEE_PERCENT", "2.5"):
+        header, rows = export.rows(stripe_guide, in_days(-1), in_days(1))
+    assert "Tourchef-Gebühr CHF" in header and "Offene Rückzahlung CHF" in header
+    assert len(rows) == 3
     by_amount = {r[6]: r for r in rows}
-    assert by_amount[Decimal("960.00")][9] == Decimal("860.00")
+    assert by_amount[Decimal("960.00")][8] == Decimal("24.00")  # fee
+    assert by_amount[Decimal("960.00")][9] == Decimal("936.00")  # payout
+    assert by_amount[Decimal("960.00")][10] == Decimal("50.00")  # refund still open
     assert by_amount[Decimal("850.50")][7] == Decimal("100.50")
+    refund = by_amount[Decimal("-100.00")]
+    assert refund[2] == "Rückzahlung" and refund[8] == Decimal("-2.50") and refund[9] == Decimal("-97.50")
     resp = export.response(stripe_guide, in_days(-1), in_days(1), "csv")
     assert resp.status_code == 200
+
+
+def test_export_books_refund_in_its_own_month(stripe_guide, make_booking):
+    b = make_booking(stripe_guide, date(2026, 6, 10), status=S.PAID, price=500, amount_paid=500,
+                     paid_at=datetime(2026, 6, 12, 10, tzinfo=ZRH), payment_method="manual", refunded_amount=200)
+    Refund.objects.create(booking=b, amount=200, created_at=datetime(2026, 7, 3, 9, tzinfo=ZRH))
+    _, june = export.rows(stripe_guide, date(2026, 6, 1), date(2026, 6, 30))
+    _, july = export.rows(stripe_guide, date(2026, 7, 1), date(2026, 7, 31))
+    assert [r[6] for r in june] == [Decimal("500.00")] and [r[6] for r in july] == [Decimal("-200.00")]
 
 
 def test_export_paid_just_after_midnight_counts_for_local_day(stripe_guide, make_booking):
@@ -318,3 +337,22 @@ def test_nodb_receipt_uses_local_date():
         text = emails._receipt(b)
     paid_line = [line for line in text.splitlines() if line.startswith("Bezahlt am")][0]
     assert "01.07.2026" in paid_line, paid_line
+
+
+def test_cancelling_departure_lists_kept_fees_for_the_guide(stripe_guide, make_departure, make_registration,
+                                                            mailoutbox, django_capture_on_commit_callbacks):
+    """Questionnaire Q5 (answer C): a guest cancelled late and paid a fee; then the guide calls off the date. The fee
+    stays, but the guide's email lists it with a link, so the guide decides case by case (goodwill refund)."""
+    dep = make_departure(stripe_guide, start=in_days(5))
+    early = make_registration(dep, email="frueh@example.com")  # within 7 days -> 100 % fee
+    make_registration(dep, email="bleibt@example.com")
+    with mock.patch("stripe.Refund.create"), django_capture_on_commit_callbacks(execute=True):
+        departures.guest_cancel(early)
+    mailoutbox.clear()
+    with mock.patch("stripe.Refund.create"), django_capture_on_commit_callbacks(execute=True):
+        departures.cancel_departure(dep, "Wetter")
+    early.refresh_from_db()
+    assert early.status == S.CANCELLED and early.refundable == early.amount_paid  # fee kept for now
+    guide_mail = next(m for m in mailoutbox if m.to == [stripe_guide.email])
+    assert "Storno-Kosten bezahlt" in guide_mail.body and f"/dashboard/buchungen/{early.pk}/" in guide_mail.body
+    assert "CHF 480.00" in guide_mail.body

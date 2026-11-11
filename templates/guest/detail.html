@@ -75,7 +75,7 @@
   {% if details_form.instance.pk and not details_form.errors %}
   <p class="small">{% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} hat deine Angaben. Bitte prüfe, ob sie noch stimmen.{% endblocktranslate %}</p>
   {% else %}
-  <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Damit {{ name }} die Tour planen kann (Hütte, Anreise, Verpflegung). Wird gespeichert, bei der nächsten Tour ist alles schon ausgefüllt. Nur {{ name }} sieht diese Angaben.{% endblocktranslate %}</p>
+  <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Damit {{ name }} die Tour planen kann (Hütte, Anreise, Verpflegung). Nur {{ name }} sieht diese Angaben und bewahrt sie für weitere Touren mit dir auf.{% endblocktranslate %}</p>
   {% endif %}
   <details class="fold"{% if not details_form.instance.pk or details_form.errors %} open{% endif %}>
     <summary class="btn btn-secondary btn-small">{% if details_form.instance.pk %}{% translate "Angaben ändern" %}{% else %}{% translate "Angaben eintragen" %}{% endif %}</summary>

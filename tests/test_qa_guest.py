@@ -50,10 +50,9 @@ def act(client, booking, name):
 # =====================================================================================
 
 
-@pytest.mark.xfail(strict=True, reason="Entscheid offen: Frage 1 im Doc «Tourchef: Fragen an Bergführer»")
-def test_bug_late_guest_cancel_keeps_days_blocked(client, guide, make_booking, django_capture_on_commit_callbacks):
-    """Guest cancels a confirmed tour late -> Storno invoice (awaiting_payment). The tour won't happen, so the
-    days should be free again in the guide's calendar/widget."""
+def test_late_guest_cancel_frees_days(client, guide, make_booking, django_capture_on_commit_callbacks):
+    """Questionnaire Q1 (answer A): guest cancels a confirmed tour late -> Storno invoice (awaiting_payment). The tour
+    won't happen, so the days are free again right away."""
     day = in_days(3)
     booking = make_booking(guide, day, status=S.CONFIRMED, price=Decimal("1000"),
                            cancel_free_days=14, cancel_partial_days=7, cancel_partial_percent=50)
@@ -62,12 +61,13 @@ def test_bug_late_guest_cancel_keeps_days_blocked(client, guide, make_booking, d
     booking.refresh_from_db()
     assert booking.status == S.AWAITING_PAYMENT  # storno fee billed (correct)
     assert booking.price == Decimal("1000.00")
-    # BUG: the cancelled tour still blocks the days (BOOKED) and new requests on them are refused
     assert availability.day_states(guide, day, day)[day] == availability.FREE
+    # and the guide can take a new request on that day
+    other = make_booking(guide, day, status=S.REQUESTED, guest_email="neu@example.com")
+    assert other.pk
 
 
-@pytest.mark.xfail(strict=True, reason="Entscheid offen: Frage 1 im Doc «Tourchef: Fragen an Bergführer»")
-def test_bug_declined_new_date_with_costs_keeps_new_days_blocked(client, guide, make_booking,
+def test_declined_new_date_with_costs_frees_days(client, guide, make_booking,
                                                                   django_capture_on_commit_callbacks):
     day = in_days(20)
     booking = make_booking(guide, day, status=S.RESCHEDULE_PROPOSED, price=Decimal("900"),
@@ -79,20 +79,16 @@ def test_bug_declined_new_date_with_costs_keeps_new_days_blocked(client, guide, 
     assert availability.day_states(guide, day, day)[day] == availability.FREE
 
 
-@pytest.mark.xfail(strict=True, reason="Entscheid offen: Frage 2 im Doc «Tourchef: Fragen an Bergführer»")
-def test_bug_guest_can_cancel_confirmed_tour_after_it_took_place(client, guide, make_booking,
-                                                                 django_capture_on_commit_callbacks):
-    """Tour is over (not yet invoiced). The guest page still offers «Verbindlich stornieren»; doing so replaces the
-    real invoice (price + effective expenses) by a 100 % Storno bill without expenses."""
+def test_guest_can_still_cancel_after_the_tour(client, guide, make_booking, django_capture_on_commit_callbacks):
+    """Questionnaire Q2 (answer C): cancelling stays possible after the tour; the fee is 100 % anyway."""
     booking = make_booking(guide, in_days(-3), end_date=in_days(-2), status=S.CONFIRMED, price=Decimal("1500"),
                            estimated_expenses=Decimal("300"))
     html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
-    offered = "Verbindlich stornieren" in html
+    assert "Verbindlich stornieren" in html
     with django_capture_on_commit_callbacks(execute=True):
         act(client, booking, "stornieren")
     booking.refresh_from_db()
-    assert not offered, "cancel button shown for a tour in the past"
-    assert booking.status == S.CONFIRMED, f"past tour was cancelled by guest -> {booking.status}"
+    assert booking.status == S.AWAITING_PAYMENT and booking.price == Decimal("1500.00")
 
 
 def test_bug_guest_accepts_offer_after_deadline(client, guide, make_booking):
@@ -128,10 +124,9 @@ def test_bug_widget_request_from_old_tab_is_silently_dropped(client, guide):
     assert created or response.status_code != 200, "success page shown, request silently discarded"
 
 
-@pytest.mark.xfail(strict=True, reason="Entscheid offen: Frage 2 im Doc «Tourchef: Fragen an Bergführer»")
-def test_bug_registration_cancellable_after_tour(client, stripe_guide, make_departure, make_registration,
+def test_registration_cancellable_after_tour(client, stripe_guide, make_departure, make_registration,
                                                  django_capture_on_commit_callbacks):
-    """A paid registration for a tour that already took place can still be «cancelled» (ends as cancelled)."""
+    """Questionnaire Q2 (answer C): a paid registration can still be cancelled after the tour, at 100 % fee."""
     departure = make_departure(stripe_guide, in_days(10))
     Departure.objects.filter(pk=departure.pk).update(start_date=in_days(-5), end_date=in_days(-4),
                                                      status=Departure.Status.CONFIRMED)
@@ -140,7 +135,7 @@ def test_bug_registration_cancellable_after_tour(client, stripe_guide, make_depa
     with django_capture_on_commit_callbacks(execute=True):
         act(client, booking, "stornieren")
     booking.refresh_from_db()
-    assert booking.status == S.PAID
+    assert booking.status == S.CANCELLED and booking.refund_due == 0
 
 
 def test_bug_waitlist_accepts_more_seats_than_tour_has(client, stripe_guide, make_departure, make_registration):

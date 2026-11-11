@@ -137,6 +137,13 @@ MESSAGES = {
         _("Hallo {guest}\n\nDeine Zahlung kam an, als die Plätze schon vergeben waren. Wir haben dir den vollen Betrag "
           "zurückbezahlt; er erscheint in einigen Tagen auf deiner Karte.\n\n{summary}"),
     ),
+    "registration_stopped_by_move": (
+        _("Termin verschoben – Anmeldung abgebrochen"),
+        _("Hallo {guest}\n\n{guide} hat «{tour}» verschoben, während du bezahlt hast. Deine Anmeldung für das alte "
+          "Datum ist deshalb abgebrochen. Wurde schon Geld abgebucht, erhältst du den vollen Betrag automatisch "
+          "zurück; er erscheint in einigen Tagen auf deiner Karte.\n\nNeues Datum: {new_dates}\n\n"
+          "Passt dir das neue Datum, kannst du dich hier neu anmelden:\n{departure_url}"),
+    ),
     "payment_failed": (
         _("Anmeldung nicht abgeschlossen"),
         _("Hallo {guest}\n\nDie Zahlung für deine Anmeldung wurde nicht abgeschlossen, deshalb sind die Plätze nicht "
@@ -168,12 +175,12 @@ MESSAGES = {
     "departure_auto_cancelled_guide": (
         _("Termin automatisch abgesagt: {tour} am {start}"),
         _("Hallo {guide}\n\nDie Entscheid-Frist ist ohne Entscheid abgelaufen. Der Termin wurde deshalb abgesagt, "
-          "{count} angemeldete Gäste erhalten ihr Geld zurück.\n\n{departure_link}"),
+          "{count} angemeldete Gäste erhalten ihr Geld zurück.{fees_kept}\n\n{departure_link}"),
     ),
     "departure_cancelled_guide": (
         _("Termin abgesagt: {tour} am {start}"),
         _("Hallo {guide}\n\nDu hast den Termin abgesagt. {count} angemeldete Gäste wurden per E-Mail informiert und "
-          "erhalten den vollen Betrag automatisch zurück.\n\n{departure_link}"),
+          "erhalten den vollen Betrag automatisch zurück.{fees_kept}\n\n{departure_link}"),
     ),
     "decision_reminder": (
         _("Entscheid fällig: {tour} am {start}"),
@@ -242,6 +249,9 @@ COSTS_NOTE = _("\nBereits angefallene Kosten, die du bei einer Absage trägst: C
 REFUND_NOTE = _(" und du erhältst den vollen Betrag zurück")
 REASON_GUIDE = _("{guide} musste die Tour leider absagen.")
 REASON_AUTO = _("Die Tour findet nicht statt: {guide} hat nicht rechtzeitig über die Durchführung entschieden.")
+FEES_KEPT = _("Diese Gäste haben sich vorher abgemeldet und Storno-Kosten bezahlt. Ob du ihnen die Gebühr "
+              "zurückzahlst, entscheidest du (Kulanz auf der Buchung):")
+FEE_KEPT_ROW = _("- {guest}: CHF {fee} – {link}")
 MIN_REACHED = _("Mindestzahl erreicht")
 MIN_MISSING = _("Mindestzahl noch nicht erreicht")
 CHANGE_LABELS = {"dates": _("Datum"), "participants": _("Teilnehmende"), "price": _("Preis")}
@@ -498,6 +508,11 @@ def payment_failed(b):
     _send("payment_failed", b, to_guest=True)
 
 
+def registration_stopped_by_move(b, d):
+    new_dates = f"{d.start_date:%d.%m.%Y}" + (f" – {d.end_date:%d.%m.%Y}" if d.end_date != d.start_date else "")
+    _send("registration_stopped_by_move", b, to_guest=True, new_dates=new_dates)
+
+
 def registration_cancelled(b, *, fee, percent):
     extra = {"fee": f"{Decimal(fee):.2f}", "percent": percent, "refund": f"{Decimal(b.amount_paid) - Decimal(fee):.2f}"}
     _send("registration_cancelled_guest", b, to_guest=True, **extra)
@@ -524,12 +539,22 @@ def _send_guide(key, d, **extra):
     _deliver(key, guide.language, guide.email, ctx)
 
 
-def departure_auto_cancelled_guide(d, count):
-    _send_guide("departure_auto_cancelled_guide", d, count=count)
+def _fees_kept(d, bookings) -> str:
+    """Guests who cancelled earlier and paid a fee: the guide decides whether to pay it back (questionnaire Q5)."""
+    if not bookings:
+        return ""
+    with translation.override(d.guide.language):
+        rows = [FEE_KEPT_ROW.format(guest=b.guest_name, fee=f"{b.refundable - b.refund_due:.2f}",
+                                    link=f"{settings.SITE_URL}/dashboard/buchungen/{b.pk}/") for b in bookings]
+        return "\n\n" + str(FEES_KEPT) + "\n" + "\n".join(rows)
 
 
-def departure_cancelled_guide(d, count):
-    _send_guide("departure_cancelled_guide", d, count=count)
+def departure_auto_cancelled_guide(d, count, fees_kept=()):
+    _send_guide("departure_auto_cancelled_guide", d, count=count, fees_kept=_fees_kept(d, fees_kept))
+
+
+def departure_cancelled_guide(d, count, fees_kept=()):
+    _send_guide("departure_cancelled_guide", d, count=count, fees_kept=_fees_kept(d, fees_kept))
 
 
 def decision_reminder(d):

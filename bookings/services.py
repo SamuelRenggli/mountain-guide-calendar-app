@@ -12,7 +12,7 @@ Scheduled dates (Termine) and their registrations live in departures.py and reus
         └── reject / cancel / expire (before the tour) ──▶ rejected / cancelled / expired
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
 
 from django.conf import settings
@@ -170,10 +170,11 @@ def check_days_free(booking: Booking, start_date: date, end_date: date) -> None:
 
 
 def accept_request(booking: Booking, *, start_date: date, end_date: date, price, message: str = "",
-                   estimated_expenses=None, decision_date=None) -> Booking:
+                   estimated_expenses=None, decision_date=None, answer_deadline: date | None = None) -> Booking:
     """The guide takes the request: price, estimated expenses and possibly other or more days. The days are held
-    provisionally; the booking is confirmed once the guest agrees (within GUEST_RESPONSE_DAYS). Can be repeated to
-    adjust the proposal while the guest hasn't answered."""
+    provisionally; the booking is confirmed once the guest agrees by the answer deadline the guide sets on each offer
+    (questionnaire Q3; default GUEST_RESPONSE_DAYS). Can be repeated to adjust the proposal while the guest hasn't
+    answered."""
     today = timezone.localdate()
     if start_date < today:
         raise BookingError(_("Das Datum liegt in der Vergangenheit."))
@@ -181,9 +182,15 @@ def accept_request(booking: Booking, *, start_date: date, end_date: date, price,
         raise BookingError(_("Das Ende muss nach dem Beginn liegen."))
     if decision_date and decision_date > start_date:
         raise BookingError(_("Die Entscheid-Frist muss vor dem Tourenbeginn liegen."))
+    if answer_deadline and not today <= answer_deadline <= start_date:
+        raise BookingError(_("Die Antwortfrist muss zwischen heute und dem ersten Tourentag liegen."))
     check_days_free(booking, start_date, end_date)
     note = f"{start_date:%d.%m.%Y}–{end_date:%d.%m.%Y}, {_price_note(price, [], estimated_expenses)}"
-    deadline = _deadline(settings.GUEST_RESPONSE_DAYS)
+    if answer_deadline:
+        # The whole chosen day counts.
+        deadline = timezone.make_aware(datetime.combine(answer_deadline, time(23, 59)))
+    else:
+        deadline = _deadline(settings.GUEST_RESPONSE_DAYS)
     booking = transition(
         booking, {S.REQUESTED, S.OFFERED}, S.OFFERED, Actor.GUIDE, f"{note}. {message}".strip(),
         start_date=start_date, end_date=end_date, is_window=False, price=price, price_breakdown=[],
@@ -270,11 +277,24 @@ def invoice(booking: Booking, lines: list[InvoiceLine], message: str = "") -> Bo
     if not lines:
         raise BookingError(_("Die Rechnung hat keine Posten."))
     total = sum((line.amount for line in lines), Decimal("0.00"))
+    if total < 0:
+        raise BookingError(_("Die Rechnung darf nicht unter CHF 0 liegen."))
     if booking.status == S.AWAITING_PAYMENT:
         # A correction: the checkout opened for the old amount must not stay payable.
         from payments import stripe_service
 
         stripe_service.expire_open_checkout(booking)
+    if total == 0:
+        # Nothing to pay (a free tour, later e.g. a voucher): the tour is settled at once (questionnaire Q6).
+        with transaction.atomic():
+            booking = transition(
+                booking, {S.CONFIRMED, S.AWAITING_PAYMENT}, S.PAID, Actor.GUIDE,
+                f"Rechnung über CHF 0 – erledigt. {message}".strip(),
+                price=total, invoiced_at=timezone.now(), guide_message=message, deadline=None,
+                payment_method=Booking.PaymentMethod.MANUAL, paid_at=timezone.now(), amount_paid=total,
+            )
+            _replace_lines(booking, lines)
+        return booking
     with transaction.atomic():
         booking = transition(
             booking, {S.CONFIRMED, S.AWAITING_PAYMENT}, S.AWAITING_PAYMENT, Actor.GUIDE,
@@ -294,12 +314,13 @@ def _replace_lines(booking, lines):
 
 
 def _bill_costs(booking: Booking, actor, lines: list[InvoiceLine], note: str) -> Booking:
-    """Cancelled, but the guest owes something (cancellation fee or costs already incurred)."""
+    """Cancelled, but the guest owes something (cancellation fee or costs already incurred). The tour won't take
+    place, so its days are free again right away (guide answer, questionnaire Q1)."""
     total = sum((line.amount for line in lines), Decimal("0.00"))
     with transaction.atomic():
         booking = transition(
             booking, {S.CONFIRMED, S.RESCHEDULE_PROPOSED}, S.AWAITING_PAYMENT, actor, f"{note}: CHF {total}",
-            price=total, invoiced_at=timezone.now(), deadline=None,
+            price=total, invoiced_at=timezone.now(), deadline=None, days_released=True,
         )
         _replace_lines(booking, lines)
     transaction.on_commit(lambda: emails.invoice_sent(booking))

@@ -147,12 +147,16 @@ def cancel_departure(departure: Departure, message: str = "", actor=Actor.GUIDE)
                 if message:
                     messaging.record_sent(booking, message)  # the cancel email carries it; keep it in the history
         departure.waitlist.all().delete()
+        # Guests who cancelled earlier and paid a fee keep it for now: the guide decides case by case whether to pay
+        # it back (questionnaire Q5), with the goodwill refund on each booking.
+        fees_kept = [b for b in departure.registrations.filter(status=S.CANCELLED).select_related("guide", "departure")
+                     if b.refundable - b.refund_due > 0]
     automatic = actor == Actor.SYSTEM
     transaction.on_commit(lambda: [emails.departure_cancelled(b, automatic=automatic) for b in cancelled])
     if automatic:
-        transaction.on_commit(lambda: emails.departure_auto_cancelled_guide(departure, len(cancelled)))
+        transaction.on_commit(lambda: emails.departure_auto_cancelled_guide(departure, len(cancelled), fees_kept))
     else:
-        transaction.on_commit(lambda: emails.departure_cancelled_guide(departure, len(cancelled)))
+        transaction.on_commit(lambda: emails.departure_cancelled_guide(departure, len(cancelled), fees_kept))
     return departure
 
 
@@ -180,8 +184,21 @@ def move_departure(departure: Departure, *, start_date, end_date, message: str =
                                     start_date=start_date, end_date=end_date, guide_message=message, deadline=deadline))
             if message:
                 messaging.record_sent(booking, message)
+        # Guests in the middle of paying: their signup is called off (questionnaire Q4). They can sign up again for
+        # the new date; a payment that still lands for the old date is refunded in full (registration_paid).
+        stopped = [transition(booking, {S.PAYMENT_PENDING}, S.EXPIRED, Actor.GUIDE,
+                              f"Termin während der Zahlung verschoben: {note}", hold_until=None)
+                   for booking in departure.registrations.filter(status=S.PAYMENT_PENDING)]
     transaction.on_commit(lambda: [emails.new_date_proposed(b) for b in moved])
+    transaction.on_commit(lambda: [_stop_payment(b, departure) for b in stopped])
     return departure
+
+
+def _stop_payment(booking: Booking, departure: Departure) -> None:
+    from payments import stripe_service
+
+    stripe_service.expire_open_checkout(booking)
+    emails.registration_stopped_by_move(booking, departure)
 
 
 def refund_extra(booking: Booking, amount) -> Booking:
@@ -237,8 +254,9 @@ def registration_paid(booking: Booking, *, session_id: str, payment_intent: str,
         paid = {"payment_method": Booking.PaymentMethod.STRIPE, "paid_at": timezone.now(), "amount_paid": amount,
                 "stripe_checkout_session_id": session_id, "stripe_payment_intent_id": payment_intent,
                 "hold_until": None, "deadline": None}
-        if locked.status == S.PAYMENT_PENDING or (locked.status == S.EXPIRED and departure.signup_open
-                                                   and departure.seats_free >= locked.participants):
+        moved_meanwhile = locked.start_date != departure.start_date  # the guide moved the date during the payment
+        if not moved_meanwhile and (locked.status == S.PAYMENT_PENDING or (
+                locked.status == S.EXPIRED and departure.signup_open and departure.seats_free >= locked.participants)):
             locked = transition(locked, {locked.status}, S.PAID, Actor.STRIPE, f"Stripe Checkout {session_id}", **paid)
             departure.waitlist.filter(email__iexact=locked.guest_email).delete()
             messaging.notify(locked.guide, Notification.Kind.BOOKING, locked)
@@ -257,6 +275,11 @@ def registration_paid(booking: Booking, *, session_id: str, payment_intent: str,
         for name, value in paid.items():
             setattr(locked, name, value)
         locked.save()
+        if moved_meanwhile:
+            # The guest already got the email that the signup was called off and the money comes back.
+            log(locked, Actor.STRIPE, locked.status, locked.status, "Zahlung nach Verschiebung des Termins – zurückbezahlt")
+            _schedule_refund(locked, amount)
+            return locked
         log(locked, Actor.STRIPE, locked.status, locked.status, "Zahlung nach Ablauf der Reservation – zurückbezahlt")
         _schedule_refund(locked, amount)
         transaction.on_commit(lambda: emails.registration_too_late(locked))
@@ -388,7 +411,9 @@ def erase_guest_data(guide, email: str) -> int:
         guest_texts = booking.messages.filter(direction=Message.Direction.FROM_GUEST).exclude(body="")
         if booking.has_sensitive_data or booking.guest_message or guest_texts.exists():
             booking.guest_phone = booking.emergency_contact = booking.experience = booking.guest_message = ""
-            booking.save(update_fields=["guest_phone", "emergency_contact", "experience", "guest_message", "updated_at"])
+            booking.guest_details = ""
+            booking.save(update_fields=["guest_phone", "emergency_contact", "experience", "guest_message",
+                                        "guest_details", "updated_at"])
             guest_texts.update(body=_("(gelöscht)"))
             log(booking, Actor.GUIDE, booking.status, booking.status,
                 "Telefon, Notfallkontakt, Erfahrung und Nachrichten des Gastes gelöscht")

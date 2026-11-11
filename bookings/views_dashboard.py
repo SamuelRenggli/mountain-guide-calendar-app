@@ -197,7 +197,8 @@ def booking_action(request, pk, name):
             try:
                 services.accept_request(booking, start_date=d["start_date"], end_date=d["end_date"],
                                         price=form.final_price(), message=d["message"],
-                                        estimated_expenses=d["estimated_expenses"], decision_date=d["decision_date"])
+                                        estimated_expenses=d["estimated_expenses"], decision_date=d["decision_date"],
+                                        answer_deadline=d["answer_deadline"])
             except services.DatesUnavailable as exc:  # keep what the guide typed
                 form.add_error("end_date", str(exc))
                 return _rerender(request, booking, accept_form=form)
@@ -260,11 +261,14 @@ def invoice(request, pk):
     if request.method == "POST" and form.is_valid() and expense_forms.is_valid():
         lines = [form.tour_line()] + [line for f in expense_forms if (line := f.line())]
         try:
-            services.invoice(booking, lines, form.cleaned_data["message"])
+            billed = services.invoice(booking, lines, form.cleaned_data["message"])
         except services.BookingError as exc:
             messages.error(request, str(exc))
         else:
-            messages.success(request, _("Rechnung gesendet. Der Gast hat einen Link zur Zahlung erhalten."))
+            if billed.status == S.PAID:
+                messages.success(request, _("Abrechnung über CHF 0 gespeichert. Die Tour ist erledigt."))
+            else:
+                messages.success(request, _("Rechnung gesendet. Der Gast hat einen Link zur Zahlung erhalten."))
             return redirect("dashboard:booking", pk=pk)
     return render(request, "dashboard/invoice.html", {
         "booking": booking, "form": form, "expense_forms": expense_forms,
@@ -807,8 +811,8 @@ def calendar_view(request):
     first, last = weeks[0][0], weeks[-1][-1]
     states = availability.day_states(guide, first, last)
     bookings = guide.bookings.filter(
-        status__in=Booking.ACTIVE_STATUSES, is_window=False, departure__isnull=True, start_date__lte=last,
-        end_date__gte=first,
+        status__in=Booking.ACTIVE_STATUSES, is_window=False, departure__isnull=True, days_released=False,
+        start_date__lte=last, end_date__gte=first,
     ).select_related("tour")
     by_day, departures_by_day, external_by_day = {}, {}, {}
     for b in bookings:

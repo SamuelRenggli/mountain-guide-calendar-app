@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from accounts.models import AccessLog, DayRateTier
 from bookings.forms import form_timestamp_token
@@ -246,7 +247,8 @@ def test_guest_page_in_booking_language(client, guide, make_booking):
 
 def accept_data(start, end, **extra):
     data = {"accept-start_date": start.isoformat(), "accept-end_date": end.isoformat(), "accept-guide_rate": "750",
-            "accept-decision_date": (start - timedelta(days=2)).isoformat()}
+            "accept-decision_date": (start - timedelta(days=2)).isoformat(),
+            "accept-answer_deadline": (start - timedelta(days=3)).isoformat()}
     data.update({f"accept-{k}": v for k, v in extra.items()})
     return data
 
@@ -284,6 +286,22 @@ def test_accept_rejects_decision_date_after_start(client, guide, make_booking):
     assert "vor dem Tourenbeginn" in response.content.decode()
 
 
+def test_guide_sets_answer_deadline_per_offer(client, guide, make_booking):
+    """Questionnaire Q3 (answer B): the guide picks the guest's answer deadline on each offer; the whole day counts."""
+    booking = make_booking(guide, in_days(10))
+    client.force_login(guide)
+    page = client.get(reverse("dashboard:booking", args=[booking.pk])).content.decode()
+    assert "Antwortfrist" in page and in_days(5).isoformat() in page  # suggestion: usual 5 days
+    client.post(reverse("dashboard:booking_action", args=[booking.pk, "accept"]),
+                accept_data(in_days(10), in_days(10), answer_deadline=in_days(2).isoformat()))
+    booking.refresh_from_db()
+    local = timezone.localtime(booking.deadline)
+    assert booking.status == S.OFFERED and (local.date(), local.hour, local.minute) == (in_days(2), 23, 59)
+    response = client.post(reverse("dashboard:booking_action", args=[booking.pk, "accept"]),
+                           accept_data(in_days(10), in_days(10), answer_deadline=in_days(11).isoformat()))
+    assert response.status_code == 400 and "Antwortfrist" in response.content.decode()
+
+
 def test_guide_accepts_with_other_dates_and_own_price(client, guide, make_booking):
     booking = make_booking(guide, in_days(10))
     client.force_login(guide)
@@ -319,8 +337,13 @@ def test_guest_enters_planning_details_once(client, guide, make_booking):
     client.force_login(guide)
     page = client.get(reverse("dashboard:booking", args=[booking.pk])).content.decode()
     assert "Bahnhofstr. 1" in page and "Gegenrecht" in page
+    # Questionnaire Q8 (answer C): a later booking with the same address doesn't show the details to the guest,
+    # only to the guide.
     later = make_booking(guide, in_days(30), status=S.CONFIRMED, price=Decimal("750"))
-    assert "Bahnhofstr. 1" in client.get(reverse("guest:detail", args=[later.token])).content.decode()
+    assert "Bahnhofstr. 1" not in client.get(reverse("guest:detail", args=[later.token])).content.decode()
+    assert "Bahnhofstr. 1" in client.get(reverse("dashboard:booking", args=[later.pk])).content.decode()
+    # the first booking still shows the guest what they entered there
+    assert "Bahnhofstr. 1" in client.get(reverse("guest:detail", args=[booking.token])).content.decode()
 
 
 def test_actions_require_post(client, guide, make_booking):

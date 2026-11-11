@@ -97,7 +97,8 @@ def test_departure_new_other_guides_template_404(gclient, other_guide):
 
 ACTIONS = {
     "accept": lambda b: {"accept-start_date": in_days(20).isoformat(), "accept-end_date": in_days(20).isoformat(),
-                         "accept-guide_rate": "600", "accept-price": "", "accept-decision_date": in_days(18).isoformat()},
+                         "accept-guide_rate": "600", "accept-price": "", "accept-decision_date": in_days(18).isoformat(),
+                         "accept-answer_deadline": in_days(5).isoformat()},
     "reject": lambda b: {"reject-message": "nein"},
     "cancel": lambda b: {"cancel-message": "weg", "cancel-sure": "on"},
     "change": lambda b: {"change-start_date": in_days(21).isoformat(), "change-end_date": in_days(21).isoformat(),
@@ -258,15 +259,19 @@ def test_move_departure_earlier_keeps_decision_deadline_before_start(stripe_guid
     assert dep.decision_deadline <= start
 
 
-@pytest.mark.xfail(strict=True, reason="Entscheid offen: Frage 4 im Doc «Tourchef: Fragen an Bergführer»")
-def test_move_departure_moves_pending_registrations_too(stripe_guide, make_departure, make_registration):
-    """BUG: a guest who is paying (payment_pending) keeps the old dates after a move."""
+def test_move_departure_stops_pending_registrations(stripe_guide, make_departure, make_registration, mailoutbox,
+                                                   django_capture_on_commit_callbacks):
+    """Questionnaire Q4 (answer B): a guest who is paying while the date moves has the signup called off, is told
+    so by email and can sign up again for the new date."""
     dep = make_departure(stripe_guide, start=in_days(30))
     pending = make_registration(dep, status=S.PAYMENT_PENDING, email="p@example.com",
                                 hold_until=timezone.now() + timedelta(minutes=20))
-    departures.move_departure(dep, start_date=in_days(40), end_date=in_days(41))
+    with django_capture_on_commit_callbacks(execute=True):
+        departures.move_departure(dep, start_date=in_days(40), end_date=in_days(41))
     pending.refresh_from_db()
-    assert pending.start_date == in_days(40)
+    assert pending.status == S.EXPIRED and pending.hold_until is None
+    mail = [m for m in mailoutbox if m.to == ["p@example.com"]]
+    assert len(mail) == 1 and "abgebrochen" in mail[0].subject and in_days(40).strftime("%d.%m.%Y") in mail[0].body
 
 
 def test_departure_actions_in_wrong_status(gclient, stripe_guide, make_departure, make_registration):

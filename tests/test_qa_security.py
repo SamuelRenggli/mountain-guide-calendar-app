@@ -117,34 +117,32 @@ def test_ok_idor_all_dashboard_pk_urls(client, other_guide, victim_objects):
 # --- Guest file leak through an unverified email address ---------------------------------------------
 
 
-def test_vuln_guest_profile_leaks_to_anyone_booking_with_victims_email(client, stripe_guide, make_departure,
-                                                                     make_registration):
-    """GuestProfile is keyed by guide + email only. Whoever books with someone else's email address
-    (never verified) gets the guest link straight back from Stripe's success_url and sees the victim's
-    billing address, emergency contact and allergies, prefilled in the details form, and can overwrite them."""
+def test_guest_profile_never_reaches_someone_booking_with_victims_email(client, stripe_guide, make_departure,
+                                                                        make_registration):
+    """Questionnaire Q8 (answer C): GuestProfile is keyed by guide + email only and the address is never verified.
+    Whoever books with someone else's email sees none of that person's file; only the guide does."""
     GuestProfile.objects.create(guide=stripe_guide, email="opfer@example.com", name="Opfer",
                                 billing_address="Geheimweg 7, 3000 Bern", emergency_contact="Ehefrau 079 999 99 99",
                                 allergies="HIV-Medikamente")
     departure = make_departure(stripe_guide)
 
-    # 1) attacker signs up with the victim's address; success_url is the guest page
     session = mock.Mock(id="cs_att", url="https://checkout.stripe.test/cs_att")
-    with mock.patch("stripe.checkout.Session.create", return_value=session) as create:
+    with mock.patch("stripe.checkout.Session.create", return_value=session):
         response = signup_post(client, departure, guest_email="opfer@example.com", guest_name="Angreifer")
     assert response.status_code == 302
     booking = Booking.objects.get(guest_email="opfer@example.com")
-    assert create.call_args.kwargs["success_url"] == f"{booking.guest_url}?bezahlt=1"
-
-    # 2) after paying (refundable via free cancellation), the guest page shows the victim's file
     booking.status, booking.amount_paid, booking.paid_at = S.PAID, booking.price, timezone.now()
     booking.save()
-    html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
-    assert "Geheimweg 7" in html and "079 999 99 99" in html and "HIV-Medikamente" in html
 
-    # 3) and can overwrite it (the guide then sees the attacker's emergency contact)
+    html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
+    assert "Geheimweg 7" not in html and "079 999 99 99" not in html and "HIV-Medikamente" not in html
+
+    # What this guest enters is shown back to them on this booking and lands in the guide's file.
     client.post(reverse("guest:details", args=[booking.token]), {
-        "angaben-billing_address": "Fake", "angaben-emergency_contact": "Angreifer 079", "angaben-allergies": ""})
-    assert GuestProfile.objects.get(email="opfer@example.com").emergency_contact == "Angreifer 079"
+        "angaben-billing_address": "Fake 1", "angaben-emergency_contact": "Angreifer 079", "angaben-allergies": ""})
+    html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
+    assert "Fake 1" in html and "Geheimweg 7" not in html
+    assert GuestProfile.objects.get(email="opfer@example.com").billing_address == "Fake 1"
 
 
 # --- Two-factor really enforced ----------------------------------------------------------------------

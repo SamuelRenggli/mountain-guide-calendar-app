@@ -3,6 +3,7 @@ from datetime import datetime, time, timedelta
 from decimal import Decimal
 
 from django import forms
+from django.conf import settings
 from django.core import signing
 from django.utils import timezone
 from django.utils.translation import gettext_lazy as _
@@ -351,8 +352,9 @@ CAR_CHOICES = [("", _("Kein Auto")), ("0", _("Auto, aber keine freien Plätze"))
 
 
 class GuestDetailsForm(forms.ModelForm):
-    """What the guide needs for planning, entered by the guest on the booking page (no login). Saved per guide and
-    email address, so it's filled in already for the next tour with the same guide."""
+    """What the guide needs for planning, entered by the guest on the booking page (no login). Kept on the booking and
+    in the guide's guest file (per guide and email address). The guest sees only what they entered on this booking,
+    never the file from earlier tours (questionnaire Q8)."""
 
     car = forms.ChoiceField(label=_("Auto"), choices=CAR_CHOICES, required=False,
                             help_text=_("Falls wir gemeinsam anreisen: Könntest du fahren?"))
@@ -502,6 +504,14 @@ def _price(label=None):
     return field
 
 
+def default_answer_deadline(start_date, today=None):
+    """Suggestion for the guest's answer deadline: the usual response time, but never after the day before the tour
+    (or today, for a tour that starts tomorrow or today)."""
+    today = today or timezone.localdate()
+    usual = today + timedelta(days=settings.GUEST_RESPONSE_DAYS)
+    return max(min(usual, start_date - timedelta(days=1)), today)
+
+
 class AcceptForm(forms.Form):
     """The guide takes a request: days (as asked, more, or other ones), price (day rate x days or an own price),
     estimated expenses and a note. The guest then confirms."""
@@ -520,6 +530,11 @@ class AcceptForm(forms.Form):
         label=_("Entscheid-Frist"), widget=_date_input(),
         help_text=_("Bis dann entscheidest du definitiv, ob die Tour stattfindet (Wetter, Verhältnisse)."),
     )
+    answer_deadline = forms.DateField(
+        label=_("Antwortfrist für den Gast"), widget=_date_input(),
+        help_text=_("Bis zu diesem Tag kann der Gast dein Angebot bestätigen. Danach verfällt es und die Tage "
+                    "werden wieder frei."),
+    )
     message = forms.CharField(label=_("Nachricht an den Gast (optional)"), max_length=2000, required=False,
                               widget=TEXTAREA,
                               help_text=_("z. B. warum du einen Tag dazunimmst oder ein anderes Datum vorschlägst."))
@@ -537,12 +552,18 @@ class AcceptForm(forms.Form):
                 "price": booking.price if booking.has_price else None,
                 "estimated_expenses": booking.estimated_expenses,
                 "decision_date": booking.decision_date or max(booking.start_date - timedelta(days=2), today),
+                "answer_deadline": default_answer_deadline(booking.start_date, today),
                 "message": booking.guide_message if booking.status == "offered" else ""}
 
     def clean(self):
         cleaned = super().clean()
         s, e, decide = cleaned.get("start_date"), cleaned.get("end_date"), cleaned.get("decision_date")
         today = timezone.localdate()
+        answer = cleaned.get("answer_deadline")
+        if answer and answer < today:
+            self.add_error("answer_deadline", _("Das Datum liegt in der Vergangenheit."))
+        elif answer and s and answer > s:
+            self.add_error("answer_deadline", _("Die Antwortfrist muss spätestens am ersten Tourentag enden."))
         if s and s < today:
             self.add_error("start_date", _("Das Datum liegt in der Vergangenheit."))
         if s and e and e < s:

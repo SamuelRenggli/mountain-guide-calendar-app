@@ -64,7 +64,7 @@ def day_states(guide, start: date, end: date, *, exclude_booking=None, exclude_e
     for s, e in Departure.objects.filter(status__in=live, **overlapping).values_list("start_date", "end_date"):
         mark(s, e, DEPARTURE)
     requests = Booking.objects.filter(status__in=Booking.ACTIVE_STATUSES, is_window=False, departure__isnull=True,
-                                      **overlapping)
+                                      days_released=False, **overlapping)
     if exclude_booking is not None:
         requests = requests.exclude(pk=exclude_booking.pk)
     for s, e, status in requests.values_list("start_date", "end_date", "status"):

@@ -17,7 +17,7 @@ from django.db import transaction
 from django.utils.translation import gettext as _
 
 from bookings import departures, services
-from bookings.models import Booking, BookingEvent, cents, money
+from bookings.models import Booking, BookingEvent, Refund, cents, money
 
 from .models import StripeEvent
 
@@ -203,6 +203,7 @@ def process_refund(booking_id: int) -> bool:
         booking.refunded_amount = money(booking.refunded_amount + amount)
         booking.refund_due = Decimal(0)
         booking.save(update_fields=["refunded_amount", "refund_due", "updated_at"])
+        Refund.objects.create(booking=booking, amount=amount)
         BookingEvent.objects.create(booking=booking, actor=BookingEvent.Actor.STRIPE, note=f"CHF {amount} zurückbezahlt")
     return True
 

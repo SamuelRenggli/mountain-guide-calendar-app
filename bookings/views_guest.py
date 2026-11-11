@@ -1,10 +1,12 @@
 """Guest pages, reached through the secret link in the booking emails (no login, decision 2)."""
 
+import json
 from datetime import timedelta
 from decimal import Decimal
 
 from django.conf import settings
 from django.contrib import messages
+from django.db import transaction
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -42,10 +44,24 @@ def _details_form(booking, data=None):
     """None when planning details aren't needed (request not taken yet, booking over)."""
     if not booking.planning_open:
         return None
-    profile = GuestProfile.for_booking(booking) or GuestProfile(
-        guide=booking.guide, email=booking.guest_email.lower(), name=booking.guest_name,
-        emergency_contact=booking.emergency_contact)
+    # Only what was entered on this booking (questionnaire Q8): the address is never verified, so details from the
+    # guide's guest file must not reach whoever booked with it. The guide still sees the file on the dashboard.
+    details = {"emergency_contact": booking.emergency_contact}  # from the signup form, if any
+    details.update({f: v for f, v in _saved_details(booking).items() if f in DETAIL_FIELDS})
+    profile = GuestProfile(guide=booking.guide, email=booking.guest_email.lower(), name=booking.guest_name, **details)
     return GuestDetailsForm(data, instance=profile, prefix="angaben")
+
+
+DETAIL_FIELDS = ("billing_address", "emergency_contact", "diet", "allergies", "club", "club_number", "travel_card",
+                 "car_seats")
+
+
+def _saved_details(booking) -> dict:
+    try:
+        details = json.loads(booking.guest_details) if booking.guest_details else {}
+    except ValueError:
+        return {}
+    return details if isinstance(details, dict) else {}
 
 
 @never_cache
@@ -124,8 +140,17 @@ def details(request, token):
         return redirect("guest:detail", token=token)
     if not form.is_valid():
         return detail(request, token, details_form=form, status=400)
-    form.instance.name = booking.guest_name
-    form.save()
+    entered = form.save(commit=False)
+    details = {f: getattr(entered, f) for f in DETAIL_FIELDS}
+    with transaction.atomic():
+        Booking.objects.filter(pk=booking.pk).update(guest_details=json.dumps(details))
+        # The guide's guest file keeps the latest details for this address.
+        profile = GuestProfile.for_booking(booking) or GuestProfile(guide=booking.guide,
+                                                                    email=booking.guest_email.lower())
+        profile.name = booking.guest_name
+        for field, value in details.items():
+            setattr(profile, field, value)
+        profile.save()
     messages.success(request, _("Danke! Deine Angaben sind gespeichert."))
     return redirect(reverse("guest:detail", args=[token]) + "#angaben")
 
