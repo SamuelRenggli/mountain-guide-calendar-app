@@ -15,7 +15,10 @@ logger = logging.getLogger(__name__)
 
 @login_required
 def connect(request):
-    """Start (or resume) Stripe onboarding. GET is allowed because Stripe sends guides back here on refresh."""
+    """Start (or resume) Stripe onboarding. Starting takes a POST from the settings page; GET only resumes an account
+    that already exists, because Stripe sends guides back here on refresh."""
+    if request.method != "POST" and not request.user.stripe_account_id:
+        return redirect("dashboard:settings")
     if not stripe_service.is_configured():
         messages.error(request, "Online-Zahlungen sind auf dieser Plattform noch nicht eingerichtet.")
         return redirect("dashboard:settings")

@@ -34,7 +34,7 @@ def days_between(start: date, end: date):
         yield start + timedelta(days=offset)
 
 
-def day_states(guide, start: date, end: date, *, exclude_booking=None) -> dict[date, str]:
+def day_states(guide, start: date, end: date, *, exclude_booking=None, exclude_external=None) -> dict[date, str]:
     today = timezone.localdate()
     weekdays = guide.weekday_set
     states = {d: PAST if d < today else (FREE if d.weekday() in weekdays else UNAVAILABLE) for d in days_between(start, end)}
@@ -71,6 +71,8 @@ def day_states(guide, start: date, end: date, *, exclude_booking=None) -> dict[d
         held = BOOKED if status in Booking.BOOKED_STATUSES else REQUESTED
         mark(s, e, held)
     external = ExternalTour.objects.filter(status__in=ExternalTour.ACTIVE_STATUSES, **overlapping)
+    if exclude_external is not None:
+        external = external.exclude(pk=exclude_external.pk)
     for s, e, status in external.values_list("start_date", "end_date", "status"):
         mark(s, e, EXTERNAL if status == ExternalTour.Status.CONFIRMED else REQUESTED)
     return states

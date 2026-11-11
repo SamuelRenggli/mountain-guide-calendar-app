@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-10 16:42+0100\n"
+"POT-Creation-Date: 2026-11-10 20:12+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -37,6 +37,12 @@ msgstr "Accetta le condizioni d’uso."
 msgid "Ungültiger Einladungscode."
 msgstr "Codice d’invito non valido."
 
+msgid "Aktuelles Passwort"
+msgstr "Password attuale"
+
+msgid "Nur nötig, wenn du E-Mail oder IBAN änderst."
+msgstr "Necessaria solo se modifichi l'e-mail o l'IBAN."
+
 msgid ""
 "Erscheint in der Widget-Adresse. Nur Kleinbuchstaben, Zahlen und "
 "Bindestriche."
@@ -59,6 +65,9 @@ msgstr "IBAN non valido (esempio: CH93 0076 2011 6238 5295 7)."
 
 msgid "Muss kleiner oder gleich der kostenlosen Frist sein."
 msgstr "Deve essere minore o uguale al termine gratuito."
+
+msgid "Zum Ändern von E-Mail oder IBAN brauchen wir dein aktuelles Passwort."
+msgstr "Per modificare l'e-mail o l'IBAN ci serve la tua password attuale."
 
 msgid ""
 "Google Kalender: Einstellungen → dein Kalender → «Privatadresse im iCal-"
@@ -222,6 +231,11 @@ msgstr "Il codice non è corretto."
 msgid "Der Code stimmt nicht. Prüfe die Uhrzeit deines Handys."
 msgstr "Il codice non è corretto. Controlla l’ora del tuo telefono."
 
+msgid ""
+"Bitte bestätige zuerst dein Passwort und sende das Formular dann noch "
+"einmal."
+msgstr "Conferma prima la tua password, poi invia di nuovo il modulo."
+
 msgid "Passwort oder Code stimmt nicht."
 msgstr "Password o codice non corretti."
 
@@ -277,8 +291,15 @@ msgstr "Scegli almeno un posto."
 msgid "Leider sind nur noch %(n)s Plätze frei."
 msgstr "Purtroppo restano solo %(n)s posti."
 
+#, python-format
+msgid "Dieser Termin hat höchstens %(n)s Plätze."
+msgstr "Questa data ha al massimo %(n)s posti."
+
 msgid "Es sind Plätze frei – du kannst dich direkt anmelden."
 msgstr "Ci sono posti liberi – puoi iscriverti direttamente."
+
+msgid "(gelöscht)"
+msgstr "(eliminato)"
 
 #, python-brace-format
 msgid ""
@@ -1393,6 +1414,13 @@ msgid "Zeit"
 msgstr "Ora"
 
 msgid ""
+"Das Formular war sehr lange offen. Bitte prüfe deine Angaben und sende es "
+"noch einmal."
+msgstr ""
+"Il modulo è rimasto aperto molto a lungo. Controlla i tuoi dati e invialo di"
+" nuovo."
+
+msgid ""
 "Ich akzeptiere die Bedingungen des Bergführers und habe die "
 "Datenschutzerklärung gelesen."
 msgstr ""
@@ -2083,6 +2111,14 @@ msgstr "Almeno un giorno non è più libero."
 msgid "Dieses Angebot wurde bereits beantwortet."
 msgstr "A questa offerta è già stata data una risposta."
 
+#, python-format
+msgid ""
+"Diese Tage sind inzwischen belegt: %(days)s. Gib sie zuerst frei oder lehne "
+"das Angebot ab."
+msgstr ""
+"Questi giorni sono nel frattempo occupati: %(days)s. Liberali prima o "
+"rifiuta l'offerta."
+
 msgid "Bitte ein JPG-, PNG-, WebP- oder HEIC-Bild verwenden."
 msgstr "Usa un'immagine JPG, PNG, WebP o HEIC."
 
@@ -2133,6 +2169,9 @@ msgstr "La fatturazione avviene dopo la gita, dall'ultimo giorno."
 
 msgid "Die Rechnung hat keine Posten."
 msgstr "La fattura non contiene voci."
+
+msgid "Die Frist für deine Antwort ist abgelaufen."
+msgstr "Il termine per la tua risposta è scaduto."
 
 #, python-format
 msgid "Storno-Kosten %(percent)s %% gemäss Bedingungen"
@@ -2731,7 +2770,6 @@ msgid "Auto, keine freien Plätze"
 msgstr "auto, nessun posto libero"
 
 #, python-format
-#| msgid_plural "%(n)s Plätze"
 msgid "Auto, %(n)s freier Platz"
 msgid_plural "Auto, %(n)s freie Plätze"
 msgstr[0] "auto, %(n)s posto libero"
@@ -3471,7 +3509,6 @@ msgid "Gegenrecht"
 msgstr "reciprocità"
 
 #, python-format
-#| msgid_plural "%(n)s Plätze"
 msgid "Auto, %(n)s Platz"
 msgid_plural "Auto, %(n)s Plätze"
 msgstr[0] "auto, %(n)s posto"
@@ -3513,18 +3550,6 @@ msgstr "Carica immagini per i tuoi tipi di gita"
 
 msgid "optional"
 msgstr "facoltativo"
-
-msgid ""
-"Optional: Lade Bilder für deine Tourenarten hoch (Freeride, Skitour, "
-"Gletschertrekking …). Dann wählst du beim Ausschreiben nur noch aus. Bis "
-"dahin kannst du die Tourchef-Bilder verwenden."
-msgstr ""
-"Facoltativo: carica immagini per i tuoi tipi di gita (freeride, "
-"scialpinismo, trekking su ghiacciaio …). Poi, pubblicando, dovrai solo "
-"sceglierle. Nel frattempo puoi usare le immagini di Tourchef."
-
-msgid "Bilder hochladen"
-msgstr "Carica immagini"
 
 #, python-format
 msgid "Ein Anbieter hat dir eine Tour angeboten."
@@ -3631,6 +3656,9 @@ msgstr ""
 "Le tue immagini, ordinate per tipo di gita. Quando pubblichi una gita ne "
 "scegli una invece di caricarla ogni volta. Tourchef fornisce anche immagini "
 "per la maggior parte dei tipi di gita."
+
+msgid "Bilder hochladen"
+msgstr "Carica immagini"
 
 msgid "Bilder auswählen"
 msgstr "Scegli immagini"

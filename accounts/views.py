@@ -99,6 +99,9 @@ def two_factor_setup(request):
     user = request.user
     if user.totp_enabled and not request.session.get("2fa_ok"):
         return redirect("accounts:2fa_verify")
+    if user.totp_enabled and time.time() - request.session.get("reauth_at", 0) > settings.REAUTH_SECONDS:
+        # Replacing the second factor: password and current code again, so a stolen session can't take the account.
+        return redirect(f"{reverse('accounts:reauth')}?next={quote(request.get_full_path())}")
     secret = request.session.get("2fa_setup_secret") or twofactor.new_secret()
     request.session["2fa_setup_secret"] = secret
     form = CodeForm(request.POST or None)
@@ -124,6 +127,10 @@ def recent_auth_required(view):
     @wraps(view)
     def wrapper(request, *args, **kwargs):
         if time.time() - request.session.get("reauth_at", 0) > settings.REAUTH_SECONDS:
+            if request.method != "GET":
+                # A form post can't be repeated by a redirect: confirm, then send the form again from where it was.
+                messages.info(request, _("Bitte bestätige zuerst dein Passwort und sende das Formular dann noch einmal."))
+                return redirect(f"{reverse('accounts:reauth')}?next={quote(reverse('dashboard:settings'))}")
             return redirect(f"{reverse('accounts:reauth')}?next={quote(request.get_full_path())}")
         return view(request, *args, **kwargs)
 

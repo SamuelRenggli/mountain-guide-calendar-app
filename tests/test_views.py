@@ -415,7 +415,7 @@ def test_settings_saves_terms_vat_and_tiers(client, guide):
     data = {"display_name": guide.display_name, "email": guide.email, "phone": "", "language": "fr", "slug": guide.slug,
             "widget_allowed_origins": "", "day_rate": "780", "aspirant_day_rate": "520", "iban": "ch9300762011623852957",
             "vat_number": "CHE-123.456.789 MWST", "vat_rate": "8.1", "cancel_free_days": "21", "cancel_partial_days": "10",
-            "cancel_partial_percent": "40", "guest_terms": "",
+            "cancel_partial_percent": "40", "guest_terms": "", "current_password": "sehr-geheimes-pw-123",  # new IBAN
             "tiers-TOTAL_FORMS": "2", "tiers-INITIAL_FORMS": "0", "tiers-MIN_NUM_FORMS": "0", "tiers-MAX_NUM_FORMS": "6",
             "tiers-0-min_participants": "5", "tiers-0-day_rate": "850", "tiers-1-min_participants": "",
             "tiers-1-day_rate": ""}

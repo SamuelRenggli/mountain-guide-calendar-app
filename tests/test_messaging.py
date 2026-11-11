@@ -69,6 +69,7 @@ def test_email_reply_lands_in_history_with_notification(client, guide, make_book
     with django_capture_on_commit_callbacks(execute=True):
         response = client.post("/eingang/mail/", signed({
             "recipient": address, "sender": "Gast@Example.com", "body-plain": body, "Message-Id": "<r1@mail.example>",
+            "X-Mailgun-Spf": "Pass",
         }))
     assert response.status_code == 200
     message = booking.messages.get()

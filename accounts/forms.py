@@ -35,6 +35,12 @@ class SignupForm(UserCreationForm):
 
 
 class ProfileForm(forms.ModelForm):
+    current_password = forms.CharField(
+        label=_("Aktuelles Passwort"), required=False, strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "current-password"}),
+        help_text=_("Nur nötig, wenn du E-Mail oder IBAN änderst."),
+    )
+
     class Meta:
         model = User
         fields = ("display_name", "email", "phone", "language", "slug", "widget_allowed_origins",
@@ -68,6 +74,11 @@ class ProfileForm(forms.ModelForm):
         free, partial = cleaned.get("cancel_free_days"), cleaned.get("cancel_partial_days")
         if free is not None and partial is not None and partial > free:
             self.add_error("cancel_partial_days", _("Muss kleiner oder gleich der kostenlosen Frist sein."))
+        # The login email receives password resets and the IBAN receives money: changing either needs the password.
+        # (self.instance still holds the saved values here; the form copies the new ones in after clean().)
+        sensitive = [name for name in ("email", "iban") if name in cleaned and cleaned[name] != getattr(self.instance, name)]
+        if sensitive and not self.instance.check_password(cleaned.get("current_password") or ""):
+            self.add_error("current_password", _("Zum Ändern von E-Mail oder IBAN brauchen wir dein aktuelles Passwort."))
         return cleaned
 
 

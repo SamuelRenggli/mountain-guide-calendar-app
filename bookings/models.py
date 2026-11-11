@@ -497,6 +497,12 @@ class Booking(models.Model):
         return money(sum((Decimal(str(row["amount"])) for row in self.price_breakdown), Decimal(0)))
 
     @property
+    def planning_open(self) -> bool:
+        """The guest can (still) enter details for planning the tour on their page."""
+        return (self.status in (self.Status.OFFERED, self.Status.CONFIRMED, self.Status.RESCHEDULE_PROPOSED,
+                                self.Status.PAID) and self.end_date >= timezone.localdate())
+
+    @property
     def has_sensitive_data(self) -> bool:
         return bool(self.guest_phone or self.emergency_contact or self.experience)
 

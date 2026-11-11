@@ -17,8 +17,10 @@
   {% else %}
   <p class="small muted">{% translate "Rechnungsadresse, Notfallkontakt, Ernährung, Allergien, Alpenverein (Gegenrecht), GA/Halbtax und Auto: Der Gast trägt das auf seiner Buchungsseite ein – einmal, bei der nächsten Tour ist es schon ausgefüllt." %}</p>
   {% endif %}
+  {% if booking.planning_open %}
   <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'ask_details' %}" class="inline">{% csrf_token %}
     <button class="btn btn-secondary btn-small" type="submit">{% if profile and profile.is_filled %}{% translate "Gast bitten, die Angaben zu prüfen" %}{% else %}{% translate "Gast um diese Angaben bitten" %}{% endif %}</button>
   </form>
+  {% endif %}
 </section>
 {% endif %}

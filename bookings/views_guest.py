@@ -1,6 +1,7 @@
 """Guest pages, reached through the secret link in the booking emails (no login, decision 2)."""
 
 from datetime import timedelta
+from decimal import Decimal
 
 from django.conf import settings
 from django.contrib import messages
@@ -17,7 +18,7 @@ from payments import stripe_service
 
 from . import messaging, services
 from .forms import GuestDetailsForm, GuestMessageForm
-from .models import Booking, GuestProfile
+from .models import Booking, GuestProfile, money
 
 S = Booking.Status
 FINISHED = (S.PAID, S.DECLINED, S.REJECTED, S.CANCELLED, S.EXPIRED)
@@ -37,12 +38,9 @@ def _booking(request, token):
     return booking
 
 
-PLANNING_STATUSES = (S.OFFERED, S.CONFIRMED, S.RESCHEDULE_PROPOSED, S.PAID)
-
-
 def _details_form(booking, data=None):
     """None when planning details aren't needed (request not taken yet, booking over)."""
-    if booking.status not in PLANNING_STATUSES or booking.end_date < timezone.localdate():
+    if not booking.planning_open:
         return None
     profile = GuestProfile.for_booking(booking) or GuestProfile(
         guide=booking.guide, email=booking.guest_email.lower(), name=booking.guest_name,
@@ -55,8 +53,11 @@ def detail(request, token, message_form=None, details_form=None, status=200):
     booking = _booking(request, token)
     can_cancel = booking.status in ((S.PAID, S.RESCHEDULE_PROPOSED) if booking.is_registration
                                     else (S.REQUESTED, S.OFFERED, S.CONFIRMED))
-    fee_percent = services.cancellation_percent(booking) if can_cancel and booking.status in (S.PAID, S.CONFIRMED) else 0
+    # Same rules and rounding as the cancellation itself (services.guest_cancel / departures.guest_cancel).
+    charged = booking.status == S.PAID or (booking.status == S.CONFIRMED and booking.has_price)
+    fee_percent = services.cancellation_percent(booking) if can_cancel and charged else 0
     fee_base = booking.amount_paid if booking.is_registration else booking.price
+    fee = money(Decimal(fee_base) * fee_percent / 100)
     response = render(request, "guest/detail.html", {
         "booking": booking,
         "invoice_lines": booking.invoice_lines.all(),
@@ -64,8 +65,8 @@ def detail(request, token, message_form=None, details_form=None, status=200):
         "returned_from_payment": request.GET.get("bezahlt") == "1",
         "can_cancel": can_cancel,
         "fee_percent": fee_percent,
-        "fee": round(fee_base * fee_percent / 100, 2),
-        "refund": round(fee_base - fee_base * fee_percent / 100, 2),
+        "fee": fee,
+        "refund": money(Decimal(fee_base) - fee),
         "vat": booking.vat_included(),
         "thread": booking.messages.filter(needs_review=False),
         "message_form": message_form or GuestMessageForm(),

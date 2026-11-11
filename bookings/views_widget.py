@@ -194,6 +194,8 @@ def widget_request(request, slug):
     if form.is_valid():
         if form.is_spam():
             return _framed(render(request, "widget/success.html", {"guide": guide, "booking": None}), guide)
+        if form.refuse_if_stale():
+            return _render(request, guide, form=form, status=400, **rerender)
         if _rate_limited(request, "widget"):
             form.add_error(None, _("Zu viele Anfragen. Bitte versuche es später erneut."))
             return _render(request, guide, form=form, status=429, **rerender)
@@ -247,6 +249,8 @@ def departure_signup(request, public_id):
         return _departure_page(request, departure, form=form, status=400)
     if form.is_spam():
         return redirect("widget:departure", public_id=public_id)
+    if form.refuse_if_stale():
+        return _departure_page(request, departure, form=form, status=400)
     if _rate_limited(request, "signup"):
         form.add_error(None, _("Zu viele Anmeldungen. Bitte versuche es später erneut."))
         return _departure_page(request, departure, form=form, status=429)
@@ -277,6 +281,8 @@ def departure_waitlist(request, public_id):
         return _departure_page(request, departure, waitlist_form=form, status=400)
     if form.is_spam():
         return redirect("widget:departure", public_id=public_id)
+    if form.refuse_if_stale():
+        return _departure_page(request, departure, waitlist_form=form, status=400)
     if _rate_limited(request, "waitlist"):
         form.add_error(None, _("Zu viele Versuche. Bitte versuche es später erneut."))
         return _departure_page(request, departure, waitlist_form=form, status=429)

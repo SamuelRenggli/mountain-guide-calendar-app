@@ -142,12 +142,30 @@ class PublicForm(forms.Form):
         token = self.data.get("ts", "")
         try:
             signer.unsign(token, max_age=MAX_FORM_AGE_SECONDS)
-        except signing.BadSignature:  # forged or too old
+        except signing.SignatureExpired:
+            return False  # a real form left open too long (old tab): see refuse_if_stale()
+        except signing.BadSignature:  # forged
             return True
         try:
             signer.unsign(token, max_age=MIN_FILL_SECONDS)
         except signing.SignatureExpired:
             return False  # took longer than a bot would
+        return True
+
+    def refuse_if_stale(self) -> bool:
+        """The form was open longer than MAX_FORM_AGE_SECONDS: ask the guest to send it again (with a fresh
+        timestamp) instead of silently dropping it."""
+        signer = signing.TimestampSigner(salt=FORM_SIGNER_SALT)
+        try:
+            signer.unsign(self.data.get("ts", ""), max_age=MAX_FORM_AGE_SECONDS)
+            return False
+        except signing.SignatureExpired:
+            pass
+        except signing.BadSignature:
+            return False
+        self.data = self.data.copy()
+        self.data["ts"] = form_timestamp_token()
+        self.add_error(None, _("Das Formular war sehr lange offen. Bitte prüfe deine Angaben und sende es noch einmal."))
         return True
 
     def clean_guest_name(self):

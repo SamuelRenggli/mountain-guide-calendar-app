@@ -24,7 +24,7 @@
     <p>✓ {% translate "Stripe ist verbunden. Gäste zahlen Termine bei der Anmeldung und deine Rechnungen nach der Tour mit Karte oder TWINT; das Geld geht direkt auf dein Konto. Gebühren für Rückzahlungen trägt Tourchef." %}</p>
   {% elif stripe_available %}
     <p>{% translate "Verbinde dein Stripe-Konto. Ohne Stripe kannst du keine Termine ausschreiben; Rechnungen bezahlen Gäste dann per Überweisung." %}</p>
-    <a class="btn" href="{% url 'payments:connect' %}">{% if user.stripe_account_id %}{% translate "Stripe-Einrichtung fortsetzen" %}{% else %}{% translate "Mit Stripe verbinden" %}{% endif %}</a>
+    <form method="post" action="{% url 'payments:connect' %}" class="inline">{% csrf_token %}<button class="btn" type="submit">{% if user.stripe_account_id %}{% translate "Stripe-Einrichtung fortsetzen" %}{% else %}{% translate "Mit Stripe verbinden" %}{% endif %}</button></form>
   {% else %}
     <p class="muted">{% translate "Online-Zahlungen sind auf dieser Plattform noch nicht aktiviert." %}</p>
   {% endif %}

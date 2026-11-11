@@ -97,6 +97,12 @@ def _expire_old_session(booking):
         logger.warning("Could not expire old checkout session for booking %s", booking.pk)
 
 
+def expire_open_checkout(booking):
+    """The bill changed: a checkout opened for the old amount must not stay payable."""
+    if is_configured():
+        _expire_old_session(booking)
+
+
 def _checkout(booking: Booking, *, success_url: str, cancel_url: str, expires_minutes: int, quantity=1,
               unit_amount=None) -> str:
     guide = booking.guide
@@ -201,6 +207,35 @@ def process_refund(booking_id: int) -> bool:
     return True
 
 
+def refund_extra_payment(booking_id: int, payment_intent: str, amount: Decimal) -> bool:
+    """A second payment arrived for a registration that already holds a payment: send the second one straight back
+    through its own payment, so the first stays refundable as before."""
+    booking = Booking.objects.filter(pk=booking_id).first()
+    if booking is None:
+        return False
+    if not (is_configured() and payment_intent):
+        mail_admins(f"Doppelte Zahlung Buchung {booking.pk}", f"CHF {amount} über {payment_intent!r} manuell zurückzahlen")
+        return False
+    try:
+        stripe.Refund.create(
+            payment_intent=payment_intent,
+            amount=cents(amount),
+            reverse_transfer=True,
+            refund_application_fee=True,
+            metadata={"booking_id": str(booking.pk)},
+            idempotency_key=f"refund-extra-{payment_intent}",
+            **_key(),
+        )
+    except stripe.StripeError as exc:
+        logger.exception("Refund of a second payment failed for booking %s", booking.pk)
+        mail_admins(f"Rückzahlung doppelte Zahlung fehlgeschlagen Buchung {booking.pk}",
+                    f"CHF {amount} über {payment_intent}\n{exc}")
+        return False
+    BookingEvent.objects.create(booking=booking, actor=BookingEvent.Actor.STRIPE,
+                                note=f"Doppelte Zahlung CHF {amount} zurückbezahlt ({payment_intent})")
+    return True
+
+
 def retry_refunds() -> int:
     return sum(1 for pk in Booking.objects.filter(refund_due__gt=0).values_list("pk", flat=True) if process_refund(pk))
 
@@ -227,6 +262,11 @@ def handle_event(event) -> None:
         if not created:
             return
         obj = event["data"]["object"]
+        if event["type"].startswith("checkout.session.") and event.get("account"):
+            # Our checkouts live on the platform account (destination charges). A checkout on a connected account
+            # was not made by Tourchef and must never mark a booking paid.
+            logger.warning("Ignoring %s from connected account %s", event["type"], event.get("account"))
+            return
         if event["type"] in ("checkout.session.completed", "checkout.session.async_payment_succeeded"):
             if obj.get("payment_status") == "paid":
                 _session_paid(obj)

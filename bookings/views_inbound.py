@@ -40,6 +40,13 @@ def signature_valid(timestamp: str, token: str, signature: str) -> bool:
     return cache.add(f"mailgun-token:{token}", 1, MAX_AGE_SECONDS)  # each token only once
 
 
+def sender_verified(post) -> bool:
+    """Mailgun's checks of the sender's domain: SPF or DKIM must pass, otherwise the From address may be forged."""
+    spf = post.get("X-Mailgun-Spf", "").strip().lower()
+    dkim = post.get("X-Mailgun-Dkim-Check-Result", "").strip().lower()
+    return spf == "pass" or dkim == "pass"
+
+
 @csrf_exempt
 @require_POST
 def mail(request):
@@ -55,6 +62,7 @@ def mail(request):
         message_id=post.get("Message-Id", ""),
         in_reply_to=post.get("In-Reply-To", ""),
         references=post.get("References", ""),
+        sender_verified=sender_verified(post),
     )
     if message is None:
         logger.info("Inbound mail for %s matched no booking", post.get("recipient", "")[:100])

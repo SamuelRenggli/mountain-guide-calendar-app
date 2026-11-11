@@ -12,7 +12,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.utils import translation
+from django.utils import timezone, translation
 from django.utils.translation import gettext_lazy as _
 
 logger = logging.getLogger(__name__)
@@ -302,7 +302,7 @@ def _receipt(b) -> str:
         guide=guide.display_name, tour=b.title, dates=_dates(b), amount=f"{Decimal(b.amount_paid):.2f}",
         vat_number_line=RECEIPT_VAT_NUMBER.format(vat_number=guide.vat_number) if guide.charges_vat else "",
         vat_amount_line=RECEIPT_VAT.format(rate=_percent(guide.vat_rate), vat=f"{vat:.2f}") if vat is not None else "",
-        paid_at=f"{b.paid_at:%d.%m.%Y}" if b.paid_at else NONE, method=b.get_payment_method_display() or NONE,
+        paid_at=f"{timezone.localtime(b.paid_at):%d.%m.%Y}" if b.paid_at else NONE, method=b.get_payment_method_display() or NONE,
     )
 
 

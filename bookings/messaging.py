@@ -184,8 +184,10 @@ def _from_guest(booking, body, *, sender_email="", email_message_id="", needs_re
 
 
 def receive_email(*, recipient: str, sender: str, body: str, message_id: str = "", in_reply_to: str = "",
-                  references: str = "") -> Message | None:
-    """An email reply from the mail service. Returns None when it belongs to no booking or was seen already."""
+                  references: str = "", sender_verified: bool = True) -> Message | None:
+    """An email reply from the mail service. Returns None when it belongs to no booking or was seen already.
+    `sender_verified` is False when the mail service could not confirm the sender address (SPF/DKIM): such a mail
+    goes to the guide for review like one from a foreign address, since the From line is easy to fake."""
     booking = booking_for_address(recipient) or booking_for_headers(in_reply_to, references)
     if booking is None:
         return None
@@ -197,7 +199,7 @@ def receive_email(*, recipient: str, sender: str, body: str, message_id: str = "
     sender_email = parseaddr(sender or "")[1].lower()
     with transaction.atomic():
         return _from_guest(booking, body, sender_email=sender_email, email_message_id=message_id,
-                           needs_review=sender_email != booking.guest_email.lower())
+                           needs_review=not sender_verified or sender_email != booking.guest_email.lower())
 
 
 def receive_from_guest_page(booking, body: str) -> Message:

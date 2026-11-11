@@ -66,6 +66,14 @@ def answer_offer(tour: ExternalTour, *, accept: bool) -> ExternalTour:
         locked = ExternalTour.objects.select_for_update().get(pk=tour.pk)
         if not locked.is_pending:
             raise PartnerOfferError(_("Dieses Angebot wurde bereits beantwortet."))
+        if accept:
+            # The days were free when the partner offered them; the guide may have taken them since. Entries from the
+            # guide's own calendar don't count: the guide may well have noted this very tour there already.
+            states = availability.day_states(locked.guide, locked.start_date, locked.end_date, exclude_external=locked)
+            taken = sorted(d for d, state in states.items() if state in _TAKEN - {availability.BUSY, availability.PAST})
+            if taken:
+                raise PartnerOfferError(_("Diese Tage sind inzwischen belegt: %(days)s. Gib sie zuerst frei oder lehne "
+                                          "das Angebot ab.") % {"days": ", ".join(f"{d:%d.%m.%Y}" for d in taken[:5])})
         locked.status = ExternalTour.Status.CONFIRMED if accept else ExternalTour.Status.DECLINED
         locked.answered_at = timezone.now()
         locked.save(update_fields=["status", "answered_at"])

@@ -6,7 +6,7 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
-from django.http import JsonResponse
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -228,6 +228,8 @@ def booking_action(request, pk, name):
         elif name == "paid":
             services.mark_paid_manually(booking)
         elif name == "ask_details":
+            if not booking.planning_open:
+                raise services.InvalidTransition()
             messaging.ask_for_details(booking)
             messages.success(request, _("Der Gast wurde per E-Mail gebeten, seine Angaben einzutragen."))
             return redirect(f"{booking_url(booking)}#angaben")
@@ -298,6 +300,8 @@ def _departure_fields(form, guide) -> dict:
 def departure_new(request):
     tour = None
     if template_id := request.GET.get("vorlage") or request.POST.get("vorlage"):
+        if not template_id.isdigit():
+            raise Http404
         tour = get_object_or_404(Tour, pk=template_id, guide=request.user)
     start = monthgrid.parse_date(request.GET.get("datum"))
     draft = _own_draft(request, Draft.Kind.DEPARTURE)

@@ -220,6 +220,9 @@ def change_booking(booking: Booking, *, start_date: date, end_date: date, partic
     old = booking
     changes = []
     if (start_date, end_date) != (old.start_date, old.end_date):
+        if start_date < timezone.localdate():
+            raise BookingError(_("Das Datum liegt in der Vergangenheit."))
+        check_days_free(booking, start_date, end_date)
         changes.append(("dates", f"{old.start_date:%d.%m.%Y}–{old.end_date:%d.%m.%Y}", f"{start_date:%d.%m.%Y}–{end_date:%d.%m.%Y}"))
     if participants != old.participants:
         changes.append(("participants", str(old.participants), str(participants)))
@@ -245,7 +248,8 @@ def propose_new_date(booking: Booking, *, start_date: date, end_date: date, mess
         raise InvalidTransition()
     if start_date < timezone.localdate() or end_date < start_date:
         raise BookingError(_("Bitte gib ein gültiges Ersatzdatum in der Zukunft an."))
-    note = f"{booking.start_date:%d.%m.%Y} → {start_date:%d.%m.%Y}–{end_date:%d.%m.%Y}"
+    check_days_free(booking, start_date, end_date)
+    note = f"{booking.start_date:%d.%m.%Y} →{start_date:%d.%m.%Y}–{end_date:%d.%m.%Y}"
     if incurred_costs:
         note += f", angefallene Kosten CHF {money(incurred_costs)} ({incurred_costs_note})"
     booking = transition(
@@ -266,6 +270,11 @@ def invoice(booking: Booking, lines: list[InvoiceLine], message: str = "") -> Bo
     if not lines:
         raise BookingError(_("Die Rechnung hat keine Posten."))
     total = sum((line.amount for line in lines), Decimal("0.00"))
+    if booking.status == S.AWAITING_PAYMENT:
+        # A correction: the checkout opened for the old amount must not stay payable.
+        from payments import stripe_service
+
+        stripe_service.expire_open_checkout(booking)
     with transaction.atomic():
         booking = transition(
             booking, {S.CONFIRMED, S.AWAITING_PAYMENT}, S.AWAITING_PAYMENT, Actor.GUIDE,
@@ -309,7 +318,16 @@ def mark_paid_manually(booking: Booking) -> Booking:
 # --- Guest actions ---------------------------------------------------------
 
 
+def check_answer_in_time(booking: Booking) -> None:
+    """The guest answers an offer or a replacement date: only before the deadline and before the tour starts."""
+    if booking.deadline and booking.deadline < timezone.now():
+        raise BookingError(_("Die Frist für deine Antwort ist abgelaufen."))
+    if booking.start_date < timezone.localdate():
+        raise BookingError(_("Das Datum liegt in der Vergangenheit."))
+
+
 def accept_offer(booking: Booking) -> Booking:
+    check_answer_in_time(booking)
     booking = transition(booking, {S.OFFERED}, S.CONFIRMED, Actor.GUEST, deadline=None)
     transaction.on_commit(lambda: emails.offer_accepted(booking))
     return booking
@@ -326,6 +344,7 @@ def accept_new_date(booking: Booking) -> Booking:
         from . import departures
 
         return departures.accept_new_date(booking)
+    check_answer_in_time(booking)
     booking = transition(booking, {S.RESCHEDULE_PROPOSED}, S.CONFIRMED, Actor.GUEST, deadline=None,
                          incurred_costs=0, incurred_costs_note="")
     transaction.on_commit(lambda: emails.new_date_answered(booking, accepted=True))

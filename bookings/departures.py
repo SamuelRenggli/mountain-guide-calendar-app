@@ -99,8 +99,9 @@ def update_departure(departure: Departure, **fields) -> Departure:
                 if fields.get(name) is not None and fields[name] != getattr(departure, name):
                     raise BookingError(_("Datum und Preis lassen sich nicht mehr ändern, weil schon Gäste angemeldet "
                                          "sind. Für ein neues Datum: Termin verschieben."))
-            if fields["max_participants"] < departure.seats_taken():
-                raise BookingError(_("Die Höchstzahl ist kleiner als die bereits vergebenen Plätze."))
+        # Seats held for a payment in progress count too, or the date is overbooked once that payment lands.
+        if fields.get("max_participants") is not None and fields["max_participants"] < departure.seats_taken():
+            raise BookingError(_("Die Höchstzahl ist kleiner als die bereits vergebenen Plätze."))
         checked = ("start_date", "end_date", "min_participants", "max_participants", "signup_deadline",
                    "decision_deadline")
         current = {f: getattr(departure, f) for f in checked}
@@ -169,7 +170,8 @@ def move_departure(departure: Departure, *, start_date, end_date, message: str =
         departure.start_date, departure.end_date = start_date, end_date
         start = _start_of(start_date)
         departure.signup_deadline = min(max(departure.signup_deadline, timezone.now()), start)
-        departure.decision_deadline = max(departure.decision_deadline, min(deadline, start))
+        # Never after the new start, also when the date moves earlier.
+        departure.decision_deadline = min(max(departure.decision_deadline, min(deadline, start)), start)
         departure.reminder_sent_at = None
         departure.save()
         moved = []
@@ -242,6 +244,15 @@ def registration_paid(booking: Booking, *, session_id: str, payment_intent: str,
             messaging.notify(locked.guide, Notification.Kind.BOOKING, locked)
             transaction.on_commit(lambda: emails.registration_confirmed(locked))
             return locked
+        if locked.amount_paid > 0 and locked.stripe_payment_intent_id and locked.stripe_payment_intent_id != payment_intent:
+            # A second payment for a registration that already holds one (e.g. two checkout tabs): send the second
+            # back through its own payment and leave the first one's records alone, so it stays refundable.
+            from payments import stripe_service
+
+            log(locked, Actor.STRIPE, locked.status, locked.status,
+                f"Zweite Zahlung CHF {amount} ({session_id}) – wird zurückbezahlt")
+            transaction.on_commit(lambda: stripe_service.refund_extra_payment(locked.pk, payment_intent, amount))
+            return locked
         # Too late: nothing to sign up for any more.
         for name, value in paid.items():
             setattr(locked, name, value)
@@ -283,6 +294,9 @@ def guest_cancel(booking: Booking) -> Booking:
 
 
 def accept_new_date(booking: Booking) -> Booking:
+    from .services import check_answer_in_time
+
+    check_answer_in_time(booking)
     booking = transition(booking, {S.RESCHEDULE_PROPOSED}, S.PAID, Actor.GUEST, "Ersatzdatum angenommen", deadline=None)
     transaction.on_commit(lambda: emails.new_date_answered(booking, accepted=True))
     return booking
@@ -305,6 +319,8 @@ def join_waitlist(departure: Departure, *, name: str, email: str, seats: int, la
     """Only while the date is full (R-130)."""
     if not departure.signup_open:
         raise BookingError(_("Für diesen Termin sind keine Anmeldungen mehr möglich."))
+    if seats > departure.max_participants:
+        raise BookingError(_("Dieser Termin hat höchstens %(n)s Plätze.") % {"n": departure.max_participants})
     if departure.seats_free >= seats:
         raise BookingError(_("Es sind Plätze frei – du kannst dich direkt anmelden."))
     entry, _created = WaitlistEntry.objects.update_or_create(
@@ -362,14 +378,20 @@ def remind_and_auto_cancel() -> tuple[int, int]:
 
 
 def erase_guest_data(guide, email: str) -> int:
-    """The guest asked for deletion (R-152): phone, emergency contact and experience go; bookings and invoices stay."""
+    """The guest asked for deletion (R-152): phone, emergency contact, experience and what the guest wrote go;
+    bookings and invoices stay."""
+    from .models import Message
+
     bookings = Booking.objects.filter(guide=guide, guest_email__iexact=email)
     count = 0
     for booking in bookings:
-        if booking.has_sensitive_data:
-            booking.guest_phone = booking.emergency_contact = booking.experience = ""
-            booking.save(update_fields=["guest_phone", "emergency_contact", "experience", "updated_at"])
-            log(booking, Actor.GUIDE, booking.status, booking.status, "Telefon, Notfallkontakt und Erfahrung gelöscht")
+        guest_texts = booking.messages.filter(direction=Message.Direction.FROM_GUEST).exclude(body="")
+        if booking.has_sensitive_data or booking.guest_message or guest_texts.exists():
+            booking.guest_phone = booking.emergency_contact = booking.experience = booking.guest_message = ""
+            booking.save(update_fields=["guest_phone", "emergency_contact", "experience", "guest_message", "updated_at"])
+            guest_texts.update(body=_("(gelöscht)"))
+            log(booking, Actor.GUIDE, booking.status, booking.status,
+                "Telefon, Notfallkontakt, Erfahrung und Nachrichten des Gastes gelöscht")
             count += 1
     WaitlistEntry.objects.filter(departure__guide=guide, email__iexact=email).delete()
     count += GuestProfile.objects.filter(guide=guide, email__iexact=email).delete()[0]

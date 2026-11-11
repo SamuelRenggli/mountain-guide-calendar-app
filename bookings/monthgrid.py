@@ -17,9 +17,12 @@ def weekday_names() -> list[str]:
 
 
 def parse_month(value: str | None, default: date) -> date:
-    """'2026-11' -> date(2026, 11, 1); falls back to the default's month."""
+    """'2026-11' -> date(2026, 11, 1); falls back to the default's month. Years far out are refused too, so that
+    the neighbouring months and full weeks around the month still exist (year 1 and 9999 have none)."""
     try:
         year, month = (int(part) for part in (value or "").split("-"))
+        if not 1900 <= year <= 2200:
+            raise ValueError(year)
         return date(year, month, 1)
     except (TypeError, ValueError):
         return default.replace(day=1)
