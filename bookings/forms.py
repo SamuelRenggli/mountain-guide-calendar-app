@@ -13,7 +13,7 @@ from accounts.models import LANGUAGE_CHOICES
 from . import pictures
 from .models import (
     BlockedPeriod, Departure, ExternalTour, GuestProfile, InvoiceLine, OpenPeriod, Partner, PartnerPeriod, Picture, Tour,
-    TourCategory, money,
+    TourCategory, TourDetails, money,
 )
 
 _CONTROL_CHARS = re.compile(r"[\x00-\x1f\x7f]")
@@ -260,7 +260,7 @@ class PhotoMixin:
     """An optional tour photo: upload a new one, keep the current one or remove it.
     Call picture(guide, current) after is_valid() to get the Picture to store."""
 
-    def add_photo_fields(self, current=None, guide=None):
+    def add_photo_fields(self, current=None, guide=None, gallery=False):
         self.current_picture = current
         self.library_groups = []
         if guide is not None:
@@ -268,9 +268,16 @@ class PhotoMixin:
             self.library_groups = library_groups(library)
             if library:
                 self.fields["library_picture"] = forms.ChoiceField(
-                    label=_("Bild aus deiner Bibliothek"), required=False,
+                    label=_("Hauptbild aus deiner Bibliothek"), required=False,
                     choices=[("", "")] + [(p.key, p.key) for p in library],
                 )
+                if gallery:
+                    self.fields["gallery"] = forms.MultipleChoiceField(
+                        label=_("Weitere Bilder (Galerie)"), required=False,
+                        choices=[(p.key, p.key) for p in library],
+                        help_text=_("Bis zu %(n)s weitere Bilder, die Gäste unter dem Hauptbild sehen.")
+                        % {"n": TourDetails.GALLERY_MAX - 1},
+                    )
         self.fields["photo"] = forms.FileField(
             label=_("Bild"), required=False,
             widget=forms.ClearableFileInput(attrs={"accept": pictures.ACCEPT,
@@ -291,6 +298,18 @@ class PhotoMixin:
                 raise forms.ValidationError(str(exc)) from exc
         return upload
 
+    def clean_gallery(self):
+        keys = self.cleaned_data.get("gallery") or []
+        if len(keys) > TourDetails.GALLERY_MAX - 1:
+            raise forms.ValidationError(_("Höchstens %(n)s weitere Bilder.") % {"n": TourDetails.GALLERY_MAX - 1})
+        return keys
+
+    def gallery_keys(self, main) -> list:
+        """The chosen gallery without the main picture; None when the form has no gallery (keep what is stored)."""
+        if "gallery" not in self.fields:
+            return None
+        return [k for k in self.cleaned_data.get("gallery") or [] if not main or k != main.key]
+
     def library_choice(self, guide):
         key = self.cleaned_data.get("library_picture")
         return Picture.library_for(guide).filter(key=key).first() if key else None
@@ -307,7 +326,8 @@ class PhotoMixin:
         return current
 
     def detail_data(self) -> dict:
-        return {k: v for k, v in self.cleaned_data.items() if k not in ("photo", "remove_photo", "library_picture")}
+        return {k: v for k, v in self.cleaned_data.items()
+                if k not in ("photo", "remove_photo", "library_picture", "gallery")}
 
 
 def library_groups(library) -> list:
@@ -320,14 +340,23 @@ def library_groups(library) -> list:
     return [(labels.get(c) or _("Ohne Tourenart"), groups[c]) for c in order if c in groups]
 
 
-class PictureCategoryForm(forms.Form):
-    """Kind of tour and description of one picture in the library."""
+class PictureInfoForm(forms.Form):
+    """Name and sorting of one picture in the library: kind of tour, region, place, rating and an own note."""
 
     category = forms.ChoiceField(choices=[("", "–")] + list(TourCategory.choices), required=False)
     title = forms.CharField(max_length=120, required=False)
+    region = forms.CharField(max_length=80, required=False)
+    place = forms.CharField(max_length=120, required=False)
+    rating = forms.TypedChoiceField(choices=[("", "–")] + [(str(n), str(n)) for n in range(1, 5)], coerce=int,
+                                    empty_value=None, required=False)
+    note = forms.CharField(max_length=500, required=False)
 
-    def clean_title(self):
-        return single_line(self.cleaned_data["title"])
+    def clean(self):
+        cleaned = super().clean()
+        for name in ("title", "region", "place"):
+            if name in cleaned:
+                cleaned[name] = single_line(cleaned[name])
+        return cleaned
 
 
 class GuideMessageForm(forms.Form):
@@ -338,54 +367,75 @@ class GuideMessageForm(forms.Form):
     )
 
 
-class GuestMessageForm(forms.Form):
-    body = forms.CharField(
-        label=_("Deine Nachricht"), max_length=3000,
-        widget=forms.Textarea(attrs={"rows": 3, "maxlength": 3000}),
-        error_messages={"required": _("Bitte schreibe eine Nachricht.")},
-    )
-
-
 CAR_CHOICES = [("", _("Kein Auto")), ("0", _("Auto, aber keine freien Plätze"))] + [
     (str(n), _("Auto mit %(n)s freien Plätzen") % {"n": n} if n > 1 else _("Auto mit 1 freien Platz")) for n in range(1, 7)
 ]
 
 
 class GuestDetailsForm(forms.ModelForm):
-    """What the guide needs for planning, entered by the guest on the booking page (no login). Kept on the booking and
-    in the guide's guest file (per guide and email address). The guest sees only what they entered on this booking,
-    never the file from earlier tours (questionnaire Q8)."""
+    """What the guide needs for planning, entered by the guest on the booking page (no login). Kept on the booking; with
+    the guest's consent (keep) also in the guide's guest file (per guide and email address). The guest sees only what
+    they entered on this booking, never the file from earlier tours (questionnaire Q8)."""
 
+    emergency_name = forms.CharField(label=_("Notfallkontakt: Name"), max_length=60,
+                                     help_text=_("Eine Person, die nicht mitkommt."))
+    emergency_phone = PhoneField(label=_("Notfallkontakt: Telefon"))
     car = forms.ChoiceField(label=_("Auto"), choices=CAR_CHOICES, required=False,
                             help_text=_("Falls wir gemeinsam anreisen: Könntest du fahren?"))
+    remark = forms.CharField(label=_("Weitere Bemerkung"), max_length=500, required=False,
+                             widget=forms.Textarea(attrs={"rows": 2, "maxlength": 500}),
+                             help_text=_("Falls noch etwas wichtig ist, das oben nicht abgefragt wurde."))
+    keep = forms.BooleanField(label=_("Meine Angaben für weitere Touren speichern"), required=False)
 
     class Meta:
         model = GuestProfile
-        fields = ("billing_address", "emergency_contact", "diet", "allergies", "club", "club_number", "travel_card")
+        fields = ("billing_address", "diet", "allergies", "club", "travel_card")
         widgets = {"billing_address": forms.Textarea(attrs={"rows": 3}), "allergies": forms.Textarea(attrs={"rows": 2})}
         help_texts = {
-            "emergency_contact": _("Name und Telefon einer Person, die wir im Notfall erreichen."),
             "allergies": _("Nur was für die Tour wichtig ist, z. B. Nussallergie, Asthma, Medikamente."),
             "club": _("Mitglieder von Alpenvereinen mit Gegenrecht zahlen in SAC-Hütten den Mitgliederpreis."),
         }
 
-    def __init__(self, *args, **kwargs):
+    field_order = ("billing_address", "emergency_name", "emergency_phone", "diet", "allergies", "club", "travel_card",
+                   "car", "remark", "keep")
+
+    def __init__(self, *args, remark="", keep=False, **kwargs):
         super().__init__(*args, **kwargs)
-        for name in ("billing_address", "emergency_contact"):
-            self.fields[name].required = True
+        self.fields["billing_address"].required = True
         self.fields["diet"].choices = [("", "–")] + list(GuestProfile.Diet.choices)
         self.fields["club"].choices = [("", "–")] + list(GuestProfile.Club.choices)
         self.fields["travel_card"].choices = [("", "–")] + list(GuestProfile.TravelCard.choices)
         seats = self.instance.car_seats
         self.fields["car"].initial = "" if seats is None else str(seats)
+        name, phone = split_contact(self.instance.emergency_contact)
+        self.fields["emergency_name"].initial = name
+        self.fields["emergency_phone"].initial = phone
+        self.fields["remark"].initial = remark
+        self.fields["keep"].initial = keep
 
-    def clean_emergency_contact(self):
-        return single_line(self.cleaned_data["emergency_contact"])
+    def clean_emergency_name(self):
+        return single_line(self.cleaned_data["emergency_name"])
+
+    def clean_remark(self):
+        value = self.cleaned_data["remark"].strip()
+        if re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]", value):
+            raise forms.ValidationError(_("Ungültige Zeichen."))
+        return value
 
     def save(self, commit=True):
         car = self.cleaned_data.get("car")
         self.instance.car_seats = int(car) if car not in (None, "") else None
+        self.instance.emergency_contact = f"{self.cleaned_data['emergency_name']}, {self.cleaned_data['emergency_phone']}"
         return super().save(commit)
+
+
+def split_contact(value: str) -> tuple[str, str]:
+    """"Paul Muster, +41 791234567" -> name and phone. Older free text stays in the name for the guest to tidy up."""
+    value = (value or "").strip()
+    match = re.fullmatch(r"(.+?)[,;]?\s+(\+\d[\d ]{6,})", value)
+    if match:
+        return match.group(1).strip(), match.group(2).strip()
+    return value[:60], ""
 
 
 class TourForm(PhotoMixin, forms.ModelForm):
@@ -402,7 +452,9 @@ class TourForm(PhotoMixin, forms.ModelForm):
 
     def __init__(self, *args, guide=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.add_photo_fields(self.instance.picture if self.instance.pk else None, guide=guide)
+        self.add_photo_fields(self.instance.picture if self.instance.pk else None, guide=guide, gallery=True)
+        if self.instance.pk and "gallery" in self.fields:
+            self.initial.setdefault("gallery", self.instance.gallery)
 
     def clean(self):
         cleaned = super().clean()
@@ -439,7 +491,9 @@ class DepartureForm(PhotoMixin, forms.ModelForm):
             self.fields[name].required = True
         if editing or from_template:
             del self.fields["save_as_template"]
-        self.add_photo_fields(self.instance.picture if self.instance.pk else picture, guide=guide)
+        self.add_photo_fields(self.instance.picture if self.instance.pk else picture, guide=guide, gallery=True)
+        if self.instance.pk and "gallery" in self.fields:
+            self.initial.setdefault("gallery", self.instance.gallery)
 
     @staticmethod
     def initial_from(tour: Tour | None, start=None) -> dict:

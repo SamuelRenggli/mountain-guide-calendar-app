@@ -57,6 +57,17 @@
       </form>
     </div>
   </section>
+{% elif booking.details_missing %}
+  {% comment %}Not complete yet: no green "done" bar before the planning details are in.{% endcomment %}
+  <section class="alert warning" id="noch-offen">
+    <strong>{% if booking.is_registration %}{% translate "Fast geschafft – deine Anmeldung ist noch nicht komplett." %}{% else %}{% translate "Fast geschafft – deine Buchung ist noch nicht komplett." %}{% endif %}</strong>
+    <ol class="steps">
+      <li class="done">✓ {% if booking.is_registration %}{% translate "Zahlung erhalten, deine Plätze sind reserviert." %}{% else %}{% translate "Tour bestätigt, die Tage sind für dich reserviert." %}{% endif %}</li>
+      <li><strong>{% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} braucht noch weitere Angaben für die Tourenplanung.{% endblocktranslate %}</strong></li>
+      <li>{% if booking.is_registration %}{% translate "Dann ist deine Anmeldung komplett." %}{% else %}{% translate "Dann ist deine Buchung komplett." %}{% endif %}</li>
+    </ol>
+    <a class="btn" href="#angaben">{% translate "Jetzt Angaben eintragen" %}</a>
+  </section>
 {% elif booking.status == "confirmed" %}
   <div class="alert success">{% translate "Bestätigt – die Tage sind für dich reserviert. Nach der Tour erhältst du die Rechnung per E-Mail." %}</div>
 {% elif booking.status == "paid" and booking.is_registration %}
@@ -72,39 +83,23 @@
 {% if details_form %}
 <section class="card" id="angaben">
   <h2>{% translate "Angaben für die Tourenplanung" %}</h2>
-  {% if details_form.instance.pk and not details_form.errors %}
-  <p class="small">{% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} hat deine Angaben. Bitte prüfe, ob sie noch stimmen.{% endblocktranslate %}</p>
+  {% if details_just_saved %}
+  <div class="alert success" role="status">{% blocktranslate with name=booking.guide.display_name trimmed %}Vielen Dank für deine Angaben, {{ name }} wird sich melden.{% endblocktranslate %}</div>
+  {% elif booking.guest_details and not details_form.errors %}
+  <p class="small">✓ {% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} hat deine Angaben erhalten.{% endblocktranslate %}</p>
   {% else %}
-  <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Damit {{ name }} die Tour planen kann (Hütte, Anreise, Verpflegung). Nur {{ name }} sieht diese Angaben und bewahrt sie für weitere Touren mit dir auf.{% endblocktranslate %}</p>
+  <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Damit {{ name }} die Tour planen kann (Hütte, Anreise, Verpflegung). Nur {{ name }} sieht diese Angaben.{% endblocktranslate %}</p>
   {% endif %}
-  <details class="fold"{% if not details_form.instance.pk or details_form.errors %} open{% endif %}>
-    <summary class="btn btn-secondary btn-small">{% if details_form.instance.pk %}{% translate "Angaben ändern" %}{% else %}{% translate "Angaben eintragen" %}{% endif %}</summary>
+  <details class="fold"{% if not booking.guest_details or details_form.errors %} open{% endif %}>
+    <summary class="btn btn-secondary btn-small">{% if booking.guest_details %}{% translate "Angaben ansehen oder ändern" %}{% else %}{% translate "Angaben eintragen" %}{% endif %}</summary>
     <form method="post" action="{% url 'guest:details' booking.token %}">{% csrf_token %}
       {% include "_form.html" with form=details_form %}
+      <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Mit dem Häkchen bewahrt {{ name }} deine Angaben für weitere Touren mit dir auf. Ohne Häkchen gelten sie nur für diese Tour.{% endblocktranslate %}</p>
       <button class="btn" type="submit">{% translate "Speichern" %}</button>
     </form>
   </details>
 </section>
 {% endif %}
-
-<section class="card" id="nachrichten">
-  <h2>{% blocktranslate with name=booking.guide.display_name trimmed %}Nachrichten mit {{ name }}{% endblocktranslate %}</h2>
-  {% if thread %}
-  <ol class="thread">
-    {% for m in thread %}
-    <li class="msg {% if m.from_guest %}msg-out{% else %}msg-in{% endif %}">
-      <div class="msg-meta small muted">{% if m.from_guest %}{% translate "Du" %}{% else %}{{ booking.guide.display_name }}{% endif %} · {{ m.created_at|date:"d.m.Y H:i" }}</div>
-      <div class="pre">{{ m.body }}</div>
-    </li>
-    {% endfor %}
-  </ol>
-  {% endif %}
-  <form method="post" action="{% url 'guest:message' booking.token %}">{% csrf_token %}
-    {% include "_form.html" with form=message_form %}
-    <button class="btn btn-secondary" type="submit">{% translate "Senden" %}</button>
-  </form>
-  <p class="small muted">{% translate "Du kannst auch einfach auf eine E-Mail deines Bergführers antworten." %}</p>
-</section>
 
 {% if booking.is_invoiced %}
   <section class="card">

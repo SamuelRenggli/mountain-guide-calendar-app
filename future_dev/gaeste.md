@@ -42,3 +42,19 @@ aber Stripe teilt eine einzelne Zahlung nicht automatisch auf zwei Bankkonten au
 3. **Zwei Stripe-Konten pro Guide:** technisch möglich (zweites Connect-Konto für Spesen, Checkout mit zwei Zahlungen),
    aber doppeltes Onboarding und doppelte Gebühren – nicht empfohlen.
 Vorschlag: 1. Der Buchhaltungs-Export hat schon eine Spalte «davon Spesen CHF». Mit der Treuhand des Pilot-Guides klären.
+
+## Umgesetzt 2026-11-12: Angaben nach der Zahlung
+- Solange die Planungsangaben fehlen, zeigt die Gast-Seite statt des grünen «Bestätigt»-Balkens eine gelbe Box
+  «Fast geschafft»: 1. Zahlung erhalten / Tour bestätigt ✓, 2. der Guide braucht noch Angaben, 3. dann ist die
+  Anmeldung komplett. Knopf «Jetzt Angaben eintragen».
+- Nach dem Speichern: grüne Box «Vielen Dank für deine Angaben, <Guide> wird sich melden.» Die Angaben bleiben sichtbar
+  und änderbar (zugeklappt).
+- Formular: Notfallkontakt als Name (max. 60 Zeichen) plus Telefon mit Vorwahl, gespeichert als «Name, +41 79…».
+  Mitgliedernummer Alpenverein entfernt (Feld gelöscht). «Weitere Bemerkung» (max. 500 Zeichen) statt Nachricht an
+  den Guide; sie eröffnet keinen Dialog.
+- Häkchen «Meine Angaben für weitere Touren speichern» (Standard: aus). Nur mit Häkchen landen die Angaben in der
+  Gäste-Kartei des Guides; ohne Häkchen nur bei dieser Buchung. Vorausfüllen bei der nächsten Buchung bleibt wegen Q8
+  aus (E-Mail-Adresse nicht bestätigt) – geht erst mit Gast-Login per E-Mail-Link (siehe oben).
+- Erinnerung: fehlen die Angaben 24 h nach Zahlung/Zusage noch (`DETAILS_REMINDER_HOURS`), geht einmal eine Mail
+  «<Guide> braucht noch deine Infos für die anstehende Tour» (stündlicher Job `expire_bookings`).
+- Das Nachrichtenfenster auf der Gast-Seite ist weg (siehe Skizze in `messenger.md`).

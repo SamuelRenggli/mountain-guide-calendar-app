@@ -1,6 +1,6 @@
 # Bildbibliothek und Foto-Cloud
 
-Stand: 2026-11-10.
+Stand: 2026-11-12.
 
 ## Umgesetzt
 - Bildbibliothek pro Bergführer unter Dashboard → Meine Touren → Bilder, sortiert nach Tourenart: Freeride, Skitour (1 Tag),
@@ -22,6 +22,18 @@ Stand: 2026-11-10.
   **Für den echten Betrieb braucht es eigene, lizenzierte Bilder.**
 - Einrichtung: «Erste Schritte» auf der Startseite nennt das Hochladen als optionalen Schritt. Danach erscheint ein Hinweis, solange keine eigenen Bilder da sind. Blockiert nichts (anders als Stripe).
 - Speicher: Bilder werden auf 1200 px verkleinert und in der Datenbank abgelegt (ca. 100–300 KB pro Bild). Für einige hundert Bibliotheksbilder pro Guide reicht das.
+
+## Umgesetzt 2026-11-12: Bildarchiv und Galerie
+- **Zwischenablage:** Neu hochgeladene Bilder liegen unter «Zwischenablage – bitte zuordnen», bis sie eine Tourenart haben.
+  Pro Bild: Name, Tourenart, Region, Ort, Bewertung (1–4 Sterne), eigene Bemerkung. Region und Ort schlagen bereits
+  verwendete Werte vor.
+- **Archiv durchsuchen:** Suche über Name, Region, Ort, Bemerkung; Filter nach Tourenart, Region, Mindestbewertung.
+  Innerhalb einer Tourenart stehen die best bewerteten Bilder zuerst.
+- **Galerie:** Vorlage und Termin haben ein Hauptbild plus bis zu 9 weitere Bilder (`TourDetails.gallery`, Liste von
+  Bild-Schlüsseln, max. 10 insgesamt). Die Terminseite für Gäste zeigt Hauptbild gross und die weiteren als Kacheln.
+  Gelöschte Bilder fallen aus der Galerie, fremde Bilder werden nie angezeigt.
+- **Noch offen:** Wenn das Foto-Sharing mit Gästen kommt (`foto_sharing.md`), landen die eigenen Fotos des Guides aus
+  einem Tour-Album automatisch in seiner Zwischenablage (vorbelegt mit Tourenart, Ort und Datum der Tour).
 
 ## Später: Foto-Cloud mit Gedächtnis
 Sobald die Foto-Cloud für Tourenfotos (siehe `foto_sharing.md`) läuft:

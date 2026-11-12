@@ -328,15 +328,25 @@ def test_guest_enters_planning_details_once(client, guide, make_booking):
 
     booking = make_booking(guide, in_days(10), status=S.CONFIRMED, price=Decimal("750"))
     url = reverse("guest:details", args=[booking.token])
+    page = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
+    assert "noch nicht komplett" in page and "Bestätigt – die Tage" not in page  # no green bar before the details
+    assert "Nachrichten mit" not in page and "Mitgliedernummer" not in page
     data = {"angaben-billing_address": "Gina Gast, Bahnhofstr. 1, 3000 Bern",
-            "angaben-emergency_contact": "Paul, 079 123 45 67", "angaben-diet": "vegan", "angaben-allergies": "Nüsse",
-            "angaben-club": "DAV", "angaben-club_number": "", "angaben-travel_card": "halbtax", "angaben-car": "3"}
-    assert client.post(url, data).status_code == 302
+            "angaben-emergency_name": "Paul Gast", "angaben-emergency_phone_0": "41",
+            "angaben-emergency_phone_1": "079 123 45 67", "angaben-diet": "vegan", "angaben-allergies": "Nüsse",
+            "angaben-club": "DAV", "angaben-travel_card": "halbtax", "angaben-car": "3",
+            "angaben-remark": "Komme mit dem Zug", "angaben-keep": "on"}
+    response = client.post(url, data)
+    assert response.status_code == 302 and "angaben=1" in response["Location"]
+    page = client.get(response["Location"]).content.decode()
+    assert "Vielen Dank für deine Angaben" in page and "noch nicht komplett" not in page
+    assert 'value="Paul Gast"' in page and "Komme mit dem Zug" in page  # saved, not emptied
     profile = GuestProfile.objects.get()
     assert (profile.diet, profile.club, profile.car_seats, profile.has_reciprocal_rights) == ("vegan", "DAV", 3, True)
+    assert profile.emergency_contact == "Paul Gast, +41 791234567"
     client.force_login(guide)
     page = client.get(reverse("dashboard:booking", args=[booking.pk])).content.decode()
-    assert "Bahnhofstr. 1" in page and "Gegenrecht" in page
+    assert "Bahnhofstr. 1" in page and "Gegenrecht" in page and "Komme mit dem Zug" in page
     # Questionnaire Q8 (answer C): a later booking with the same address doesn't show the details to the guest,
     # only to the guide.
     later = make_booking(guide, in_days(30), status=S.CONFIRMED, price=Decimal("750"))
@@ -494,3 +504,34 @@ def test_dashboard_pages_show_upcoming_guests_and_pictures(client, guide, make_b
     assert client.get(reverse("dashboard:pictures")).status_code == 200
     ext = client.get(reverse("dashboard:external_tours")).content.decode()
     assert "Manuelle Eingabe" in ext
+
+
+def test_planning_details_kept_only_with_consent(client, guide, make_booking):
+    from bookings.models import GuestProfile
+
+    booking = make_booking(guide, in_days(10), status=S.CONFIRMED, price=Decimal("750"))
+    data = {"angaben-billing_address": "Weg 1, 3000 Bern", "angaben-emergency_name": "Paul",
+            "angaben-emergency_phone_0": "49", "angaben-emergency_phone_1": "151 2345678"}
+    assert client.post(reverse("guest:details", args=[booking.token]), data).status_code == 302
+    assert not GuestProfile.objects.exists()  # no tick: only for this tour
+    booking.refresh_from_db()
+    assert booking.saved_details()["emergency_contact"] == "Paul, +49 1512345678"
+    client.force_login(guide)
+    assert "Weg 1, 3000 Bern" in client.get(reverse("dashboard:booking", args=[booking.pk])).content.decode()
+
+
+def test_reminder_when_planning_details_missing(guide, make_booking, mailoutbox, settings):
+    from bookings import services
+    from bookings.models import Booking
+
+    settings.DETAILS_REMINDER_HOURS = 24
+    booking = make_booking(guide, in_days(10), status=S.CONFIRMED, price=Decimal("750"))
+    done = make_booking(guide, in_days(20), status=S.CONFIRMED, price=Decimal("750"), guest_details='{"diet": "all"}')
+    assert services.remind_missing_details() == 0  # too early
+    Booking.objects.filter(pk__in=[booking.pk, done.pk]).update(updated_at=timezone.now() - timedelta(hours=25))
+    assert services.remind_missing_details() == 1
+    assert services.remind_missing_details() == 0  # only once
+    assert len(mailoutbox) == 1
+    mail = mailoutbox[0]
+    assert mail.to == ["gast@example.com"] and "braucht noch deine Infos" in mail.subject
+    assert f"{booking.guest_url}#angaben" in mail.body

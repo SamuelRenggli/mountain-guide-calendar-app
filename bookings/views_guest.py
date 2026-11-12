@@ -18,8 +18,8 @@ from django.views.decorators.http import require_POST
 from core.ratelimit import allow, client_ip
 from payments import stripe_service
 
-from . import messaging, services
-from .forms import GuestDetailsForm, GuestMessageForm
+from . import services
+from .forms import GuestDetailsForm
 from .models import Booking, GuestProfile, money
 
 S = Booking.Status
@@ -46,26 +46,17 @@ def _details_form(booking, data=None):
         return None
     # Only what was entered on this booking (questionnaire Q8): the address is never verified, so details from the
     # guide's guest file must not reach whoever booked with it. The guide still sees the file on the dashboard.
-    details = {"emergency_contact": booking.emergency_contact}  # from the signup form, if any
-    details.update({f: v for f, v in _saved_details(booking).items() if f in DETAIL_FIELDS})
-    profile = GuestProfile(guide=booking.guide, email=booking.guest_email.lower(), name=booking.guest_name, **details)
-    return GuestDetailsForm(data, instance=profile, prefix="angaben")
-
-
-DETAIL_FIELDS = ("billing_address", "emergency_contact", "diet", "allergies", "club", "club_number", "travel_card",
-                 "car_seats")
-
-
-def _saved_details(booking) -> dict:
-    try:
-        details = json.loads(booking.guest_details) if booking.guest_details else {}
-    except ValueError:
-        return {}
-    return details if isinstance(details, dict) else {}
+    saved = booking.saved_details()
+    profile = GuestProfile.from_booking(booking) or GuestProfile(
+        guide=booking.guide, email=booking.guest_email.lower(), name=booking.guest_name,
+        emergency_contact=booking.emergency_contact,  # from the signup form, if any
+    )
+    return GuestDetailsForm(data, instance=profile, prefix="angaben", remark=saved.get("remark", ""),
+                            keep=saved.get("keep", False))
 
 
 @never_cache
-def detail(request, token, message_form=None, details_form=None, status=200):
+def detail(request, token, details_form=None, status=200):
     booking = _booking(request, token)
     can_cancel = booking.status in ((S.PAID, S.RESCHEDULE_PROPOSED) if booking.is_registration
                                     else (S.REQUESTED, S.OFFERED, S.CONFIRMED))
@@ -79,13 +70,12 @@ def detail(request, token, message_form=None, details_form=None, status=200):
         "invoice_lines": booking.invoice_lines.all(),
         "can_pay_online": booking.status == S.AWAITING_PAYMENT and booking.guide.can_take_card_payments,
         "returned_from_payment": request.GET.get("bezahlt") == "1",
+        "details_just_saved": request.GET.get("angaben") == "1" and bool(booking.guest_details),
         "can_cancel": can_cancel,
         "fee_percent": fee_percent,
         "fee": fee,
         "refund": money(Decimal(fee_base) - fee),
         "vat": booking.vat_included(),
-        "thread": booking.messages.filter(needs_review=False),
-        "message_form": message_form or GuestMessageForm(),
         "details_form": details_form or _details_form(booking),
     }, status=status)
     response.headers["X-Robots-Tag"] = "noindex"
@@ -94,7 +84,7 @@ def detail(request, token, message_form=None, details_form=None, status=200):
 
 GUEST_ACTIONS = {
     "annehmen": (services.accept_offer,
-                 lambda: _("Danke! Deine Tour ist bestätigt. Trag unten noch deine Angaben für die Planung ein.")),
+                 lambda: _("Danke! Deine Tour ist bestätigt. Es fehlen nur noch deine Angaben für die Tourenplanung.")),
     "ablehnen": (services.decline_offer, lambda: _("Du hast das Angebot abgelehnt.")),
     "ersatzdatum-annehmen": (services.accept_new_date, lambda: _("Danke! Das neue Datum ist bestätigt.")),
     "ersatzdatum-ablehnen": (services.decline_new_date, lambda: _("Die Buchung ist kostenlos storniert.")),
@@ -117,21 +107,6 @@ def action(request, token, name):
 
 
 @require_POST
-def message(request, token):
-    """The guest writes to the guide on the booking page."""
-    booking = _booking(request, token)
-    form = GuestMessageForm(request.POST)
-    if not form.is_valid():
-        return detail(request, token, message_form=form, status=400)
-    if not allow(f"guestmsg:{booking.pk}", limit=20, window_seconds=60 * 60):
-        messages.error(request, _("Zu viele Nachrichten. Bitte versuche es später erneut."))
-        return redirect("guest:detail", token=token)
-    messaging.receive_from_guest_page(booking, form.cleaned_data["body"])
-    messages.success(request, _("Nachricht gesendet."))
-    return redirect(reverse("guest:detail", args=[token]) + "#nachrichten")
-
-
-@require_POST
 def details(request, token):
     """The guest enters or updates the details for planning the tour."""
     booking = _booking(request, token)
@@ -141,18 +116,20 @@ def details(request, token):
     if not form.is_valid():
         return detail(request, token, details_form=form, status=400)
     entered = form.save(commit=False)
-    details = {f: getattr(entered, f) for f in DETAIL_FIELDS}
+    keep = form.cleaned_data["keep"]
+    details = {f: getattr(entered, f) for f in GuestProfile.PLANNING_FIELDS}
     with transaction.atomic():
-        Booking.objects.filter(pk=booking.pk).update(guest_details=json.dumps(details))
-        # The guide's guest file keeps the latest details for this address.
-        profile = GuestProfile.for_booking(booking) or GuestProfile(guide=booking.guide,
-                                                                    email=booking.guest_email.lower())
-        profile.name = booking.guest_name
-        for field, value in details.items():
-            setattr(profile, field, value)
-        profile.save()
-    messages.success(request, _("Danke! Deine Angaben sind gespeichert."))
-    return redirect(reverse("guest:detail", args=[token]) + "#angaben")
+        Booking.objects.filter(pk=booking.pk).update(
+            guest_details=json.dumps({**details, "remark": form.cleaned_data["remark"], "keep": keep}),
+            updated_at=timezone.now())
+        if keep:  # the guest agreed that the guide keeps the details in the guest file for later tours
+            profile = GuestProfile.for_booking(booking) or GuestProfile(guide=booking.guide,
+                                                                        email=booking.guest_email.lower())
+            profile.name = booking.guest_name
+            for field, value in details.items():
+                setattr(profile, field, value)
+            profile.save()
+    return redirect(reverse("guest:detail", args=[token]) + "?angaben=1#angaben")
 
 
 @require_POST

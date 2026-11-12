@@ -288,7 +288,7 @@ input[type=datetime-local], input[type=time] { width: 100%; padding: .55rem .65r
 .library-grid, .pick-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: .75rem; }
 .library-item { margin: 0; }
 .library-item img, .pick img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; display: block; }
-.library-item select, .library-item input[type="text"] { width: 100%; padding: .25rem .35rem; font-size: .8rem; margin-top: .3rem; }
+.library-item select, .library-item input[type="text"], .library-item textarea { width: 100%; padding: .25rem .35rem; font-size: .8rem; margin-top: .3rem; }
 .library-edit .row { margin-top: .3rem; justify-content: space-between; }
 details.manual { margin: .5rem 0 1rem; }
 details.manual > summary { list-style: none; display: inline-block; margin-bottom: .5rem; }
@@ -324,3 +324,13 @@ details.fold[open] > summary { margin-bottom: 1rem; }
 details.more { margin-top: .75rem; }
 .search { margin-bottom: 1rem; }
 .search input { max-width: 20rem; }
+
+/* Tour gallery: main picture plus up to 9 more */
+.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: .4rem; margin-bottom: 1rem; }
+.gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; display: block; }
+.gallery .gallery-main { grid-column: 1 / -1; }
+.gallery .gallery-main img { aspect-ratio: 16 / 9; }
+/* Guest page: what is still missing before the booking is complete */
+.steps { margin: .5rem 0 .75rem 1.25rem; padding: 0; }
+.steps li { margin: .2rem 0; }
+.steps .done { color: var(--muted, #666); }

@@ -1,3 +1,4 @@
+import json
 import secrets
 from datetime import timedelta
 from decimal import ROUND_HALF_UP, Decimal
@@ -64,7 +65,13 @@ class Picture(models.Model):
     height = models.PositiveIntegerField(default=0)
     source_url = models.URLField(max_length=1000, blank=True)
     category = models.CharField(_("Tourenart"), max_length=20, choices=TourCategory.choices, blank=True)
-    title = models.CharField(_("Bezeichnung"), max_length=120, blank=True)
+    title = models.CharField(_("Name"), max_length=120, blank=True)
+    # Sorting the library, so a growing photo archive stays searchable when the guide advertises tours.
+    region = models.CharField(_("Region"), max_length=80, blank=True)
+    place = models.CharField(_("Ort"), max_length=120, blank=True)
+    rating = models.PositiveSmallIntegerField(_("Bewertung"), null=True, blank=True,
+                                              validators=[MinValueValidator(1), MaxValueValidator(4)])
+    note = models.TextField(_("Eigene Bemerkung"), blank=True, validators=[MaxLengthValidator(500)])
     in_library = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -78,6 +85,15 @@ class Picture(models.Model):
     @property
     def is_stock(self) -> bool:
         return self.guide_id is None
+
+    @property
+    def stars(self) -> str:
+        return "★" * (self.rating or 0)
+
+    @property
+    def needs_sorting(self) -> bool:
+        """Still in the clipboard (Zwischenablage): uploaded, but no kind of tour given yet."""
+        return not self.category and not self.is_stock
 
     @classmethod
     def library_for(cls, guide):
@@ -110,15 +126,27 @@ class TourDetails(models.Model):
         _("Höchstzahl"), default=6, validators=[MinValueValidator(1), MaxValueValidator(50)]
     )
     picture = models.ForeignKey(Picture, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    # More pictures after the main one: Picture keys in order, at most GALLERY_MAX - 1. Deleted pictures just drop out.
+    gallery = models.JSONField(default=list, blank=True)
 
+    GALLERY_MAX = 10  # main picture included
     DETAIL_FIELDS = ("title", "category", "description", "requirements", "equipment", "included", "not_included", "location",
-                     "meeting_point", "meeting_time", "price_per_person", "min_participants", "max_participants", "picture")
+                     "meeting_point", "meeting_time", "price_per_person", "min_participants", "max_participants", "picture",
+                     "gallery")
 
     class Meta:
         abstract = True
 
     def __str__(self):
         return self.title
+
+    def gallery_pictures(self) -> list:
+        """Main picture first, then the gallery; only the guide's own and Tourchef's pictures."""
+        keys = [k for k in (self.gallery or []) if isinstance(k, str)]
+        found = {p.key: p for p in Picture.objects.filter(Q(guide_id=self.guide_id) | Q(guide__isnull=True),
+                                                          key__in=keys).defer("data")}
+        extra = [found[k] for k in keys if k in found and (not self.picture_id or found[k].pk != self.picture_id)]
+        return ([self.picture] if self.picture_id else []) + extra[:self.GALLERY_MAX - 1]
 
 
 class Tour(TourDetails):
@@ -404,6 +432,7 @@ class Booking(models.Model):
     # Planning details the guest entered on this booking (JSON). The guest page only ever shows these, never what the
     # guide's guest file holds from earlier tours (questionnaire Q8).
     guest_details = EncryptedTextField()
+    details_reminder_sent_at = models.DateTimeField(null=True, blank=True)  # "guide still needs your details" sent
     language =models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default="de")  # guest's email language
     guest_message = models.TextField(blank=True)
     guide_message = models.TextField(blank=True)
@@ -506,6 +535,19 @@ class Booking(models.Model):
         """The guest can (still) enter details for planning the tour on their page."""
         return (self.status in (self.Status.OFFERED, self.Status.CONFIRMED, self.Status.RESCHEDULE_PROPOSED,
                                 self.Status.PAID) and self.end_date >= timezone.localdate())
+
+    def saved_details(self) -> dict:
+        """The planning details the guest entered on this booking ({} if none)."""
+        try:
+            details = json.loads(self.guest_details) if self.guest_details else {}
+        except ValueError:
+            return {}
+        return details if isinstance(details, dict) else {}
+
+    @property
+    def details_missing(self) -> bool:
+        """Planning details are still open: the guest's booking isn't complete until they're in."""
+        return self.planning_open and self.status in (self.Status.CONFIRMED, self.Status.PAID) and not self.guest_details
 
     @property
     def has_sensitive_data(self) -> bool:
@@ -709,7 +751,6 @@ class GuestProfile(models.Model):
     diet = models.CharField(_("Ernährung"), max_length=12, choices=Diet.choices, blank=True)
     allergies = EncryptedTextField(_("Allergien, Unverträglichkeiten, Gesundheit"), max_length=500)
     club = models.CharField(_("Alpenverein"), max_length=8, choices=Club.choices, blank=True)
-    club_number = models.CharField(_("Mitgliedernummer"), max_length=40, blank=True)
     travel_card = models.CharField(_("ÖV-Abo"), max_length=8, choices=TravelCard.choices, blank=True)
     car_seats = models.PositiveSmallIntegerField(
         _("Auto"), null=True, blank=True, validators=[MaxValueValidator(8)],
@@ -735,3 +776,17 @@ class GuestProfile(models.Model):
     @classmethod
     def for_booking(cls, booking):
         return cls.objects.filter(guide_id=booking.guide_id, email__iexact=booking.guest_email).first()
+
+    PLANNING_FIELDS = ("billing_address", "emergency_contact", "diet", "allergies", "club", "travel_card", "car_seats")
+
+    @classmethod
+    def from_booking(cls, booking):
+        """What the guest entered on this booking as an unsaved profile (with .remark), or None."""
+        details = booking.saved_details()
+        if not details:
+            return None
+        profile = cls(guide_id=booking.guide_id, email=booking.guest_email.lower(), name=booking.guest_name,
+                      **{f: details[f] for f in cls.PLANNING_FIELDS if f in details and details[f] is not None})
+        profile.remark = details.get("remark", "")
+        profile.updated_at = booking.updated_at
+        return profile

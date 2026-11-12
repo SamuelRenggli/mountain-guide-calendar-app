@@ -137,11 +137,15 @@ def test_guest_profile_never_reaches_someone_booking_with_victims_email(client, 
     html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
     assert "Geheimweg 7" not in html and "079 999 99 99" not in html and "HIV-Medikamente" not in html
 
-    # What this guest enters is shown back to them on this booking and lands in the guide's file.
-    client.post(reverse("guest:details", args=[booking.token]), {
-        "angaben-billing_address": "Fake 1", "angaben-emergency_contact": "Angreifer 079", "angaben-allergies": ""})
+    # What this guest enters is shown back to them on this booking; without the tick the guide's file stays as it was.
+    data = {"angaben-billing_address": "Fake 1", "angaben-emergency_name": "Angreifer",
+            "angaben-emergency_phone_0": "41", "angaben-emergency_phone_1": "79 000 00 01", "angaben-allergies": ""}
+    client.post(reverse("guest:details", args=[booking.token]), data)
     html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
     assert "Fake 1" in html and "Geheimweg 7" not in html
+    assert GuestProfile.objects.get(email="opfer@example.com").billing_address == "Geheimweg 7, 3000 Bern"
+    # with the tick the file takes the latest details for this address
+    client.post(reverse("guest:details", args=[booking.token]), {**data, "angaben-keep": "on"})
     assert GuestProfile.objects.get(email="opfer@example.com").billing_address == "Fake 1"
 
 
@@ -263,7 +267,6 @@ def test_ok_csrf_enforced_on_dashboard_and_guest_posts(guide, victim_objects):
                 reverse("dashboard:draft_save", args=["tour"]), reverse("dashboard:notifications_read"),
                 reverse("dashboard:pictures"), reverse("accounts:password_change"), reverse("accounts:logout"),
                 reverse("guest:action", args=[o["booking"].token, "stornieren"]),
-                reverse("guest:message", args=[o["booking"].token]),
                 reverse("guest:details", args=[o["booking"].token]),
                 reverse("guest:pay", args=[o["booking"].token]),
                 reverse("widget:partner", args=[o["partner"].token])):

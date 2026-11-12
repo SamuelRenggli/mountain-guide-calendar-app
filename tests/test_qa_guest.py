@@ -203,8 +203,6 @@ def test_pay_without_stripe_config(client, guide, make_booking):
 
 def test_message_and_details_edge_cases(client, guide, make_booking):
     booking = make_booking(guide, in_days(10), status=S.REQUESTED)
-    assert client.post(reverse("guest:message", args=[booking.token]), {"body": "   "}).status_code == 400
-    assert client.post(reverse("guest:message", args=[booking.token]), {"body": "x" * 3001}).status_code == 400
     # details not available before the offer: just redirect
     assert client.post(reverse("guest:details", args=[booking.token]), {}).status_code == 302
     booking.status = S.CONFIRMED
@@ -212,7 +210,8 @@ def test_message_and_details_edge_cases(client, guide, make_booking):
     r = client.post(reverse("guest:details", args=[booking.token]), {"angaben-billing_address": ""})
     assert r.status_code == 400
     r = client.post(reverse("guest:details", args=[booking.token]),
-                    {"angaben-billing_address": "Weg 1", "angaben-emergency_contact": "A\nB"})
+                    {"angaben-billing_address": "Weg 1", "angaben-emergency_name": "A\nB",
+                     "angaben-emergency_phone_0": "41", "angaben-emergency_phone_1": "79 123 45 67"})
     assert r.status_code == 400
 
 

@@ -1,0 +1,17 @@
+{% load i18n %}<details class="field picture-picker{% if field.errors %} has-error{% endif %}"{% if field.value or field.errors %} open{% endif %}>
+  <summary>{{ field.label }} <span class="small muted">({% blocktranslate with n=field.value|length trimmed %}{{ n }} gewählt{% endblocktranslate %})</span></summary>
+  <small class="help">{{ field.help_text }}</small>
+  {% for label, pics in form.library_groups %}
+    <p class="small pick-group">{{ label }}</p>
+    <div class="pick-grid">
+      {% for pic in pics %}
+        <label class="pick" title="{{ pic.title }}{% if pic.place %}, {{ pic.place }}{% endif %}">
+          <input type="checkbox" name="{{ field.html_name }}" value="{{ pic.key }}"{% if pic.key in field.value %} checked{% endif %}>
+          <img src="{{ pic.url }}" alt="{{ pic.title }}" loading="lazy">
+          {% if pic.is_stock %}<span class="pick-badge">Tourchef</span>{% elif pic.rating %}<span class="pick-badge">{{ pic.stars }}</span>{% endif %}
+        </label>
+      {% endfor %}
+    </div>
+  {% endfor %}
+  {{ field.errors }}
+</details>

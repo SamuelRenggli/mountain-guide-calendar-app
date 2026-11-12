@@ -50,3 +50,45 @@ Gäste öffnen eine Web-Seite selten von selbst. Als Ergänzung ist er trotzdem 
 Laut Drittquellen (Metas Doku nicht erreichbar): Gäste lassen sich nicht direkt hinzufügen, sie müssen einen Einladungslink öffnen. Höchstens 8 Teilnehmer inklusive Business-Nummer. Die Gruppe gehört der Tourchef-Nummer, nicht dem Guide. Zulassung meist nur für verifizierte Business-Konten, dazu Gebühren pro Nachricht. Für Tourchef unpraktisch.
 
 Quellen: unipile.com/whatsapp-group-api, periskope.app/blog/whatsapp-groups-api-requirements-eligibility-limits, kapso.com/blog/whatsapp-groups-api-state-2026, chatbotx.io (WhatsApp Groups API Explained), ominiflow.com/blog/whatsapp-groups-api
+
+## Skizze: Kommunikation kanalisieren (Feedback 2026-11-12)
+
+Stand: Idee, nicht umgesetzt. Seit 2026-11-12 hat die Gast-Seite kein Nachrichtenfenster mehr (verwirrte nach der Zahlung).
+Die Planungsangaben haben nur noch ein Feld «Weitere Bemerkung», das kein Gespräch eröffnet.
+
+**Problem:** Heute laufen E-Mail, Nachrichtenverlauf und WhatsApp nebeneinander. Gast und Guide wissen nicht, wo was steht.
+**Ziel:** pro Phase genau **ein** Kanal, und der Wechsel ist sichtbar.
+
+| Phase | Kanal | Warum |
+|---|---|---|
+| Anfrage, Angebot, Zahlung, Storno | System-Mails von Tourchef (nur Info, kein Dialog) | Verbindlich, nachweisbar, für Buchhaltung |
+| Ab Anmeldung bis Tourstart | **Tour-Messenger** (kurz, wie Airbnb) | Fragen zu Ausrüstung, Treffpunkt; Verlauf beim Guide |
+| Ab ca. 2–3 Tagen vor Tour | **WhatsApp** (Gruppe oder 1:1) | Schnell, unterwegs, Wetter, Live-Treffpunkt |
+| Nach der Tour | Rechnung per Mail, Fotos über Foto-Sharing | — |
+
+### Variante A: «Airbnb-Style» – Messenger zuerst, dann WhatsApp
+- Ein Messenger pro Tour (bei Terminen: ein Faden pro Gast plus «an alle»), offen erst nach Anmeldung/Zusage.
+- Bewusst knapp: nur Text, kein Anhang, Hinweis «Antwort meist innert 24 h».
+- Gast bekommt bei neuer Nachricht eine **Benachrichtigungs-Mail ohne Inhalt** («Neue Nachricht von Anna zu Gran Paradiso → öffnen»). Antworten per Mail werden *nicht* mehr angenommen (oder höflich auf den Messenger umgeleitet). So gibt es nur einen Verlauf.
+- Guide hat einen Knopf «Zu WhatsApp wechseln»: legt beim Gast die Telefonnummer offen, schickt einen wa.me-Link und schreibt in den Verlauf «Ab jetzt per WhatsApp». Danach ist der Messenger für diese Tour nur noch lesbar.
+- Pro: ein klarer Ort, Datenschutz sauber, Guide entscheidet den Wechsel. Contra: Gast muss die Seite öffnen (Magic Link).
+
+### Variante B: WhatsApp so früh wie möglich, Tourchef nur für Formales
+- Nach Anmeldung zeigt die Gast-Seite nur: «Fragen? → WhatsApp an Anna» (wa.me mit vorausgefülltem Text «Gran Paradiso 12.3., Gina Gast»).
+- Tourchef schreibt keine freien Nachrichten mehr, nur System-Mails. Der Verlauf liegt auf dem Handy des Guides.
+- Pro: null Aufwand, Bergführer leben auf WhatsApp. Contra: kein Verlauf im Dashboard, private Nummer des Guides wird öffentlich, «an alle» nur über eine WhatsApp-Gruppe, die der Guide selbst anlegt.
+
+### Variante C: Hybrid mit fester Regel (Empfehlung)
+- Bis X Tage vor Tour: Tour-Messenger (wie A). Ab X Tagen (Einstellung beim Guide, Standard 3): automatisch Hinweis an alle Angemeldeten mit WhatsApp-Gruppenlink, den der Guide einmal pro Termin hinterlegt.
+- E-Mail bleibt reine System-Information («nicht antworten»).
+- Im Dashboard pro Tour ein Feld «Kanal jetzt: Messenger / WhatsApp», damit Gast und Guide denselben Stand sehen.
+
+### Kleine Regeln, egal welche Variante
+- Antwort-Mails auf System-Mails: automatisch «Bitte antworte im Messenger: <Link>».
+- Keine zweite Eingabe für Freitext auf der Gast-Seite (nur «Weitere Bemerkung» bei den Angaben).
+- Notfall-/Telefonnummer des Guides erst kurz vor der Tour anzeigen.
+
+### Offene Fragen an die Bergführer
+1. Wollt ihr eure Handynummer Gästen geben, oder lieber eine Tourchef-Nummer?
+2. Ab wann WhatsApp: gleich nach Anmeldung oder erst kurz vor der Tour?
+3. Braucht ihr den Verlauf im Dashboard (Nachweis bei Streit/Storno)?

@@ -127,6 +127,12 @@ MESSAGES = {
           "Bergführer: {guide}, Telefon {guide_phone}, {guide_email}\n\n{receipt}\n\n"
           "Deine Anmeldung, Stornieren und Bedingungen:\n{guest_link}"),
     ),
+    "details_reminder": (
+        _("{guide} braucht noch deine Infos für die anstehende Tour"),
+        _("Hallo {guest}\n\nFür «{tour}» am {start} fehlen noch deine Angaben für die Tourenplanung (Rechnungsadresse, "
+          "Notfallkontakt, Ernährung, Alpenverein, Abo, Auto). Es dauert nur zwei Minuten:\n{details_link}\n\n"
+          "Danke! {guide}"),
+    ),
     "registration_to_guide": (
         _("Neue Anmeldung: {tour} am {start}"),
         _("Hallo {guide}\n\n{guest} hat {participants} Platz/Plätze gebucht und bezahlt.\n\n"
@@ -498,6 +504,10 @@ def expired(b):
 def registration_confirmed(b):
     _send("registration_confirmed", b, to_guest=True)  # includes the receipt (R-125, R-204)
     _send("registration_to_guide", b, to_guest=False)  # R-126
+
+
+def details_reminder(b):
+    _send("details_reminder", b, to_guest=True)
 
 
 def registration_too_late(b):

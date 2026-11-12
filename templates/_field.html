@@ -2,6 +2,8 @@
 <div class="hp" aria-hidden="true"><label for="{{ field.id_for_label }}">Website</label>{{ field }}</div>
 {% elif field.name == "library_picture" %}
 {% include "dashboard/_picture_picker.html" %}
+{% elif field.name == "gallery" %}
+{% include "dashboard/_gallery_picker.html" %}
 {% else %}
 <div class="field{% if field.errors %} has-error{% endif %}">
   {% if field.widget_type == "checkbox" %}

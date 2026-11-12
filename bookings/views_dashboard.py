@@ -25,7 +25,7 @@ from . import (
 from .forms import (
     AcceptForm, BlockedPeriodForm, ChangeBookingForm, DepartureForm, EraseGuestDataForm, ExpenseFormSet, ExportForm,
     ExternalTourForm, GuestsMessageForm, GuideCancelForm, GuideMessageForm, InvoiceForm, MessageForm, MoveDepartureForm,
-    OpenPeriodForm, PartnerForm, PartnerPeriodForm, PictureCategoryForm, ProposeDateForm, RefundExtraForm, TourForm,
+    OpenPeriodForm, PartnerForm, PartnerPeriodForm, PictureInfoForm, ProposeDateForm, RefundExtraForm, TourForm,
     library_groups,
 )
 from .models import (
@@ -104,7 +104,8 @@ def _detail_context(booking, **forms):
         "thread": booking.messages.all(),
         "message_form": GuideMessageForm(prefix="msg"),
         "whatsapp": whatsapp_number(booking.guest_phone),
-        "profile": GuestProfile.for_booking(booking),
+        # What the guest entered on this booking, else the guest file from earlier tours.
+        "profile": GuestProfile.from_booking(booking) or GuestProfile.for_booking(booking),
     }
     context.update(forms)
     return context
@@ -297,6 +298,8 @@ def departure_list(request):
 def _departure_fields(form, guide) -> dict:
     fields = {k: v for k, v in form.detail_data().items() if k != "save_as_template"}
     fields["picture"] = form.picture(guide)
+    if (gallery := form.gallery_keys(fields["picture"])) is not None:
+        fields["gallery"] = gallery
     return fields
 
 
@@ -428,6 +431,8 @@ def tour_edit(request, pk=None):
     if request.method == "POST" and form.is_valid():
         tour = form.save(commit=False)
         tour.picture = form.picture(request.user)
+        if (gallery := form.gallery_keys(tour.picture)) is not None:
+            tour.gallery = gallery
         tour.save()
         if draft:
             draft.delete()
@@ -547,20 +552,53 @@ def picture_library(request):
         if wants_json:
             return JsonResponse({"added": added, "errors": errors}, status=200 if added else 400)
         if added:
-            messages.success(request, _("%(count)s Bild(er) hochgeladen. Ordne sie unten einer Tourenart zu.")
+            messages.success(request, _("%(count)s Bild(er) hochgeladen. Sie liegen in der Zwischenablage: gib ihnen "
+                                        "unten Name und Tourenart.")
                              % {"count": added})
         for error in errors:
             messages.error(request, error)
         return redirect("dashboard:pictures")
     library = list(Picture.library_for(guide))
     kinds = dict(TourCategory.choices)
+    filters = _picture_filters(request.GET)
+    sorted_pics = [p for p in library if not p.needs_sorting and _picture_matches(p, filters)]
+    sorted_pics.sort(key=lambda p: -(p.rating or 0))  # best first within each kind (stable: newest next)
+    own = [p for p in library if not p.is_stock]
     return render(request, "dashboard/pictures.html", {
-        "unsorted": [p for p in library if not p.category and not p.is_stock],
-        "groups": library_groups([p for p in library if p.category or p.is_stock]),
+        "unsorted": [p for p in library if p.needs_sorting],
+        "groups": library_groups(sorted_pics),
+        "filters": filters,
+        "filtering": any(filters.values()),
+        "regions": sorted({p.region for p in own if p.region}),
+        "places": sorted({p.place for p in own if p.place}),
         "missing_kinds": [kinds[c] for c in kinds if not any(p.category == c and not p.is_stock for p in library)],
         "category_choices": [("", "–")] + list(TourCategory.choices),
+        "rating_choices": [("", "–")] + [(n, "★" * n) for n in range(1, 5)],
         "accept": pictures.ACCEPT,
     })
+
+
+def _picture_filters(params) -> dict:
+    rating = params.get("bewertung", "")
+    return {
+        "q": params.get("q", "").strip()[:80],
+        "category": params.get("tourenart", "") if params.get("tourenart", "") in dict(TourCategory.choices) else "",
+        "region": params.get("region", "").strip()[:80],
+        "rating": int(rating) if rating in ("1", "2", "3", "4") else None,
+    }
+
+
+def _picture_matches(pic, f) -> bool:
+    if f["category"] and pic.category != f["category"]:
+        return False
+    if f["region"] and pic.region.casefold() != f["region"].casefold():
+        return False
+    if f["rating"] and (pic.rating or 0) < f["rating"]:
+        return False
+    if f["q"]:
+        text = " ".join((pic.title, pic.region, pic.place, pic.note)).casefold()
+        return all(word in text for word in f["q"].casefold().split())
+    return True
 
 
 @login_required
@@ -571,13 +609,15 @@ def picture_action(request, key, name):
         pic.delete()  # tours using it keep their text, just without a picture
         messages.success(request, _("Bild gelöscht."))
     elif name in ("tourenart", "speichern"):
-        form = PictureCategoryForm(request.POST)
+        form = PictureInfoForm(request.POST)
         if form.is_valid():
-            pic.category = form.cleaned_data["category"]
-            pic.title = form.cleaned_data["title"]
+            for name, value in form.cleaned_data.items():
+                setattr(pic, name, value)
             pic.in_library = True
-            pic.save(update_fields=["category", "title", "in_library"])
+            pic.save(update_fields=[*form.cleaned_data, "in_library"])
             messages.success(request, _("Gespeichert."))
+        else:
+            messages.error(request, _("Bitte prüfe die Angaben zum Bild."))
     return redirect(reverse("dashboard:pictures") + f"#bild-{pic.key}" if pic.pk else "dashboard:pictures")
 
 

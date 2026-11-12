@@ -123,16 +123,6 @@ def test_reply_matched_by_headers_when_address_is_lost(guide, make_booking, mail
     assert message.booking == booking
 
 
-def test_guest_writes_on_booking_page(client, guide, make_booking, django_capture_on_commit_callbacks):
-    booking = make_booking(guide, in_days(10))
-    with django_capture_on_commit_callbacks(execute=True):
-        response = client.post(reverse("guest:message", args=[booking.token]), {"body": "Brauche ich Steigeisen?"})
-    assert response.status_code == 302
-    assert booking.messages.get().body == "Brauche ich Steigeisen?"
-    html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
-    assert "Brauche ich Steigeisen?" in html
-
-
 def test_message_to_everyone_signed_up(client, stripe_guide, make_departure, make_registration, mailoutbox,
                                        django_capture_on_commit_callbacks):
     departure = make_departure(stripe_guide)
@@ -214,12 +204,19 @@ def test_library_upload_and_pick_for_template(client, guide):
         "photos": [SimpleUploadedFile("a.jpg", jpeg(), "image/jpeg"), SimpleUploadedFile("b.jpg", jpeg(), "image/jpeg")],
     })
     assert Picture.objects.filter(guide=guide, in_library=True, category="").count() == 2
-    assert "Neu hochgeladen" in client.get(reverse("dashboard:pictures")).content.decode()
+    assert "Zwischenablage" in client.get(reverse("dashboard:pictures")).content.decode()
     pic, extra = Picture.objects.all()
     client.post(reverse("dashboard:picture_action", args=[pic.key, "speichern"]),
-                {"category": TourCategory.SKITOUR_DAY, "title": "Piz Lunghin"})
+                {"category": TourCategory.SKITOUR_DAY, "title": "Piz Lunghin", "region": "Engadin",
+                 "place": "Maloja", "rating": "4", "note": "Morgenlicht"})
     pic.refresh_from_db()
-    assert (pic.category, pic.title) == (TourCategory.SKITOUR_DAY, "Piz Lunghin")
+    assert (pic.category, pic.title, pic.region, pic.place, pic.rating, pic.note) == (
+        TourCategory.SKITOUR_DAY, "Piz Lunghin", "Engadin", "Maloja", 4, "Morgenlicht")
+    # the archive is searchable by name, place, region and rating; the clipboard always shows
+    found = client.get(reverse("dashboard:pictures"), {"q": "maloja"}).content.decode()
+    assert f"bild-{pic.key}" in found and f"bild-{extra.key}" in found
+    assert f"bild-{pic.key}" not in client.get(reverse("dashboard:pictures"), {"q": "eiger"}).content.decode()
+    assert f"bild-{pic.key}" not in client.get(reverse("dashboard:pictures"), {"region": "Wallis"}).content.decode()
     resp = client.post(reverse("dashboard:pictures"), {"photos": [SimpleUploadedFile("c.jpg", jpeg(), "image/jpeg")]},
                        HTTP_ACCEPT="application/json")
     assert resp.json() == {"added": 1, "errors": []}
@@ -292,3 +289,26 @@ def test_no_equipment_list_after_payment(client, stripe_guide, make_departure, m
     booking = make_registration(make_departure(stripe_guide, equipment="Pickel und Steigeisen"))
     html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
     assert "Pickel und Steigeisen" not in html
+
+
+def test_tour_gallery_up_to_ten_pictures(client, stripe_guide, other_guide, make_departure):
+    from bookings.models import TourDetails
+
+    guide = stripe_guide
+    own = [pictures.from_bytes(guide, jpeg(), in_library=True, category=TourCategory.HIGH_TOUR)
+           for _ in range(TourDetails.GALLERY_MAX + 1)]
+    foreign = pictures.from_bytes(other_guide, jpeg(), in_library=True)
+    client.force_login(guide)
+    base = {"title": "Lunghin", "duration_days": 1, "price_per_person": 200, "min_participants": 1,
+            "max_participants": 4, "library_picture": own[0].key}
+    too_many = client.post(reverse("dashboard:tour_new"), {**base, "gallery": [p.key for p in own[1:]]})
+    assert too_many.status_code == 200 and not guide.tours.exists()
+    assert client.post(reverse("dashboard:tour_new"), {**base, "gallery": [foreign.key]}).status_code == 200
+    client.post(reverse("dashboard:tour_new"), {**base, "gallery": [own[0].key, own[2].key, own[1].key]})
+    tour = guide.tours.get()
+    assert tour.gallery == [own[2].key, own[1].key]  # main picture not repeated, order kept
+    # a scheduled date shows main picture plus gallery to guests, never another guide's picture
+    departure = make_departure(guide, picture=own[0], gallery=[own[2].key, foreign.key, own[1].key])
+    assert departure.gallery_pictures() == [own[0], own[2], own[1]]
+    html = client.get(departure.public_url).content.decode()
+    assert own[2].url in html and foreign.url not in html

@@ -208,6 +208,8 @@ GUEST_RESPONSE_DAYS = env_int("GUEST_RESPONSE_DAYS", 5)  # guest must accept off
 MAX_REQUEST_DAYS = env_int("MAX_REQUEST_DAYS", 14)  # longest tour a guest can request in the widget
 CHECKOUT_HOLD_MINUTES = 35  # seats are held while the guest pays (Stripe Checkout lives 30 min)
 DECISION_REMINDER_HOURS = env_int("DECISION_REMINDER_HOURS", 3)  # remind the guide before the decision deadline
+# Planning details still missing this long after the booking was confirmed or paid: one reminder to the guest.
+DETAILS_REMINDER_HOURS = env_int("DETAILS_REMINDER_HOURS", 24)
 GUEST_LINK_VALID_DAYS = env_int("GUEST_LINK_VALID_DAYS", 365)  # guest page closes this long after a finished tour
 
 # Operator of the platform (Impressum, privacy policy)

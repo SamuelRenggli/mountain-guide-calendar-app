@@ -17,6 +17,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
+from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import gettext as _
 
@@ -417,6 +418,23 @@ def mark_paid_by_stripe(booking: Booking, session_id: str, payment_intent: str =
     )
     transaction.on_commit(lambda: emails.paid(booking))
     return booking
+
+
+def remind_missing_details() -> int:
+    """One email to guests who still haven't entered their planning details a while after confirming or paying."""
+    now = timezone.now()
+    cutoff = now - timedelta(hours=settings.DETAILS_REMINDER_HOURS)
+    due = Booking.objects.filter(
+        Q(departure__isnull=False, paid_at__lte=cutoff) | Q(departure__isnull=True, updated_at__lte=cutoff),
+        status__in=[S.CONFIRMED, S.PAID], guest_details="", details_reminder_sent_at__isnull=True,
+        start_date__gt=timezone.localdate(),
+    ).select_related("guide", "departure")
+    count = 0
+    for booking in due:
+        if Booking.objects.filter(pk=booking.pk, details_reminder_sent_at__isnull=True).update(details_reminder_sent_at=now):
+            emails.details_reminder(booking)
+            count += 1
+    return count
 
 
 def expire_overdue() -> int:

@@ -3,29 +3,44 @@
 {% block title %}{% translate "Bilder" %} – Tourchef{% endblock %}
 {% block content %}
 <h1>{% translate "Bildbibliothek" %}</h1>
-<p class="muted">{% translate "Deine Bilder, sortiert nach Tourenart. Beim Ausschreiben wählst du eines davon aus, statt jedes Mal neu hochzuladen. Tourchef stellt zusätzlich Bilder für die meisten Tourenarten zur Verfügung." %}</p>
+<p class="muted">{% translate "Dein Bildarchiv. Gib jedem Bild Name, Tourenart, Region, Ort und eine Bewertung – so findest du es wieder, wenn du eine Tour ausschreibst. Tourchef stellt zusätzlich Bilder für die meisten Tourenarten zur Verfügung." %}</p>
 
 <form method="post" enctype="multipart/form-data" class="card" data-multi-upload>{% csrf_token %}
   <h2>{% translate "Bilder hochladen" %}</h2>
   <div class="field">
     <label for="id_photos">{% translate "Bilder auswählen" %}</label>
     <input type="file" id="id_photos" name="photos" multiple accept="{{ accept }}" data-too-big="{% translate 'Das Bild ist zu gross (höchstens 8 MB).' %}">
-    <small class="help">{% translate "Mehrere Bilder auf einmal möglich (JPG, PNG, WebP, HEIC vom iPhone), je höchstens 8 MB. Sie werden verkleinert, Standortdaten werden entfernt. Tourenart und Beschreibung legst du danach unten fest." %}</small>
+    <small class="help">{% translate "Mehrere Bilder auf einmal möglich (JPG, PNG, WebP, HEIC vom iPhone), je höchstens 8 MB. Sie werden verkleinert, Standortdaten werden entfernt. Neue Bilder landen zuerst in der Zwischenablage." %}</small>
   </div>
   <p class="small" aria-live="polite" data-upload-status data-text-progress="{% translate 'Lade hoch: %(done)s von %(total)s …' %}" data-text-done="{% translate '%(done)s Bild(er) hochgeladen.' %}"></p>
   <button class="btn" type="submit">{% translate "Hochladen" %}</button>
   {% if missing_kinds %}<p class="small muted">{% translate "Noch ohne eigenes Bild:" %} {{ missing_kinds|join:", " }}</p>{% endif %}
 </form>
 
+<datalist id="bild-regionen">{% for r in regions %}<option value="{{ r }}">{% endfor %}</datalist>
+<datalist id="bild-orte">{% for p in places %}<option value="{{ p }}">{% endfor %}</datalist>
+
 {% if unsorted %}
 <section class="card" id="neu">
-  <h2>{% translate "Neu hochgeladen – bitte zuordnen" %}</h2>
-  <p class="small muted">{% translate "Wähle für jedes Bild die Tourenart und schreib optional eine kurze Beschreibung. Dann «Speichern» – oder «Löschen»." %}</p>
+  <h2>{% translate "Zwischenablage – bitte zuordnen" %} <span class="small muted">({{ unsorted|length }})</span></h2>
+  <p class="small muted">{% translate "Neu hochgeladene Bilder. Sobald ein Bild eine Tourenart hat, kommt es ins Archiv. Name, Region, Ort, Bewertung (1–4 Sterne) und eine eigene Bemerkung helfen beim Wiederfinden." %}</p>
   <div class="library-grid">
     {% for pic in unsorted %}{% include "dashboard/_library_item.html" %}{% endfor %}
   </div>
 </section>
 {% endif %}
+
+<form method="get" class="card" role="search">
+  <h2>{% translate "Archiv durchsuchen" %}</h2>
+  <div class="row">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="{% translate 'Name, Ort, Bemerkung …' %}" aria-label="{% translate 'Suchen' %}">
+    <select name="tourenart" aria-label="{% translate 'Tourenart' %}">{% for value, name in category_choices %}<option value="{{ value }}"{% if value == filters.category %} selected{% endif %}>{% if value %}{{ name }}{% else %}{% translate "Alle Tourenarten" %}{% endif %}</option>{% endfor %}</select>
+    {% if regions %}<select name="region" aria-label="{% translate 'Region' %}"><option value="">{% translate "Alle Regionen" %}</option>{% for r in regions %}<option value="{{ r }}"{% if r == filters.region %} selected{% endif %}>{{ r }}</option>{% endfor %}</select>{% endif %}
+    <select name="bewertung" aria-label="{% translate 'Bewertung' %}"><option value="">{% translate "Jede Bewertung" %}</option>{% for value, stars in rating_choices %}{% if value %}<option value="{{ value }}"{% if value == filters.rating %} selected{% endif %}>{% blocktranslate trimmed %}ab {{ stars }}{% endblocktranslate %}</option>{% endif %}{% endfor %}</select>
+    <button class="btn btn-secondary btn-small" type="submit">{% translate "Filtern" %}</button>
+    {% if filtering %}<a class="small" href="{% url 'dashboard:pictures' %}">{% translate "Zurücksetzen" %}</a>{% endif %}
+  </div>
+</form>
 
 {% for label, pics in groups %}
 <section class="card">
@@ -35,6 +50,6 @@
   </div>
 </section>
 {% empty %}
-{% if not unsorted %}<p class="empty">{% translate "Noch keine Bilder." %}</p>{% endif %}
+{% if filtering %}<p class="empty">{% translate "Keine Bilder gefunden." %}</p>{% elif not unsorted %}<p class="empty">{% translate "Noch keine Bilder." %}</p>{% endif %}
 {% endfor %}
 {% endblock %}

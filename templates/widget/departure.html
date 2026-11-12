@@ -8,6 +8,12 @@
 {% if joined %}<div class="alert success">{% translate "Du bist auf der Warteliste. Wird ein Platz frei, erhältst du eine E-Mail – wer zuerst bucht, erhält ihn." %}</div>{% endif %}
 {% if departure.status == "cancelled" %}<div class="alert error">{% translate "Dieser Termin ist abgesagt." %}</div>{% endif %}
 
+{% with pics=departure.gallery_pictures %}{% if pics %}
+<section class="gallery" aria-label="{% translate 'Bilder' %}">
+  {% for pic in pics %}<a href="{{ pic.url }}" target="_blank" rel="noopener" class="{% if forloop.first %}gallery-main{% else %}gallery-thumb{% endif %}"><img src="{{ pic.url }}" alt="{{ pic.title|default:departure.title }}"{% if not forloop.first %} loading="lazy"{% endif %}></a>{% endfor %}
+</section>
+{% endif %}{% endwith %}
+
 <section class="card">
   <dl class="facts">
     <dt>{% translate "Datum" %}</dt><dd>{{ departure.start_date|date:"l, d.m.Y" }}{% if departure.end_date != departure.start_date %} – {{ departure.end_date|date:"l, d.m.Y" }}{% endif %}</dd>

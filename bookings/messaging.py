@@ -202,12 +202,6 @@ def receive_email(*, recipient: str, sender: str, body: str, message_id: str = "
                            needs_review=not sender_verified or sender_email != booking.guest_email.lower())
 
 
-def receive_from_guest_page(booking, body: str) -> Message:
-    """The guest wrote on their booking page (the secret link is proof enough)."""
-    with transaction.atomic():
-        return _from_guest(booking, body.strip(), sender_email=booking.guest_email)
-
-
 def _email_guide(message):
     booking = message.booking
     guide = booking.guide
