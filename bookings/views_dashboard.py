@@ -553,7 +553,7 @@ def picture_library(request):
             return JsonResponse({"added": added, "errors": errors}, status=200 if added else 400)
         if added:
             messages.success(request, _("%(count)s Bild(er) hochgeladen. Sie liegen in der Zwischenablage: gib ihnen "
-                                        "unten Name und Tourenart.")
+                                        "unten eine Tourenart.")
                              % {"count": added})
         for error in errors:
             messages.error(request, error)
@@ -562,7 +562,7 @@ def picture_library(request):
     kinds = dict(TourCategory.choices)
     filters = _picture_filters(request.GET)
     sorted_pics = [p for p in library if not p.needs_sorting and _picture_matches(p, filters)]
-    sorted_pics.sort(key=lambda p: -(p.rating or 0))  # best first within each kind (stable: newest next)
+    sorted_pics.sort(key=lambda p: not p.highlight)  # highlights first within each kind (stable: newest next)
     own = [p for p in library if not p.is_stock]
     return render(request, "dashboard/pictures.html", {
         "unsorted": [p for p in library if p.needs_sorting],
@@ -570,21 +570,19 @@ def picture_library(request):
         "filters": filters,
         "filtering": any(filters.values()),
         "regions": sorted({p.region for p in own if p.region}),
-        "places": sorted({p.place for p in own if p.place}),
         "missing_kinds": [kinds[c] for c in kinds if not any(p.category == c and not p.is_stock for p in library)],
         "category_choices": [("", "–")] + list(TourCategory.choices),
-        "rating_choices": [("", "–")] + [(n, "★" * n) for n in range(1, 5)],
+        "saved_key": request.GET.get("gespeichert", ""),
         "accept": pictures.ACCEPT,
     })
 
 
 def _picture_filters(params) -> dict:
-    rating = params.get("bewertung", "")
     return {
         "q": params.get("q", "").strip()[:80],
         "category": params.get("tourenart", "") if params.get("tourenart", "") in dict(TourCategory.choices) else "",
         "region": params.get("region", "").strip()[:80],
-        "rating": int(rating) if rating in ("1", "2", "3", "4") else None,
+        "highlight": params.get("highlight") == "1",
     }
 
 
@@ -593,7 +591,7 @@ def _picture_matches(pic, f) -> bool:
         return False
     if f["region"] and pic.region.casefold() != f["region"].casefold():
         return False
-    if f["rating"] and (pic.rating or 0) < f["rating"]:
+    if f["highlight"] and not pic.highlight:
         return False
     if f["q"]:
         text = " ".join((pic.title, pic.region, pic.place, pic.note)).casefold()
@@ -615,9 +613,8 @@ def picture_action(request, key, name):
                 setattr(pic, name, value)
             pic.in_library = True
             pic.save(update_fields=[*form.cleaned_data, "in_library"])
-            messages.success(request, _("Gespeichert."))
-        else:
-            messages.error(request, _("Bitte prüfe die Angaben zum Bild."))
+            return redirect(reverse("dashboard:pictures") + f"?gespeichert={pic.key}#bild-{pic.key}")
+        messages.error(request, _("Bitte prüfe die Angaben zum Bild."))
     return redirect(reverse("dashboard:pictures") + f"#bild-{pic.key}" if pic.pk else "dashboard:pictures")
 
 

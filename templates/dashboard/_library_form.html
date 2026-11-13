@@ -1,0 +1,10 @@
+{% load i18n %}<form method="post" action="{% url 'dashboard:picture_action' pic.key 'speichern' %}" class="library-edit">{% csrf_token %}
+  <select name="category" aria-label="{% translate 'Tourenart' %}">{% for value, name in category_choices %}<option value="{{ value }}"{% if value == pic.category %} selected{% endif %}>{% if value %}{{ name }}{% else %}{% translate "Tourenart –" %}{% endif %}</option>{% endfor %}</select>
+  <input type="text" name="region" value="{{ pic.region }}" maxlength="80" list="bild-regionen" placeholder="{% translate 'Region, z. B. Engadin' %}" aria-label="{% translate 'Region' %}">
+  <label class="library-check"><input type="checkbox" name="highlight" value="1"{% if pic.highlight %} checked{% endif %}> ★ {% translate "Highlight" %}</label>
+  <textarea name="note" rows="2" maxlength="500" placeholder="{% translate 'Eigene Bemerkung' %}" aria-label="{% translate 'Eigene Bemerkung' %}">{{ pic.note }}</textarea>
+  <div class="row">
+    <button class="btn btn-small btn-secondary" type="submit">{% translate "Speichern" %}</button>
+    <button class="link-button small" type="submit" formaction="{% url 'dashboard:picture_action' pic.key 'loeschen' %}" data-confirm-click="{% translate 'Bild löschen?' %}">{% translate "Löschen" %}</button>
+  </div>
+</form>

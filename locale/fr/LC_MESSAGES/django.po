@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# 
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 11:03+0100\n"
+"POT-Creation-Date: 2026-11-13 08:19+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2016,8 +2016,8 @@ msgstr "Région"
 msgid "Ort"
 msgstr "Lieu"
 
-msgid "Bewertung"
-msgstr "Note"
+msgid "Highlight"
+msgstr "Coup de cœur"
 
 msgid "Eigene Bemerkung"
 msgstr "Remarque personnelle"
@@ -2443,16 +2443,13 @@ msgstr "20 images au maximum à la fois."
 #, python-format
 msgid ""
 "%(count)s Bild(er) hochgeladen. Sie liegen in der Zwischenablage: gib ihnen "
-"unten Name und Tourenart."
+"unten eine Tourenart."
 msgstr ""
 "%(count)s image(s) téléversée(s). Elles sont dans le presse-papiers : donne-"
-"leur un nom et un type de course ci-dessous."
+"leur un type de course ci-dessous."
 
 msgid "Bild gelöscht."
 msgstr "Image supprimée."
-
-msgid "Gespeichert."
-msgstr "Enregistré."
 
 msgid "Bitte prüfe die Angaben zum Bild."
 msgstr "Vérifie les informations de l’image."
@@ -2910,26 +2907,23 @@ msgstr "Supprimer"
 msgid "%(n)s gewählt"
 msgstr "%(n)s choisie(s)"
 
-msgid "Name, z. B. Piz Palü Nordwand"
-msgstr "Nom, p. ex. Piz Palü face nord"
-
 msgid "Tourenart –"
 msgstr "Type de course –"
 
 msgid "Region, z. B. Engadin"
 msgstr "Région, p. ex. Engadine"
 
-msgid "Ort, z. B. Diavolezza"
-msgstr "Lieu, p. ex. Diavolezza"
-
-msgid "Bewertung –"
-msgstr "Note –"
-
 msgid "Bild löschen?"
 msgstr "Supprimer l'image ?"
 
 msgid "Löschen"
 msgstr "Supprimer"
+
+msgid "Gespeichert"
+msgstr "Enregistré"
+
+msgid "Bearbeiten"
+msgstr "Modifier"
 
 msgid "Benachrichtigungen"
 msgstr "Notifications"
@@ -3431,9 +3425,6 @@ msgstr "Voir"
 msgid "CHF %(price)s pro Person"
 msgstr "CHF %(price)s par personne"
 
-msgid "Bearbeiten"
-msgstr "Modifier"
-
 msgid "Plätze"
 msgstr "Places"
 
@@ -3858,13 +3849,15 @@ msgid "Bildbibliothek"
 msgstr "Bibliothèque d'images"
 
 msgid ""
-"Dein Bildarchiv. Gib jedem Bild Name, Tourenart, Region, Ort und eine "
-"Bewertung – so findest du es wieder, wenn du eine Tour ausschreibst. "
-"Tourchef stellt zusätzlich Bilder für die meisten Tourenarten zur Verfügung."
+"Dein Bildarchiv. Gib jedem Bild Tourenart, Region und eine eigene Bemerkung, "
+"markiere die besten als Highlight – so findest du es wieder, wenn du eine "
+"Tour ausschreibst. Tourchef stellt zusätzlich Bilder für die meisten "
+"Tourenarten zur Verfügung."
 msgstr ""
-"Ton archive d’images. Donne à chaque image un nom, un type de course, une "
-"région, un lieu et une note – tu la retrouveras en publiant une course. "
-"Tourchef fournit aussi des images pour la plupart des types de course."
+"Ton archive d’images. Donne à chaque image un type de course, une région et "
+"une remarque, et marque les meilleures comme coup de cœur – ainsi tu la "
+"retrouves quand tu publies une course. Tourchef fournit aussi des images "
+"pour la plupart des types de course."
 
 msgid "Bilder hochladen"
 msgstr "Télécharger des images"
@@ -3900,18 +3893,17 @@ msgstr "Presse-papiers – à attribuer"
 
 msgid ""
 "Neu hochgeladene Bilder. Sobald ein Bild eine Tourenart hat, kommt es ins "
-"Archiv. Name, Region, Ort, Bewertung (1–4 Sterne) und eine eigene Bemerkung "
-"helfen beim Wiederfinden."
+"Archiv. Region, Highlight und eine eigene Bemerkung helfen beim Wiederfinden."
 msgstr ""
 "Images nouvellement téléversées. Dès qu’une image a un type de course, elle "
-"passe dans l’archive. Nom, région, lieu, note (1–4 étoiles) et une remarque "
-"personnelle aident à la retrouver."
+"passe dans l’archive. Région, coup de cœur et une remarque t’aident à la "
+"retrouver."
 
 msgid "Archiv durchsuchen"
 msgstr "Rechercher dans l’archive"
 
-msgid "Name, Ort, Bemerkung …"
-msgstr "Nom, lieu, remarque …"
+msgid "Bemerkung …"
+msgstr "Remarque …"
 
 msgid "Alle Tourenarten"
 msgstr "Tous les types de course"
@@ -3919,12 +3911,11 @@ msgstr "Tous les types de course"
 msgid "Alle Regionen"
 msgstr "Toutes les régions"
 
-msgid "Jede Bewertung"
-msgstr "Toutes les notes"
+msgid "Alle Bilder"
+msgstr "Toutes les images"
 
-#, python-format
-msgid "ab %(stars)s"
-msgstr "%(stars)s ou plus"
+msgid "Nur Highlights"
+msgstr "Coups de cœur seulement"
 
 msgid "Filtern"
 msgstr "Filtrer"
@@ -4771,6 +4762,25 @@ msgstr "Envoyer la demande"
 
 msgid "Alle Angebote"
 msgstr "Toutes les offres"
+
+#~ msgid "Bewertung"
+#~ msgstr "Note"
+
+#~ msgid "Name, z. B. Piz Palü Nordwand"
+#~ msgstr "Nom, p. ex. Piz Palü face nord"
+
+#~ msgid "Ort, z. B. Diavolezza"
+#~ msgstr "Lieu, p. ex. Diavolezza"
+
+#~ msgid "Name, Ort, Bemerkung …"
+#~ msgstr "Nom, lieu, remarque …"
+
+#~ msgid "Jede Bewertung"
+#~ msgstr "Toutes les notes"
+
+#, python-format
+#~ msgid "ab %(stars)s"
+#~ msgstr "%(stars)s ou plus"
 
 #~ msgid "Deine Nachricht"
 #~ msgstr "Ton message"

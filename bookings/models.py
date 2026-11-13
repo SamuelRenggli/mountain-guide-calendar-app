@@ -69,8 +69,7 @@ class Picture(models.Model):
     # Sorting the library, so a growing photo archive stays searchable when the guide advertises tours.
     region = models.CharField(_("Region"), max_length=80, blank=True)
     place = models.CharField(_("Ort"), max_length=120, blank=True)
-    rating = models.PositiveSmallIntegerField(_("Bewertung"), null=True, blank=True,
-                                              validators=[MinValueValidator(1), MaxValueValidator(4)])
+    highlight = models.BooleanField(_("Highlight"), default=False)
     note = models.TextField(_("Eigene Bemerkung"), blank=True, validators=[MaxLengthValidator(500)])
     in_library = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -85,10 +84,6 @@ class Picture(models.Model):
     @property
     def is_stock(self) -> bool:
         return self.guide_id is None
-
-    @property
-    def stars(self) -> str:
-        return "★" * (self.rating or 0)
 
     @property
     def needs_sorting(self) -> bool:

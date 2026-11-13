@@ -341,19 +341,17 @@ def library_groups(library) -> list:
 
 
 class PictureInfoForm(forms.Form):
-    """Name and sorting of one picture in the library: kind of tour, region, place, rating and an own note."""
+    """Sorting of one picture in the library, the same classes the archive filters by: kind of tour, region,
+    highlight and an own note."""
 
     category = forms.ChoiceField(choices=[("", "–")] + list(TourCategory.choices), required=False)
-    title = forms.CharField(max_length=120, required=False)
     region = forms.CharField(max_length=80, required=False)
-    place = forms.CharField(max_length=120, required=False)
-    rating = forms.TypedChoiceField(choices=[("", "–")] + [(str(n), str(n)) for n in range(1, 5)], coerce=int,
-                                    empty_value=None, required=False)
+    highlight = forms.BooleanField(required=False)
     note = forms.CharField(max_length=500, required=False)
 
     def clean(self):
         cleaned = super().clean()
-        for name in ("title", "region", "place"):
+        for name in ("region",):
             if name in cleaned:
                 cleaned[name] = single_line(cleaned[name])
         return cleaned

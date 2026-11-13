@@ -3,7 +3,7 @@
 {% block title %}{% translate "Bilder" %} – Tourchef{% endblock %}
 {% block content %}
 <h1>{% translate "Bildbibliothek" %}</h1>
-<p class="muted">{% translate "Dein Bildarchiv. Gib jedem Bild Name, Tourenart, Region, Ort und eine Bewertung – so findest du es wieder, wenn du eine Tour ausschreibst. Tourchef stellt zusätzlich Bilder für die meisten Tourenarten zur Verfügung." %}</p>
+<p class="muted">{% translate "Dein Bildarchiv. Gib jedem Bild Tourenart, Region und eine eigene Bemerkung, markiere die besten als Highlight – so findest du es wieder, wenn du eine Tour ausschreibst. Tourchef stellt zusätzlich Bilder für die meisten Tourenarten zur Verfügung." %}</p>
 
 <form method="post" enctype="multipart/form-data" class="card" data-multi-upload>{% csrf_token %}
   <h2>{% translate "Bilder hochladen" %}</h2>
@@ -18,12 +18,11 @@
 </form>
 
 <datalist id="bild-regionen">{% for r in regions %}<option value="{{ r }}">{% endfor %}</datalist>
-<datalist id="bild-orte">{% for p in places %}<option value="{{ p }}">{% endfor %}</datalist>
 
 {% if unsorted %}
 <section class="card" id="neu">
   <h2>{% translate "Zwischenablage – bitte zuordnen" %} <span class="small muted">({{ unsorted|length }})</span></h2>
-  <p class="small muted">{% translate "Neu hochgeladene Bilder. Sobald ein Bild eine Tourenart hat, kommt es ins Archiv. Name, Region, Ort, Bewertung (1–4 Sterne) und eine eigene Bemerkung helfen beim Wiederfinden." %}</p>
+  <p class="small muted">{% translate "Neu hochgeladene Bilder. Sobald ein Bild eine Tourenart hat, kommt es ins Archiv. Region, Highlight und eine eigene Bemerkung helfen beim Wiederfinden." %}</p>
   <div class="library-grid">
     {% for pic in unsorted %}{% include "dashboard/_library_item.html" %}{% endfor %}
   </div>
@@ -33,10 +32,10 @@
 <form method="get" class="card" role="search">
   <h2>{% translate "Archiv durchsuchen" %}</h2>
   <div class="row">
-    <input type="search" name="q" value="{{ filters.q }}" placeholder="{% translate 'Name, Ort, Bemerkung …' %}" aria-label="{% translate 'Suchen' %}">
+    <input type="search" name="q" value="{{ filters.q }}" placeholder="{% translate 'Bemerkung …' %}" aria-label="{% translate 'Suchen' %}">
     <select name="tourenart" aria-label="{% translate 'Tourenart' %}">{% for value, name in category_choices %}<option value="{{ value }}"{% if value == filters.category %} selected{% endif %}>{% if value %}{{ name }}{% else %}{% translate "Alle Tourenarten" %}{% endif %}</option>{% endfor %}</select>
     {% if regions %}<select name="region" aria-label="{% translate 'Region' %}"><option value="">{% translate "Alle Regionen" %}</option>{% for r in regions %}<option value="{{ r }}"{% if r == filters.region %} selected{% endif %}>{{ r }}</option>{% endfor %}</select>{% endif %}
-    <select name="bewertung" aria-label="{% translate 'Bewertung' %}"><option value="">{% translate "Jede Bewertung" %}</option>{% for value, stars in rating_choices %}{% if value %}<option value="{{ value }}"{% if value == filters.rating %} selected{% endif %}>{% blocktranslate trimmed %}ab {{ stars }}{% endblocktranslate %}</option>{% endif %}{% endfor %}</select>
+    <select name="highlight" aria-label="{% translate 'Highlight' %}"><option value="">{% translate "Alle Bilder" %}</option><option value="1"{% if filters.highlight %} selected{% endif %}>★ {% translate "Nur Highlights" %}</option></select>
     <button class="btn btn-secondary btn-small" type="submit">{% translate "Filtern" %}</button>
     {% if filtering %}<a class="small" href="{% url 'dashboard:pictures' %}">{% translate "Zurücksetzen" %}</a>{% endif %}
   </div>

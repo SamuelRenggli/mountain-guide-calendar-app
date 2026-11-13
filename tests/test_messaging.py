@@ -207,14 +207,17 @@ def test_library_upload_and_pick_for_template(client, guide):
     assert "Zwischenablage" in client.get(reverse("dashboard:pictures")).content.decode()
     pic, extra = Picture.objects.all()
     client.post(reverse("dashboard:picture_action", args=[pic.key, "speichern"]),
-                {"category": TourCategory.SKITOUR_DAY, "title": "Piz Lunghin", "region": "Engadin",
-                 "place": "Maloja", "rating": "4", "note": "Morgenlicht"})
+                {"category": TourCategory.SKITOUR_DAY, "region": "Engadin", "highlight": "1", "note": "Morgenlicht Maloja"})
     pic.refresh_from_db()
-    assert (pic.category, pic.title, pic.region, pic.place, pic.rating, pic.note) == (
-        TourCategory.SKITOUR_DAY, "Piz Lunghin", "Engadin", "Maloja", 4, "Morgenlicht")
-    # the archive is searchable by name, place, region and rating; the clipboard always shows
+    assert (pic.category, pic.region, pic.highlight, pic.note) == (
+        TourCategory.SKITOUR_DAY, "Engadin", True, "Morgenlicht Maloja")
+    # saved pictures fold up behind a green tick with an edit button
+    page = client.get(reverse("dashboard:pictures"), {"gespeichert": pic.key}).content.decode()
+    assert "just-saved" in page and "Bearbeiten" in page
+    # the archive filters by the same classes: note (search), kind of tour, region, highlight; clipboard always shows
     found = client.get(reverse("dashboard:pictures"), {"q": "maloja"}).content.decode()
     assert f"bild-{pic.key}" in found and f"bild-{extra.key}" in found
+    assert f"bild-{pic.key}" in client.get(reverse("dashboard:pictures"), {"highlight": "1"}).content.decode()
     assert f"bild-{pic.key}" not in client.get(reverse("dashboard:pictures"), {"q": "eiger"}).content.decode()
     assert f"bild-{pic.key}" not in client.get(reverse("dashboard:pictures"), {"region": "Wallis"}).content.decode()
     resp = client.post(reverse("dashboard:pictures"), {"photos": [SimpleUploadedFile("c.jpg", jpeg(), "image/jpeg")]},

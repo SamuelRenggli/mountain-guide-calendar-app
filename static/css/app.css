@@ -290,6 +290,16 @@ input[type=datetime-local], input[type=time] { width: 100%; padding: .55rem .65r
 .library-item img, .pick img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; display: block; }
 .library-item select, .library-item input[type="text"], .library-item textarea { width: 100%; padding: .25rem .35rem; font-size: .8rem; margin-top: .3rem; }
 .library-edit .row { margin-top: .3rem; justify-content: space-between; }
+.library-check { display: flex; align-items: center; gap: .35rem; margin-top: .4rem; font-size: .8rem; }
+.library-sorted > summary { list-style: none; cursor: pointer; display: flex; flex-wrap: wrap; align-items: center; gap: .15rem .4rem; margin-top: .35rem; }
+.library-sorted > summary::-webkit-details-marker { display: none; }
+.library-done { color: var(--primary); font-weight: 600; }
+.ok-mark { display: inline-flex; align-items: center; justify-content: center; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: var(--primary); color: #fff; font-size: .75rem; }
+.library-tags { flex: 1 1 auto; min-width: 0; }
+.library-note { flex-basis: 100%; }
+.library-edit-link { flex-basis: 100%; color: var(--primary); text-decoration: underline; }
+.library-sorted[open] .library-edit-link { display: none; }
+.library-item.just-saved img { outline: 3px solid var(--primary); outline-offset: 2px; }
 details.manual { margin: .5rem 0 1rem; }
 details.manual > summary { list-style: none; display: inline-block; margin-bottom: .5rem; }
 .picture-picker summary { cursor: pointer; font-weight: 600; }

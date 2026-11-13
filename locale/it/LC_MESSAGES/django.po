@@ -2,13 +2,13 @@
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 # FIRST AUTHOR <EMAIL@ADDRESS>, YEAR.
-#
+# 
 #, fuzzy
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-12 11:03+0100\n"
+"POT-Creation-Date: 2026-11-13 08:19+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -2004,8 +2004,8 @@ msgstr "Regione"
 msgid "Ort"
 msgstr "Luogo"
 
-msgid "Bewertung"
-msgstr "Valutazione"
+msgid "Highlight"
+msgstr "Highlight"
 
 msgid "Eigene Bemerkung"
 msgstr "Nota personale"
@@ -2429,16 +2429,13 @@ msgstr "Al massimo 20 immagini alla volta."
 #, python-format
 msgid ""
 "%(count)s Bild(er) hochgeladen. Sie liegen in der Zwischenablage: gib ihnen "
-"unten Name und Tourenart."
+"unten eine Tourenart."
 msgstr ""
-"%(count)s immagine/i caricata/e. Sono negli appunti: dai loro un nome e un "
-"tipo di gita qui sotto."
+"%(count)s immagine/i caricata/e. Sono negli appunti: assegna loro un tipo di "
+"gita qui sotto."
 
 msgid "Bild gelöscht."
 msgstr "Immagine eliminata."
-
-msgid "Gespeichert."
-msgstr "Salvato."
 
 msgid "Bitte prüfe die Angaben zum Bild."
 msgstr "Controlla i dati dell’immagine."
@@ -2893,26 +2890,23 @@ msgstr "Scarta"
 msgid "%(n)s gewählt"
 msgstr "%(n)s selezionata/e"
 
-msgid "Name, z. B. Piz Palü Nordwand"
-msgstr "Nome, p. es. Piz Palü parete nord"
-
 msgid "Tourenart –"
 msgstr "Tipo di gita –"
 
 msgid "Region, z. B. Engadin"
 msgstr "Regione, p. es. Engadina"
 
-msgid "Ort, z. B. Diavolezza"
-msgstr "Luogo, p. es. Diavolezza"
-
-msgid "Bewertung –"
-msgstr "Valutazione –"
-
 msgid "Bild löschen?"
 msgstr "Eliminare l'immagine?"
 
 msgid "Löschen"
 msgstr "Elimina"
+
+msgid "Gespeichert"
+msgstr "Salvato"
+
+msgid "Bearbeiten"
+msgstr "Modifica"
 
 msgid "Benachrichtigungen"
 msgstr "Notifiche"
@@ -3413,9 +3407,6 @@ msgstr "Vedi"
 msgid "CHF %(price)s pro Person"
 msgstr "CHF %(price)s a persona"
 
-msgid "Bearbeiten"
-msgstr "Modifica"
-
 msgid "Plätze"
 msgstr "Posti"
 
@@ -3835,13 +3826,15 @@ msgid "Bildbibliothek"
 msgstr "Raccolta di immagini"
 
 msgid ""
-"Dein Bildarchiv. Gib jedem Bild Name, Tourenart, Region, Ort und eine "
-"Bewertung – so findest du es wieder, wenn du eine Tour ausschreibst. "
-"Tourchef stellt zusätzlich Bilder für die meisten Tourenarten zur Verfügung."
+"Dein Bildarchiv. Gib jedem Bild Tourenart, Region und eine eigene Bemerkung, "
+"markiere die besten als Highlight – so findest du es wieder, wenn du eine "
+"Tour ausschreibst. Tourchef stellt zusätzlich Bilder für die meisten "
+"Tourenarten zur Verfügung."
 msgstr ""
-"Il tuo archivio di immagini. Dai a ogni immagine nome, tipo di gita, "
-"regione, luogo e una valutazione – così la ritrovi quando pubblichi una "
-"gita. Tourchef offre anche immagini per la maggior parte dei tipi di gita."
+"Il tuo archivio di immagini. Dai a ogni immagine tipo di gita, regione e una "
+"nota personale, e segna le migliori come highlight – così la ritrovi quando "
+"pubblichi una gita. Tourchef mette a disposizione anche immagini per la "
+"maggior parte dei tipi di gita."
 
 msgid "Bilder hochladen"
 msgstr "Carica immagini"
@@ -3877,18 +3870,16 @@ msgstr "Appunti – da assegnare"
 
 msgid ""
 "Neu hochgeladene Bilder. Sobald ein Bild eine Tourenart hat, kommt es ins "
-"Archiv. Name, Region, Ort, Bewertung (1–4 Sterne) und eine eigene Bemerkung "
-"helfen beim Wiederfinden."
+"Archiv. Region, Highlight und eine eigene Bemerkung helfen beim Wiederfinden."
 msgstr ""
 "Immagini appena caricate. Appena un’immagine ha un tipo di gita, passa "
-"nell’archivio. Nome, regione, luogo, valutazione (1–4 stelle) e una nota "
-"personale aiutano a ritrovarla."
+"nell’archivio. Regione, highlight e una nota personale aiutano a ritrovarla."
 
 msgid "Archiv durchsuchen"
 msgstr "Cerca nell’archivio"
 
-msgid "Name, Ort, Bemerkung …"
-msgstr "Nome, luogo, nota …"
+msgid "Bemerkung …"
+msgstr "Nota …"
 
 msgid "Alle Tourenarten"
 msgstr "Tutti i tipi di gita"
@@ -3896,12 +3887,11 @@ msgstr "Tutti i tipi di gita"
 msgid "Alle Regionen"
 msgstr "Tutte le regioni"
 
-msgid "Jede Bewertung"
-msgstr "Qualsiasi valutazione"
+msgid "Alle Bilder"
+msgstr "Tutte le immagini"
 
-#, python-format
-msgid "ab %(stars)s"
-msgstr "%(stars)s o più"
+msgid "Nur Highlights"
+msgstr "Solo highlight"
 
 msgid "Filtern"
 msgstr "Filtra"
@@ -4742,6 +4732,25 @@ msgstr "Invia la richiesta"
 
 msgid "Alle Angebote"
 msgstr "Tutte le offerte"
+
+#~ msgid "Bewertung"
+#~ msgstr "Valutazione"
+
+#~ msgid "Name, z. B. Piz Palü Nordwand"
+#~ msgstr "Nome, p. es. Piz Palü parete nord"
+
+#~ msgid "Ort, z. B. Diavolezza"
+#~ msgstr "Luogo, p. es. Diavolezza"
+
+#~ msgid "Name, Ort, Bemerkung …"
+#~ msgstr "Nome, luogo, nota …"
+
+#~ msgid "Jede Bewertung"
+#~ msgstr "Qualsiasi valutazione"
+
+#, python-format
+#~ msgid "ab %(stars)s"
+#~ msgstr "%(stars)s o più"
 
 #~ msgid "Deine Nachricht"
 #~ msgstr "Il tuo messaggio"
