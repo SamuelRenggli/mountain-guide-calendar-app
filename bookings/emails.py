@@ -126,6 +126,12 @@ MESSAGES = {
           "Bergführer: {guide}, Telefon {guide_phone}, {guide_email}\n\n{receipt}\n\n"
           "Deine Anmeldung, Stornieren und Bedingungen:\n{guest_link}"),
     ),
+    "album_shared": (
+        _("Fotos von «{tour}»"),
+        _("Hallo {guest}\n\nDie Fotos von «{tour}» ({dates}) sind da. Hier kannst du sie in voller Qualität "
+          "herunterladen und deine eigenen dazulegen:\n{album_link}\n\nDas Album bleibt bis {delete_on} offen, "
+          "danach werden die Fotos gelöscht.\n\n{guide}"),
+    ),
     "details_reminder": (
         _("{guide} braucht noch deine Infos für die anstehende Tour"),
         _("Hallo {guest}\n\nFür «{tour}» am {start} fehlen noch deine Angaben für die Tourenplanung (Rechnungsadresse, "
@@ -616,3 +622,17 @@ def partner_offer_answered(t, *, accepted: bool):
     with translation.override(t.language):
         ctx = _external_context(t)
     _deliver("partner_offer_confirmed" if accepted else "partner_offer_declined", t.language, t.contact_email, ctx)
+
+
+def album_shared(album) -> int:
+    """The album link to everyone on the tour. Returns how many got it."""
+    ctx = {"tour": album.title, "guide": album.guide.display_name, "album_link": album.url,
+           "dates": f"{album.start_date:%d.%m.%Y} – {album.end_date:%d.%m.%Y}",
+           "delete_on": f"{album.delete_on:%d.%m.%Y}", "privacy_url": f"{settings.SITE_URL}/rechtliches/datenschutz/"}
+    sent = set()
+    for name, email, lang in album.guests():
+        if email.lower() in sent:
+            continue
+        _deliver("album_shared", lang, email, {**ctx, "guest": name})
+        sent.add(email.lower())
+    return len(sent)

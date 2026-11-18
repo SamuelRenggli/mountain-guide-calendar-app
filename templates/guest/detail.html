@@ -121,6 +121,13 @@
 </section>
 {% endif %}
 
+{% if album.is_open and booking.status == "paid" or album.is_open and booking.status == "confirmed" or album.is_open and booking.status == "awaiting_payment" %}
+<section class="card">
+  <div class="spread"><h2>{% translate "Fotos" %}</h2><a class="btn btn-small" href="{{ album.path }}">{% translate "Fotoalbum öffnen" %}</a></div>
+  <p class="small muted">{% translate "Fotos der Tour in voller Qualität herunterladen und eigene dazulegen." %}</p>
+</section>
+{% endif %}
+
 {% if companions_open %}
 <section class="card" id="mitreisende">
   <h2>{% translate "Deine Mitreisenden" %}</h2>

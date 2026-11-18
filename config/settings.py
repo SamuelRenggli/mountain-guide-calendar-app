@@ -212,6 +212,12 @@ DECISION_REMINDER_HOURS = env_int("DECISION_REMINDER_HOURS", 3)  # remind the gu
 DETAILS_REMINDER_HOURS = env_int("DETAILS_REMINDER_HOURS", 24)
 GUEST_LINK_VALID_DAYS = env_int("GUEST_LINK_VALID_DAYS", 365)  # guest page closes this long after a finished tour
 
+# Tour photos (originals): private bucket in Zürich; without one, a local folder (development, tests).
+PHOTO_BUCKET = env("PHOTO_BUCKET", "")
+PHOTO_LOCAL_DIR = env("PHOTO_LOCAL_DIR", str(BASE_DIR / "media" / "photos"))
+PHOTO_KEEP_DAYS = env_int("PHOTO_KEEP_DAYS", 90)  # photos nobody kept are deleted this long after the tour
+PHOTO_MAX_MB = env_int("PHOTO_MAX_MB", 60)
+
 # Operator of the platform (Impressum, privacy policy)
 OPERATOR_NAME = env("OPERATOR_NAME", "Samuel Renggli")
 OPERATOR_ADDRESS = env("OPERATOR_ADDRESS", "[Adresse eintragen]")

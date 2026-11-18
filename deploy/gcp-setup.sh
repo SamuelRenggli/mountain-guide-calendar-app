@@ -59,6 +59,19 @@ exists gcloud secrets describe tourchef-env ||
 gcloud secrets add-iam-policy-binding tourchef-env \
   --member="serviceAccount:$RUN_SA" --role=roles/secretmanager.secretAccessor >/dev/null
 
+echo "== Tour photos bucket (private, Zürich; the app hands out short-lived signed links)"
+PHOTO_BUCKET="$PROJECT_ID-photos"
+exists gcloud storage buckets describe "gs://$PHOTO_BUCKET" ||
+  gcloud storage buckets create "gs://$PHOTO_BUCKET" --location="$REGION" --uniform-bucket-level-access \
+    --public-access-prevention
+echo "   CORS: put the app address into deploy/photos-cors.json, then:"
+echo "   gcloud storage buckets update gs://$PHOTO_BUCKET --cors-file=deploy/photos-cors.json"
+gcloud storage buckets add-iam-policy-binding "gs://$PHOTO_BUCKET" \
+  --member="serviceAccount:$RUN_SA" --role=roles/storage.objectAdmin >/dev/null
+# Signing links without a key file: the run account signs through the IAM API as itself.
+gcloud iam service-accounts add-iam-policy-binding "$RUN_SA" \
+  --member="serviceAccount:$RUN_SA" --role=roles/iam.serviceAccountTokenCreator >/dev/null
+
 echo "== GitHub Actions access (keyless, main branch of $GITHUB_REPO only)"
 exists gcloud iam workload-identity-pools describe github --location=global ||
   gcloud iam workload-identity-pools create github --location=global --display-name=GitHub

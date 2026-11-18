@@ -19,6 +19,7 @@ from django.views.decorators.http import require_POST
 from core.ratelimit import allow, client_ip
 from payments import stripe_service
 
+from . import album as albums
 from . import services
 from .forms import CompanionDetailsForm, GuestDetailsForm
 from .models import Booking, BookingEvent, Companion, GuestProfile, money
@@ -88,6 +89,7 @@ def detail(request, token, details_form=None, status=200):
         "confirming": confirming,
         "companions_open": companions_open(booking),
         "companion_names": [c.name for c in booking.companions.all()],
+        "album": albums.Album(booking.departure if booking.is_registration else booking),
     }, status=status)
     response.headers["X-Robots-Tag"] = "noindex"
     return response

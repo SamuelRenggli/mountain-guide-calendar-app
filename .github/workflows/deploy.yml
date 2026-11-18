@@ -78,7 +78,7 @@ jobs:
         run: |
           gcloud run deploy "$SERVICE" $COMMON \
             --set-env-vars=ENV_FILE=/secrets/env,RUN_MIGRATIONS=0,WEB_CONCURRENCY=2 \
-            --allow-unauthenticated --cpu=1 --memory=512Mi --min-instances=0 --max-instances=2
+            --allow-unauthenticated --cpu=1 --memory=1Gi --min-instances=0 --max-instances=2
 
       - name: Update hourly job
         run: |

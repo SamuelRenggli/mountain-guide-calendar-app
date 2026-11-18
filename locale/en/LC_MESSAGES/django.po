@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 19:55+0100\n"
+"POT-Creation-Date: 2026-11-18 20:57+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -235,6 +235,32 @@ msgstr "Please confirm your password first, then send the form again."
 
 msgid "Passwort oder Code stimmt nicht."
 msgstr "Password or code is not correct."
+
+msgid "Das Album ist geschlossen."
+msgstr "The album is closed."
+
+msgid "Bitte ein JPG-, PNG-, WebP- oder HEIC-Bild verwenden."
+msgstr "Please use a JPG, PNG, WebP or HEIC image."
+
+#, python-format
+msgid "Das Bild ist zu gross (höchstens %(mb)s MB)."
+msgstr "The picture is too big (max. %(mb)s MB)."
+
+msgid "Das Album ist voll."
+msgstr "The album is full."
+
+msgid "Unbekanntes Foto."
+msgstr "Unknown photo."
+
+msgid "Das Bild konnte nicht gelesen werden."
+msgstr "The picture couldn’t be read."
+
+msgid "Fotos von Gästen nur mit ihrem Einverständnis."
+msgstr "Guests' photos only with their consent."
+
+#, python-format
+msgid "Aus dem Album vom %(day)s, Foto: %(who)s"
+msgstr "From the album of %(day)s, photo: %(who)s"
 
 msgid ""
 "Für ausgeschriebene Termine brauchst du Online-Zahlungen: Verbinde zuerst "
@@ -821,6 +847,30 @@ msgstr ""
 "\n"
 "Your sign-up, cancellation and terms:\n"
 "{guest_link}"
+
+#, python-brace-format
+msgid "Fotos von «{tour}»"
+msgstr "Photos from “{tour}”"
+
+#, python-brace-format
+msgid ""
+"Hallo {guest}\n"
+"\n"
+"Die Fotos von «{tour}» ({dates}) sind da. Hier kannst du sie in voller Qualität herunterladen und deine eigenen dazulegen:\n"
+"{album_link}\n"
+"\n"
+"Das Album bleibt bis {delete_on} offen, danach werden die Fotos gelöscht.\n"
+"\n"
+"{guide}"
+msgstr ""
+"Hello {guest}\n"
+"\n"
+"The photos from “{tour}” ({dates}) are here. Download them in full quality and add your own:\n"
+"{album_link}\n"
+"\n"
+"The album stays open until {delete_on}, then the photos are deleted.\n"
+"\n"
+"{guide}"
 
 #, python-brace-format
 msgid "{guide} braucht noch deine Infos für die anstehende Tour"
@@ -2118,6 +2168,12 @@ msgstr "Recorded manually"
 msgid "Eigene Tourenidee"
 msgstr "Own tour idea"
 
+msgid "Wird hochgeladen"
+msgstr "Uploading"
+
+msgid "Bereit"
+msgstr "Ready"
+
 msgid "Tourenpreis"
 msgstr "Tour price"
 
@@ -2256,12 +2312,6 @@ msgid ""
 msgstr ""
 "These days are now taken: %(days)s. Free them first or decline the offer."
 
-msgid "Bitte ein JPG-, PNG-, WebP- oder HEIC-Bild verwenden."
-msgstr "Please use a JPG, PNG, WebP or HEIC image."
-
-msgid "Das Bild konnte nicht gelesen werden."
-msgstr "The picture couldn’t be read."
-
 msgid "Diese Daten sind leider nicht mehr verfügbar."
 msgstr "Sorry, these dates are no longer available."
 
@@ -2320,6 +2370,22 @@ msgstr "The deadline for your answer has passed."
 #, python-format
 msgid "Storno-Kosten %(percent)s %% gemäss Bedingungen"
 msgstr "Cancellation charge %(percent)s %% under the terms"
+
+#, python-format
+msgid "%(n)s Fotos in deine Bildbibliothek übernommen."
+msgstr "%(n)s photos added to your picture library."
+
+#, python-format
+msgid "%(n)s Fotos von Gästen ohne ihr Einverständnis nicht übernommen."
+msgstr "%(n)s guest photos not added (no consent)."
+
+#, python-format
+msgid "%(n)s Fotos gelöscht."
+msgstr "%(n)s photos deleted."
+
+#, python-format
+msgid "Link an %(n)s Gäste gesendet."
+msgstr "Link sent to %(n)s guests."
 
 msgid "Gespeichert. Der Gast wurde per E-Mail informiert."
 msgstr "Saved. The guest has been told by email."
@@ -2797,6 +2863,123 @@ msgstr "Tourchef is in a test phase. Please contact us for access."
 msgid "Zur Anmeldung"
 msgstr "Go to login"
 
+msgid "Fotos"
+msgstr "Photos"
+
+msgid "Mit den Gästen teilen"
+msgstr "Share with the guests"
+
+msgid ""
+"Lade deine Fotos hoch und schick den Link deinen Gästen: Sie laden die Fotos"
+" in voller Qualität herunter und legen ihre eigenen dazu. Was du behältst, "
+"landet in deiner Bildbibliothek – so wächst sie mit jeder Tour, und du hast "
+"die besten Bilder zur Hand, wenn du die nächste Tour ausschreibst."
+msgstr ""
+"Upload your photos and send the link to your guests: they download the "
+"photos in full quality and add their own. What you keep goes into your "
+"picture library – it grows with every tour, and you have your best pictures "
+"at hand when you advertise the next one."
+
+msgid "Link kopieren"
+msgstr "Copy link"
+
+msgid "Teilen"
+msgstr "Share"
+
+msgid "Link per E-Mail an die Gäste"
+msgstr "Email the link to the guests"
+
+#, python-format
+msgid "Lade hoch: %%(done)s von %%(total)s …"
+msgstr "Uploading: %%(done)s of %%(total)s …"
+
+#, python-format
+msgid "%%(done)s Fotos hochgeladen."
+msgstr "%%(done)s photos uploaded."
+
+msgid "Zu gross:"
+msgstr "Too big:"
+
+msgid "Bitte deinen Namen eintragen."
+msgstr "Please enter your name."
+
+msgid "Fotos hochladen"
+msgstr "Upload photos"
+
+msgid "Dein Name"
+msgstr "Your name"
+
+msgid "Fotos auswählen"
+msgstr "Choose photos"
+
+#, python-format
+msgid ""
+"Mehrere auf einmal, in Originalqualität (JPG, PNG, WebP, HEIC), je höchstens"
+" %(mb)s MB."
+msgstr ""
+"Several at once, in original quality (JPG, PNG, WebP, HEIC), up to %(mb)s MB"
+" each."
+
+#, python-format
+msgid "%(name)s darf meine Fotos für Tourenausschreibungen verwenden."
+msgstr "%(name)s may use my photos to advertise tours."
+
+msgid ""
+"Lade nur Fotos hoch, mit deren Teilen alle Abgebildeten einverstanden sind."
+msgstr "Only upload photos everyone in them agrees to share."
+
+msgid "Hochladen"
+msgstr "Upload"
+
+#, python-format
+msgid "%(n)s Foto"
+msgid_plural "%(n)s Fotos"
+msgstr[0] "%(n)s photo"
+msgstr[1] "%(n)s photos"
+
+msgid "Lade herunter …"
+msgstr "Downloading …"
+
+msgid "Alle herunterladen"
+msgstr "Download all"
+
+#, python-format
+msgid ""
+"Das Album bleibt bis %(day)s offen, danach werden die Fotos gelöscht. Lade "
+"herunter, was du behalten willst."
+msgstr ""
+"The album stays open until %(day)s, then the photos are deleted. Download "
+"what you want to keep."
+
+msgid "Original herunterladen"
+msgstr "Download original"
+
+msgid "In der Bibliothek"
+msgstr "In the library"
+
+msgid "Ohne Einverständnis des Gastes nicht für Ausschreibungen"
+msgstr "Not for advertising without the guest's consent"
+
+msgid "Markierte behalten (Bildbibliothek)"
+msgstr "Keep selected (picture library)"
+
+msgid "Markierte Fotos endgültig löschen?"
+msgstr "Delete the selected photos for good?"
+
+msgid "Markierte löschen"
+msgstr "Delete selected"
+
+#, python-format
+msgid ""
+"Behaltene Fotos kommen mit Tourenart, Ort und Datum in deine Bildbibliothek,"
+" das Original bleibt erhalten. Alle anderen werden am %(day)s gelöscht."
+msgstr ""
+"Kept photos go into your picture library with type of tour, place and date; "
+"the original is kept. All others are deleted on %(day)s."
+
+msgid "Noch keine Fotos."
+msgstr "No photos yet."
+
 msgid "Hauptnavigation"
 msgstr "Main navigation"
 
@@ -3086,9 +3269,6 @@ msgstr ""
 " you there; you confirm it under “Calendar › Other providers”. Guests can "
 "still request these days."
 
-msgid "Link kopieren"
-msgstr "Copy link"
-
 msgid "entfernen"
 msgstr "remove"
 
@@ -3210,6 +3390,23 @@ msgstr "Withdraw"
 #, python-format
 msgid "Ersatzdatum vorgeschlagen. Der Gast antwortet bis %(day)s."
 msgstr "Replacement date proposed. The guest replies by %(day)s."
+
+msgid "Fotoalbum öffnen"
+msgstr "Open photo album"
+
+#, python-format
+msgid ""
+"%(n)s Foto im Album. Teile es mit den Gästen und behalte die besten für "
+"deine Bildbibliothek."
+msgid_plural ""
+"%(n)s Fotos im Album. Teile es mit den Gästen und behalte die besten für "
+"deine Bildbibliothek."
+msgstr[0] ""
+"%(n)s photo in the album. Share it with the guests and keep the best for "
+"your picture library."
+msgstr[1] ""
+"%(n)s photos in the album. Share it with the guests and keep the best for "
+"your picture library."
 
 msgid "Buchung ändern"
 msgstr "Change booking"
@@ -3395,9 +3592,6 @@ msgstr "blocked / busy"
 
 msgid "Link zum Teilen"
 msgstr "Link to share"
-
-msgid "Teilen"
-msgstr "Share"
 
 msgid "Ansehen"
 msgstr "View"
@@ -3749,6 +3943,13 @@ msgid ""
 "auslösen»."
 msgstr "Tours that are over. Open the booking and click “Start billing”."
 
+msgid ""
+"Lade die Fotos der Tour hoch und teile das Album mit den Gästen. Die besten "
+"behältst du – so wächst deine Bildbibliothek mit jeder Tour."
+msgstr ""
+"Upload the tour photos and share the album with your guests. Keep the best –"
+" your picture library grows with every tour."
+
 msgid "Angebote von Anbietern"
 msgstr "Offers from providers"
 
@@ -3850,6 +4051,13 @@ msgstr ""
 "note, and mark the best ones as highlight – so you find it again when you "
 "advertise a tour. Tourchef also provides pictures for most kinds of tour."
 
+msgid ""
+"Tipp: Teile die Fotos einer Tour über das Fotoalbum der Buchung. Was du dort"
+" behältst, landet automatisch hier."
+msgstr ""
+"Tip: share a tour's photos through the booking's photo album. What you keep "
+"there lands here automatically."
+
 msgid "Bilder hochladen"
 msgstr "Upload pictures"
 
@@ -3866,15 +4074,8 @@ msgstr ""
 "clipboard first."
 
 #, python-format
-msgid "Lade hoch: %%(done)s von %%(total)s …"
-msgstr "Uploading: %%(done)s of %%(total)s …"
-
-#, python-format
 msgid "%%(done)s Bild(er) hochgeladen."
 msgstr "%%(done)s picture(s) uploaded."
-
-msgid "Hochladen"
-msgstr "Upload"
 
 msgid "Noch ohne eigenes Bild:"
 msgstr "No own picture yet:"
@@ -4296,6 +4497,9 @@ msgstr ""
 
 msgid "Angaben ansehen oder ändern"
 msgstr "View or change details"
+
+msgid "Fotos der Tour in voller Qualität herunterladen und eigene dazulegen."
+msgstr "Download the tour photos in full quality and add your own."
 
 msgid "Deine Mitreisenden"
 msgstr "Your companions"

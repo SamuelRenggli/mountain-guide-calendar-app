@@ -22,7 +22,7 @@ from core.ratelimit import allow
 from payments import stripe_service
 
 from . import (
-    availability, calsync, departures, export, messaging, monthgrid, pagetitle, partners, pictures, services,
+    album as albums, availability, calsync, departures, export, messaging, monthgrid, pagetitle, partners, pictures, services,
 )
 from .forms import (
     AcceptForm, AddCompanionForm, BlockedPeriodForm, ChangeBookingForm, DepartureForm, EraseGuestDataForm, ExpenseFormSet, ExportForm,
@@ -85,6 +85,7 @@ def home(request):
     upcoming_departures = request.user.departures.filter(status__in=[D.OPEN, D.CONFIRMED], end_date__gte=today)
     return render(request, "dashboard/home.html", {
         "decisions": decisions_due(request.user, today),
+        "photo_albums": albums.photo_reminders(request.user, today),
         "needs_action": requests.filter(status=S.REQUESTED).order_by("deadline"),
         "upcoming": upcoming_tours(request.user, today),
         "to_invoice": requests.filter(status=S.CONFIRMED, end_date__lte=today),
@@ -145,6 +146,8 @@ def _detail_context(booking, **forms):
         "people_with_details": sum(1 for p in people if p["profile"]),
         "phone_list": "\n".join(f"{p['name']}: {p['phone']}" for p in people if p["phone"]),
         "profile": people[0]["profile"],
+        "album": albums.Album(booking) if not booking.is_registration else None,
+        "album_count": 0 if booking.is_registration else booking.photos.filter(status="ready").count(),
     }
     context.update(forms)
     return context
@@ -443,6 +446,8 @@ def departure_detail(request, pk):
         "move_form": MoveDepartureForm(prefix="move", initial={"start_date": departure.start_date,
                                                                "end_date": departure.end_date}),
         "cancel_form": GuestsMessageForm(prefix="cancel"),
+        "album": albums.Album(departure),
+        "album_count": departure.photos.filter(status="ready").count(),
     })
 
 

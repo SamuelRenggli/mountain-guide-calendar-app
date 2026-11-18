@@ -600,6 +600,58 @@ class Companion(models.Model):
         return details if isinstance(details, dict) else {}
 
 
+def new_photo_key() -> str:
+    return secrets.token_urlsafe(18)
+
+
+class TourPhoto(models.Model):
+    """A photo from a tour, in its album: the album of a custom booking or of a scheduled date. The original stays
+    untouched in the photo bucket (photostore.py); the database only keeps a small preview. Photos nobody kept are
+    deleted PHOTO_KEEP_DAYS after the tour. Kept ones also go into the guide's picture library."""
+
+    class Status(models.TextChoices):
+        UPLOADING = "uploading", _("Wird hochgeladen")
+        READY = "ready", _("Bereit")
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="tour_photos")
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, null=True, blank=True, related_name="photos")
+    departure = models.ForeignKey(Departure, on_delete=models.CASCADE, null=True, blank=True, related_name="photos")
+    key = models.CharField(max_length=40, unique=True, default=new_photo_key, editable=False)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.UPLOADING)
+    filename = models.CharField(max_length=200)
+    content_type = models.CharField(max_length=60)
+    size = models.PositiveBigIntegerField(default=0)
+    uploaded_by = models.CharField(max_length=100)
+    by_guide = models.BooleanField(default=False)
+    # The uploader (a guest) allows the guide to use the photo for advertising tours.
+    may_publish = models.BooleanField(default=False)
+    preview = models.BinaryField(default=bytes)
+    width = models.PositiveIntegerField(default=0)
+    height = models.PositiveIntegerField(default=0)
+    taken_at = models.DateTimeField(null=True, blank=True)
+    latitude = models.FloatField(null=True, blank=True)
+    longitude = models.FloatField(null=True, blank=True)
+    picture = models.ForeignKey(Picture, on_delete=models.SET_NULL, null=True, blank=True, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["taken_at", "created_at", "id"]
+        constraints = [models.CheckConstraint(condition=Q(booking__isnull=True) ^ Q(departure__isnull=True),
+                                              name="photo_in_one_album")]
+
+    @property
+    def object_key(self) -> str:
+        return f"photos/{self.guide_id}/{self.key}"
+
+    @property
+    def kept(self) -> bool:
+        return self.picture_id is not None
+
+    @property
+    def can_keep(self) -> bool:
+        return self.status == self.Status.READY and (self.by_guide or self.may_publish)
+
+
 class WaitlistEntry(models.Model):
     """A guest waiting for a seat on a full scheduled date (R-130). Everyone is told when a seat frees up (R-131)."""
 

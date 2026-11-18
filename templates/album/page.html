@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static i18n %}
+{% block title %}{% translate "Fotos" %} – {{ album.title }}{% endblock %}
+{% block content %}
+<h1>{% translate "Fotos" %}: {{ album.title }}</h1>
+<p class="muted">{{ album.start_date|date:"D d.m.Y" }}{% if album.end_date != album.start_date %} – {{ album.end_date|date:"D d.m.Y" }}{% endif %} · {{ album.guide.display_name }}</p>
+
+{% if is_guide %}
+<section class="card">
+  <h2>{% translate "Mit den Gästen teilen" %}</h2>
+  <p class="small muted">{% translate "Lade deine Fotos hoch und schick den Link deinen Gästen: Sie laden die Fotos in voller Qualität herunter und legen ihre eigenen dazu. Was du behältst, landet in deiner Bildbibliothek – so wächst sie mit jeder Tour, und du hast die besten Bilder zur Hand, wenn du die nächste Tour ausschreibst." %}</p>
+  <code class="embed" id="album-link">{{ album.url }}</code>
+  <div class="row">
+    <button class="btn btn-secondary btn-small" type="button" data-copy="#album-link">{% translate "Link kopieren" %}</button>
+    <button class="btn btn-secondary btn-small" type="button" data-share="#album-link" data-share-title="{{ album.title }}">{% translate "Teilen" %}</button>
+    <form method="post" action="{% url 'album_action' album.code 'teilen' %}" class="inline">{% csrf_token %}
+      <button class="btn btn-small" type="submit">{% translate "Link per E-Mail an die Gäste" %}</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+{% if album.is_open %}
+<section class="card" data-album-upload data-start="{% url 'album_start' album.code %}" data-finish="{% url 'album_finish' album.code %}"
+         data-max-bytes="{{ max_mb }}000000" data-text-progress="{% translate 'Lade hoch: %(done)s von %(total)s …' %}"
+         data-text-done="{% translate '%(done)s Fotos hochgeladen.' %}" data-text-too-big="{% translate 'Zu gross:' %}"
+         data-text-name="{% translate 'Bitte deinen Namen eintragen.' %}">
+  {% csrf_token %}
+  <h2>{% translate "Fotos hochladen" %}</h2>
+  {% if not is_guide %}
+  <div class="field"><label for="album-name">{% translate "Dein Name" %} *</label><input type="text" id="album-name" maxlength="100" autocomplete="name"></div>
+  {% endif %}
+  <div class="field">
+    <label for="album-files">{% translate "Fotos auswählen" %}</label>
+    <input type="file" id="album-files" multiple accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif">
+    <small class="help">{% blocktranslate with mb=max_mb trimmed %}Mehrere auf einmal, in Originalqualität (JPG, PNG, WebP, HEIC), je höchstens {{ mb }} MB.{% endblocktranslate %}</small>
+  </div>
+  {% if not is_guide %}
+  <label class="check small"><input type="checkbox" id="album-consent"> {% blocktranslate with name=album.guide.display_name trimmed %}{{ name }} darf meine Fotos für Tourenausschreibungen verwenden.{% endblocktranslate %}</label>
+  {% endif %}
+  <p class="small muted">{% translate "Lade nur Fotos hoch, mit deren Teilen alle Abgebildeten einverstanden sind." %}</p>
+  <p class="small" aria-live="polite" data-album-status></p>
+  <button class="btn" type="button" data-album-go>{% translate "Hochladen" %}</button>
+</section>
+{% else %}
+<div class="alert info">{% translate "Das Album ist geschlossen." %}</div>
+{% endif %}
+
+<section class="card">
+  <div class="spread">
+    <h2>{% blocktranslate count n=photos|length trimmed %}{{ n }} Foto{% plural %}{{ n }} Fotos{% endblocktranslate %}</h2>
+    {% if photos and album.is_open %}<button class="btn btn-secondary btn-small" type="button" data-album-all="{% url 'album_all' album.code %}" data-text-busy="{% translate 'Lade herunter …' %}">{% translate "Alle herunterladen" %}</button>{% endif %}
+  </div>
+  {% if album.is_open %}<p class="small muted">{% blocktranslate with day=album.delete_on|date:"d.m.Y" trimmed %}Das Album bleibt bis {{ day }} offen, danach werden die Fotos gelöscht. Lade herunter, was du behalten willst.{% endblocktranslate %}</p>{% endif %}
+  {% if photos %}
+  <form method="post" id="album-form">{% csrf_token %}
+    <div class="library-grid album-grid">
+      {% for p in photos %}
+      <figure class="library-item">
+        <a href="{% url 'album_original' album.code p.key %}" title="{% translate 'Original herunterladen' %}"><img src="{% url 'album_preview' album.code p.key %}" alt="" loading="lazy" width="{{ p.width }}" height="{{ p.height }}"></a>
+        <figcaption class="small muted">
+          {% if is_guide %}<label class="check"><input type="checkbox" name="photo" value="{{ p.key }}"> {{ p.uploaded_by }}</label>
+          {% if p.kept %}<span class="badge badge-confirmed">{% translate "In der Bibliothek" %}</span>{% elif not p.can_keep %}<span title="{% translate 'Ohne Einverständnis des Gastes nicht für Ausschreibungen' %}">🔒</span>{% endif %}
+          {% else %}{{ p.uploaded_by }}{% endif %}
+        </figcaption>
+      </figure>
+      {% endfor %}
+    </div>
+    {% if is_guide %}
+    <div class="row">
+      <button class="btn" type="submit" formaction="{% url 'album_action' album.code 'behalten' %}">{% translate "Markierte behalten (Bildbibliothek)" %}</button>
+      <button class="btn btn-danger btn-small" type="submit" formaction="{% url 'album_action' album.code 'loeschen' %}" data-confirm-click="{% translate 'Markierte Fotos endgültig löschen?' %}">{% translate "Markierte löschen" %}</button>
+    </div>
+    <p class="small muted">{% blocktranslate with day=album.delete_on|date:"d.m.Y" trimmed %}Behaltene Fotos kommen mit Tourenart, Ort und Datum in deine Bildbibliothek, das Original bleibt erhalten. Alle anderen werden am {{ day }} gelöscht.{% endblocktranslate %}</p>
+    {% endif %}
+  </form>
+  {% else %}
+  <p class="empty">{% translate "Noch keine Fotos." %}</p>
+  {% endif %}
+</section>
+{% endblock %}
+{% block scripts %}<script src="{% static 'js/copy.js' %}"></script><script src="{% static 'js/album.js' %}"></script>{% endblock %}

@@ -20,6 +20,13 @@
   </p>
 </section>
 
+{% if album.took_place %}
+<section class="card">
+  <div class="spread"><h2>{% translate "Fotos" %}</h2><a class="btn btn-small" href="{{ album.path }}">{% translate "Fotoalbum öffnen" %}</a></div>
+  <p class="small muted">{% blocktranslate count n=album_count trimmed %}{{ n }} Foto im Album. Teile es mit den Gästen und behalte die besten für deine Bildbibliothek.{% plural %}{{ n }} Fotos im Album. Teile es mit den Gästen und behalte die besten für deine Bildbibliothek.{% endblocktranslate %}</p>
+</section>
+{% endif %}
+
 <div class="grid-2">
   <section class="card">
     <h2>{% translate "Termin" %}</h2>

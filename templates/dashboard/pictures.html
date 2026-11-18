@@ -5,6 +5,8 @@
 <h1>{% translate "Bildbibliothek" %}</h1>
 <p class="muted">{% translate "Dein Bildarchiv. Gib jedem Bild Tourenart, Region und eine eigene Bemerkung, markiere die besten als Highlight – so findest du es wieder, wenn du eine Tour ausschreibst. Tourchef stellt zusätzlich Bilder für die meisten Tourenarten zur Verfügung." %}</p>
 
+<p class="small">{% translate "Tipp: Teile die Fotos einer Tour über das Fotoalbum der Buchung. Was du dort behältst, landet automatisch hier." %}</p>
+
 <form method="post" enctype="multipart/form-data" class="card" data-multi-upload>{% csrf_token %}
   <h2>{% translate "Bilder hochladen" %}</h2>
   <div class="field">

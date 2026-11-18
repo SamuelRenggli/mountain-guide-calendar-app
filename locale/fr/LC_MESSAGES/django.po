@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 19:55+0100\n"
+"POT-Creation-Date: 2026-11-18 20:57+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -242,6 +242,32 @@ msgstr "Confirme d'abord ton mot de passe, puis renvoie le formulaire."
 
 msgid "Passwort oder Code stimmt nicht."
 msgstr "Mot de passe ou code incorrect."
+
+msgid "Das Album ist geschlossen."
+msgstr "L'album est fermé."
+
+msgid "Bitte ein JPG-, PNG-, WebP- oder HEIC-Bild verwenden."
+msgstr "Merci d'utiliser une image JPG, PNG, WebP ou HEIC."
+
+#, python-format
+msgid "Das Bild ist zu gross (höchstens %(mb)s MB)."
+msgstr "L'image est trop grande (%(mb)s Mo max.)."
+
+msgid "Das Album ist voll."
+msgstr "L'album est plein."
+
+msgid "Unbekanntes Foto."
+msgstr "Photo inconnue."
+
+msgid "Das Bild konnte nicht gelesen werden."
+msgstr "Impossible de lire l’image."
+
+msgid "Fotos von Gästen nur mit ihrem Einverständnis."
+msgstr "Photos des clients seulement avec leur accord."
+
+#, python-format
+msgid "Aus dem Album vom %(day)s, Foto: %(who)s"
+msgstr "De l'album du %(day)s, photo : %(who)s"
 
 msgid ""
 "Für ausgeschriebene Termine brauchst du Online-Zahlungen: Verbinde zuerst "
@@ -832,6 +858,30 @@ msgstr ""
 "\n"
 "Ton inscription, annulation et conditions :\n"
 "{guest_link}"
+
+#, python-brace-format
+msgid "Fotos von «{tour}»"
+msgstr "Photos de « {tour} »"
+
+#, python-brace-format
+msgid ""
+"Hallo {guest}\n"
+"\n"
+"Die Fotos von «{tour}» ({dates}) sind da. Hier kannst du sie in voller Qualität herunterladen und deine eigenen dazulegen:\n"
+"{album_link}\n"
+"\n"
+"Das Album bleibt bis {delete_on} offen, danach werden die Fotos gelöscht.\n"
+"\n"
+"{guide}"
+msgstr ""
+"Bonjour {guest}\n"
+"\n"
+"Les photos de « {tour} » ({dates}) sont là. Télécharge-les en pleine qualité et ajoute les tiennes :\n"
+"{album_link}\n"
+"\n"
+"L'album reste ouvert jusqu'au {delete_on}, ensuite les photos sont supprimées.\n"
+"\n"
+"{guide}"
 
 #, python-brace-format
 msgid "{guide} braucht noch deine Infos für die anstehende Tour"
@@ -2140,6 +2190,12 @@ msgstr "Saisi manuellement"
 msgid "Eigene Tourenidee"
 msgstr "Idée de course personnelle"
 
+msgid "Wird hochgeladen"
+msgstr "Téléversement"
+
+msgid "Bereit"
+msgstr "Prête"
+
 msgid "Tourenpreis"
 msgstr "Prix de la course"
 
@@ -2280,12 +2336,6 @@ msgstr ""
 "Ces jours sont entre-temps occupés : %(days)s. Libère-les d'abord ou refuse "
 "l'offre."
 
-msgid "Bitte ein JPG-, PNG-, WebP- oder HEIC-Bild verwenden."
-msgstr "Merci d'utiliser une image JPG, PNG, WebP ou HEIC."
-
-msgid "Das Bild konnte nicht gelesen werden."
-msgstr "Impossible de lire l’image."
-
 msgid "Diese Daten sind leider nicht mehr verfügbar."
 msgstr "Ces dates ne sont malheureusement plus disponibles."
 
@@ -2345,6 +2395,22 @@ msgstr "Le délai pour ta réponse est dépassé."
 #, python-format
 msgid "Storno-Kosten %(percent)s %% gemäss Bedingungen"
 msgstr "Frais d’annulation %(percent)s %% selon les conditions"
+
+#, python-format
+msgid "%(n)s Fotos in deine Bildbibliothek übernommen."
+msgstr "%(n)s photos ajoutées à ta photothèque."
+
+#, python-format
+msgid "%(n)s Fotos von Gästen ohne ihr Einverständnis nicht übernommen."
+msgstr "%(n)s photos de clients non ajoutées (sans accord)."
+
+#, python-format
+msgid "%(n)s Fotos gelöscht."
+msgstr "%(n)s photos supprimées."
+
+#, python-format
+msgid "Link an %(n)s Gäste gesendet."
+msgstr "Lien envoyé à %(n)s clients."
 
 msgid "Gespeichert. Der Gast wurde per E-Mail informiert."
 msgstr "Enregistré. Le client a été informé par e-mail."
@@ -2833,6 +2899,126 @@ msgstr "Tourchef est en phase de test. Contacte-nous pour obtenir un accès."
 msgid "Zur Anmeldung"
 msgstr "Vers la connexion"
 
+msgid "Fotos"
+msgstr "Photos"
+
+msgid "Mit den Gästen teilen"
+msgstr "Partager avec les clients"
+
+msgid ""
+"Lade deine Fotos hoch und schick den Link deinen Gästen: Sie laden die Fotos"
+" in voller Qualität herunter und legen ihre eigenen dazu. Was du behältst, "
+"landet in deiner Bildbibliothek – so wächst sie mit jeder Tour, und du hast "
+"die besten Bilder zur Hand, wenn du die nächste Tour ausschreibst."
+msgstr ""
+"Téléverse tes photos et envoie le lien à tes clients : ils téléchargent les "
+"photos en pleine qualité et ajoutent les leurs. Ce que tu gardes va dans ta "
+"photothèque – elle grandit à chaque course, et tu as tes meilleures images "
+"sous la main pour annoncer la prochaine."
+
+msgid "Link kopieren"
+msgstr "Copier le lien"
+
+msgid "Teilen"
+msgstr "Partager"
+
+msgid "Link per E-Mail an die Gäste"
+msgstr "Envoyer le lien aux clients par e-mail"
+
+#, python-format
+msgid "Lade hoch: %%(done)s von %%(total)s …"
+msgstr "Téléversement : %%(done)s sur %%(total)s …"
+
+#, python-format
+msgid "%%(done)s Fotos hochgeladen."
+msgstr "%%(done)s photos téléversées."
+
+msgid "Zu gross:"
+msgstr "Trop grande :"
+
+msgid "Bitte deinen Namen eintragen."
+msgstr "Merci d'indiquer ton nom."
+
+msgid "Fotos hochladen"
+msgstr "Téléverser des photos"
+
+msgid "Dein Name"
+msgstr "Ton nom"
+
+msgid "Fotos auswählen"
+msgstr "Choisir des photos"
+
+#, python-format
+msgid ""
+"Mehrere auf einmal, in Originalqualität (JPG, PNG, WebP, HEIC), je höchstens"
+" %(mb)s MB."
+msgstr ""
+"Plusieurs à la fois, en qualité originale (JPG, PNG, WebP, HEIC), %(mb)s Mo "
+"max. chacune."
+
+#, python-format
+msgid "%(name)s darf meine Fotos für Tourenausschreibungen verwenden."
+msgstr "%(name)s peut utiliser mes photos pour annoncer des courses."
+
+msgid ""
+"Lade nur Fotos hoch, mit deren Teilen alle Abgebildeten einverstanden sind."
+msgstr ""
+"Ne téléverse que des photos que toutes les personnes visibles acceptent de "
+"partager."
+
+msgid "Hochladen"
+msgstr "Télécharger"
+
+#, python-format
+msgid "%(n)s Foto"
+msgid_plural "%(n)s Fotos"
+msgstr[0] "%(n)s photo"
+msgstr[1] "%(n)s photos"
+
+msgid "Lade herunter …"
+msgstr "Téléchargement …"
+
+msgid "Alle herunterladen"
+msgstr "Tout télécharger"
+
+#, python-format
+msgid ""
+"Das Album bleibt bis %(day)s offen, danach werden die Fotos gelöscht. Lade "
+"herunter, was du behalten willst."
+msgstr ""
+"L'album reste ouvert jusqu'au %(day)s, ensuite les photos sont supprimées. "
+"Télécharge ce que tu veux garder."
+
+msgid "Original herunterladen"
+msgstr "Télécharger l'original"
+
+msgid "In der Bibliothek"
+msgstr "Dans la photothèque"
+
+msgid "Ohne Einverständnis des Gastes nicht für Ausschreibungen"
+msgstr "Pas pour les annonces sans l'accord du client"
+
+msgid "Markierte behalten (Bildbibliothek)"
+msgstr "Garder la sélection (photothèque)"
+
+msgid "Markierte Fotos endgültig löschen?"
+msgstr "Supprimer définitivement les photos sélectionnées ?"
+
+msgid "Markierte löschen"
+msgstr "Supprimer la sélection"
+
+#, python-format
+msgid ""
+"Behaltene Fotos kommen mit Tourenart, Ort und Datum in deine Bildbibliothek,"
+" das Original bleibt erhalten. Alle anderen werden am %(day)s gelöscht."
+msgstr ""
+"Les photos gardées vont dans ta photothèque avec le type de course, le lieu "
+"et la date ; l'original est conservé. Toutes les autres sont supprimées le "
+"%(day)s."
+
+msgid "Noch keine Fotos."
+msgstr "Pas encore de photos."
+
 msgid "Hauptnavigation"
 msgstr "Navigation principale"
 
@@ -3128,9 +3314,6 @@ msgstr ""
 "inscrire directement une course ; tu la confirmes sous « Calendrier › "
 "Prestataires externes ». Les clients peuvent toujours demander ces jours."
 
-msgid "Link kopieren"
-msgstr "Copier le lien"
-
 msgid "entfernen"
 msgstr "supprimer"
 
@@ -3255,6 +3438,23 @@ msgstr "Retirer"
 #, python-format
 msgid "Ersatzdatum vorgeschlagen. Der Gast antwortet bis %(day)s."
 msgstr "Date de remplacement proposée. Le client répond d’ici le %(day)s."
+
+msgid "Fotoalbum öffnen"
+msgstr "Ouvrir l'album photo"
+
+#, python-format
+msgid ""
+"%(n)s Foto im Album. Teile es mit den Gästen und behalte die besten für "
+"deine Bildbibliothek."
+msgid_plural ""
+"%(n)s Fotos im Album. Teile es mit den Gästen und behalte die besten für "
+"deine Bildbibliothek."
+msgstr[0] ""
+"%(n)s photo dans l'album. Partage-le avec les clients et garde les "
+"meilleures pour ta photothèque."
+msgstr[1] ""
+"%(n)s photos dans l'album. Partage-le avec les clients et garde les "
+"meilleures pour ta photothèque."
 
 msgid "Buchung ändern"
 msgstr "Modifier la réservation"
@@ -3445,9 +3645,6 @@ msgstr "bloqué / occupé"
 
 msgid "Link zum Teilen"
 msgstr "Lien à partager"
-
-msgid "Teilen"
-msgstr "Partager"
 
 msgid "Ansehen"
 msgstr "Voir"
@@ -3807,6 +4004,13 @@ msgstr ""
 "Courses terminées. Ouvre la réservation et clique sur « Établir le décompte "
 "»."
 
+msgid ""
+"Lade die Fotos der Tour hoch und teile das Album mit den Gästen. Die besten "
+"behältst du – so wächst deine Bildbibliothek mit jeder Tour."
+msgstr ""
+"Téléverse les photos de la course et partage l'album avec tes clients. Garde"
+" les meilleures – ta photothèque grandit à chaque course."
+
 msgid "Angebote von Anbietern"
 msgstr "Offres de prestataires"
 
@@ -3909,6 +4113,13 @@ msgstr ""
 "retrouves quand tu publies une course. Tourchef fournit aussi des images "
 "pour la plupart des types de course."
 
+msgid ""
+"Tipp: Teile die Fotos einer Tour über das Fotoalbum der Buchung. Was du dort"
+" behältst, landet automatisch hier."
+msgstr ""
+"Astuce : partage les photos d'une course via l'album de la réservation. Ce "
+"que tu y gardes arrive ici automatiquement."
+
 msgid "Bilder hochladen"
 msgstr "Télécharger des images"
 
@@ -3925,15 +4136,8 @@ msgstr ""
 "nouvelles images arrivent d’abord dans le presse-papiers."
 
 #, python-format
-msgid "Lade hoch: %%(done)s von %%(total)s …"
-msgstr "Téléversement : %%(done)s sur %%(total)s …"
-
-#, python-format
 msgid "%%(done)s Bild(er) hochgeladen."
 msgstr "%%(done)s image(s) téléversée(s)."
-
-msgid "Hochladen"
-msgstr "Télécharger"
 
 msgid "Noch ohne eigenes Bild:"
 msgstr "Encore sans image propre :"
@@ -4362,6 +4566,10 @@ msgstr ""
 
 msgid "Angaben ansehen oder ändern"
 msgstr "Voir ou modifier les informations"
+
+msgid "Fotos der Tour in voller Qualität herunterladen und eigene dazulegen."
+msgstr ""
+"Télécharge les photos de la course en pleine qualité et ajoute les tiennes."
 
 msgid "Deine Mitreisenden"
 msgstr "Tes compagnons"

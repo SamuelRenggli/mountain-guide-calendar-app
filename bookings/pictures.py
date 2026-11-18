@@ -24,7 +24,8 @@ MAX_SIDE = 1200
 FORMATS = ("JPEG", "PNG", "WEBP", "GIF", "MPO", "HEIF")
 LOGO_TILE = (800, 600)
 ACCEPT = "image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif"
-Image.MAX_IMAGE_PIXELS = 40_000_000  # refuse decompression bombs
+MAX_PIXELS_DEFAULT = 40_000_000
+Image.MAX_IMAGE_PIXELS = MAX_PIXELS_DEFAULT  # refuse decompression bombs
 
 
 class PictureError(Exception):

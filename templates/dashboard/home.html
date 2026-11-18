@@ -17,7 +17,7 @@
 
 <section class="card todo">
   <h2>{% translate "To Do" %}</h2>
-  {% if not needs_action and not decisions and not to_invoice and not partner_offers %}<p class="empty">{% translate "Alles erledigt." %}</p>{% endif %}
+  {% if not needs_action and not decisions and not to_invoice and not partner_offers and not photo_albums %}<p class="empty">{% translate "Alles erledigt." %}</p>{% endif %}
   {% if needs_action %}
   <h3>{% translate "Anfragen beantworten" %}</h3>
   {% include "dashboard/_booking_table.html" with bookings=needs_action show_deadline=True %}
@@ -37,6 +37,11 @@
   <h3>{% translate "Abrechnen" %}</h3>
   <p class="small muted">{% translate "Touren, die vorbei sind. Öffne die Buchung und klicke auf «Abrechnung auslösen»." %}</p>
   {% include "dashboard/_booking_table.html" with bookings=to_invoice %}
+  {% endif %}
+  {% if photo_albums %}
+  <h3>{% translate "Fotos hochladen" %}</h3>
+  <p class="small muted">{% translate "Lade die Fotos der Tour hoch und teile das Album mit den Gästen. Die besten behältst du – so wächst deine Bildbibliothek mit jeder Tour." %}</p>
+  <ul>{% for a in photo_albums %}<li><a href="{{ a.path }}">{{ a.title }}</a> <span class="small muted">{{ a.start_date|date:"d.m.Y" }}</span></li>{% endfor %}</ul>
   {% endif %}
   {% if partner_offers %}
   <h3>{% translate "Angebote von Anbietern" %}</h3>

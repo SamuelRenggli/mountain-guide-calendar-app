@@ -5,7 +5,7 @@ from django.http import HttpResponse
 from django.urls import include, path
 from django.views.generic import RedirectView
 
-from bookings import views_guest
+from bookings import views_album, views_guest
 from bookings import views_inbound as inbound_views
 from core import views as core_views
 
@@ -26,6 +26,15 @@ urlpatterns = [
     path("", include("bookings.urls_widget")),
     path("b/", include("bookings.urls_guest")),
     path("mitreisende/<int:pk>-<str:code>/", views_guest.companion, name="companion"),
+    path("album/<str:code>/", views_album.page, name="album"),
+    path("album/<str:code>/hochladen/", views_album.start_upload, name="album_start"),
+    path("album/<str:code>/fertig/", views_album.finish_upload, name="album_finish"),
+    path("album/<str:code>/alle/", views_album.all_links, name="album_all"),
+    path("album/<str:code>/vorschau/<str:key>.jpg", views_album.preview, name="album_preview"),
+    path("album/<str:code>/original/<str:key>/", views_album.original, name="album_original"),
+    path("album/<str:code>/aktion/<slug:name>/", views_album.guide_action, name="album_action"),
+    path("album-lokal/<str:token>/", views_album.local_put, name="album_local_put"),
+    path("album-lokal/<str:token>/datei/", views_album.local_get, name="album_local_get"),
     path("zahlungen/", include("payments.urls")),
     path("eingang/mail/", inbound_views.mail, name="inbound_mail"),
     path("rechtliches/<slug:page>/", core_views.legal, name="legal"),

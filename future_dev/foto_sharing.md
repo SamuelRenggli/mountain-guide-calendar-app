@@ -2,6 +2,12 @@
 
 Stand: 27.10.2026 · Branch `v2-django`
 
+**Umgesetzt 18.11.2026 (Phase 1):** Album pro Buchung / Termin mit geheimem Link (`bookings/album.py`), Originale
+im privaten Bucket `tourchef-test-sr-photos` (Zürich), Gäste und Bergführer laden hoch, Download in Originalqualität,
+Bergführer behält Fotos für die Bildbibliothek (Gästefotos nur mit Häkchen), Rest wird 90 Tage nach der Tour gelöscht,
+To-Do «Fotos hochladen». Entscheide: Originale behalten, Gäste laden auch hoch, 90 Tage.
+Noch offen (Phase 2): Mediathek chronologisch, Schweizer Karte, Bildvorschläge nach Ort, Widget «neueste Bilder».
+
 ## Ziel
 
 Nach einer Tour sollen Teilnehmer und Bergführer ihre Fotos gegenseitig teilen können: alle laden hoch, alle sehen und laden herunter.

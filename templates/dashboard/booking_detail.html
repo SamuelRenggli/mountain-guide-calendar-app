@@ -82,6 +82,14 @@
   {% include "dashboard/_planning.html" %}
 {% endif %}
 
+{% if album %}{% if album.took_place %}
+<section class="card">
+  <div class="spread"><h2>{% translate "Fotos" %}</h2><a class="btn btn-small" href="{{ album.path }}">{% translate "Fotoalbum öffnen" %}</a></div>
+  <p class="small muted">{% blocktranslate count n=album_count trimmed %}{{ n }} Foto im Album. Teile es mit den Gästen und behalte die besten für deine Bildbibliothek.{% plural %}{{ n }} Fotos im Album. Teile es mit den Gästen und behalte die besten für deine Bildbibliothek.{% endblocktranslate %}</p>
+</section>
+{% endif %}
+{% endif %}
+
 {% if booking.status == "confirmed" and not booking.is_registration %}
 <details class="card fold-card" id="aendern"{% if change_form.errors or companion_form.errors %} open{% endif %}>
   <summary><h2>{% translate "Buchung ändern" %}</h2></summary>
