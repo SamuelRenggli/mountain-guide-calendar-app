@@ -15,17 +15,34 @@
 </div>
 {% endif %}
 
-{% if partner_offers %}
-<div class="alert info">
-  {% blocktranslate count n=partner_offers|length trimmed %}Ein Anbieter hat dir eine Tour angeboten.{% plural %}Anbieter haben dir {{ n }} Touren angeboten.{% endblocktranslate %}
-  <a href="{% url 'dashboard:external_tours' %}">{% translate "Jetzt beantworten" %}</a>
-</div>
-{% endif %}
-
-<section class="card">
-  <h2>{% translate "Neue Anfragen – bitte beantworten" %}</h2>
-  {% translate "Keine offenen Anfragen." as empty %}
-  {% include "dashboard/_booking_table.html" with bookings=needs_action empty=empty show_deadline=True %}
+<section class="card todo">
+  <h2>{% translate "To Do" %}</h2>
+  {% if not needs_action and not decisions and not to_invoice and not partner_offers %}<p class="empty">{% translate "Alles erledigt." %}</p>{% endif %}
+  {% if needs_action %}
+  <h3>{% translate "Anfragen beantworten" %}</h3>
+  {% include "dashboard/_booking_table.html" with bookings=needs_action show_deadline=True %}
+  {% endif %}
+  {% if decisions %}
+  <h3>{% translate "Durchführung entscheiden" %}</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>{% translate "Entscheid bis" %}</th><th>{% translate "Tour" %}</th><th>{% translate "Datum" %}</th></tr></thead>
+    <tbody>
+    {% for e in decisions %}
+      <tr><td><a href="{{ e.url }}">{{ e.day|date:"D d.m.Y" }}</a></td><td>{{ e.title }}<br><span class="small muted">{{ e.who }}</span></td><td>{{ e.start|date:"d.m.Y" }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+  {% endif %}
+  {% if to_invoice %}
+  <h3>{% translate "Abrechnen" %}</h3>
+  <p class="small muted">{% translate "Touren, die vorbei sind. Öffne die Buchung und klicke auf «Abrechnung auslösen»." %}</p>
+  {% include "dashboard/_booking_table.html" with bookings=to_invoice %}
+  {% endif %}
+  {% if partner_offers %}
+  <h3>{% translate "Angebote von Anbietern" %}</h3>
+  <p>{% blocktranslate count n=partner_offers|length trimmed %}Ein Anbieter hat dir eine Tour angeboten.{% plural %}Anbieter haben dir {{ n }} Touren angeboten.{% endblocktranslate %}
+  <a href="{% url 'dashboard:external_tours' %}">{% translate "Jetzt beantworten" %}</a></p>
+  {% endif %}
 </section>
 
 <section class="card">
@@ -54,14 +71,6 @@
   {% translate "Nichts offen." as empty %}
   {% include "dashboard/_booking_table.html" with bookings=waiting_for_guest empty=empty show_deadline=True %}
 </section>
-
-{% if to_invoice %}
-<section class="card">
-  <h2>{% translate "Abrechnen" %}</h2>
-  <p class="small muted">{% translate "Touren, die vorbei sind. Öffne die Buchung und klicke auf «Abrechnen»." %}</p>
-  {% include "dashboard/_booking_table.html" with bookings=to_invoice %}
-</section>
-{% endif %}
 
 <section class="card">
   <h2>{% translate "Vergangene und abgesagte Termine" %}</h2>

@@ -9,8 +9,20 @@
 {% if departure.status == "cancelled" %}<div class="alert error">{% translate "Dieser Termin ist abgesagt." %}</div>{% endif %}
 
 {% with pics=departure.gallery_pictures %}{% if pics %}
-<section class="gallery" aria-label="{% translate 'Bilder' %}">
-  {% for pic in pics %}<a href="{{ pic.url }}" target="_blank" rel="noopener" class="{% if forloop.first %}gallery-main{% else %}gallery-thumb{% endif %}"><img src="{{ pic.url }}" alt="{{ pic.title|default:departure.title }}"{% if not forloop.first %} loading="lazy"{% endif %}></a>{% endfor %}
+<section class="gallery" aria-label="{% translate 'Bilder' %}" data-gallery>
+  <div class="gallery-main">
+    <img src="{{ pics.0.url }}" alt="{{ pics.0.title|default:departure.title }}" data-gallery-main>
+    {% if pics|length > 1 %}
+    <button type="button" class="gallery-nav prev" data-gallery-prev aria-label="{% translate 'Vorheriges Bild' %}">‹</button>
+    <button type="button" class="gallery-nav next" data-gallery-next aria-label="{% translate 'Nächstes Bild' %}">›</button>
+    <span class="gallery-count" data-gallery-count>1 / {{ pics|length }}</span>
+    {% endif %}
+  </div>
+  {% if pics|length > 1 %}
+  <div class="gallery-thumbs">
+    {% for pic in pics %}<button type="button" class="gallery-thumb{% if forloop.first %} active{% endif %}" data-gallery-thumb data-src="{{ pic.url }}" data-alt="{{ pic.title|default:departure.title }}" aria-label="{% blocktranslate with n=forloop.counter trimmed %}Bild {{ n }}{% endblocktranslate %}"><img src="{{ pic.url }}" alt="" loading="lazy"></button>{% endfor %}
+  </div>
+  {% endif %}
 </section>
 {% endif %}{% endwith %}
 
@@ -37,7 +49,7 @@
   <h2>{% translate "Anmelden" context "signup" %}</h2>
   {{ form.ts }}{{ form.language }}
   {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
-  {% for field in form %}{% if field.name in "seats guest_name guest_email guest_phone emergency_contact experience" %}
+  {% for field in form.visible_fields %}{% if field.name != "accept_terms" and field.name != "website" %}
     <div class="field{% if field.errors %} has-error{% endif %}">
       <label for="{{ field.id_for_label }}">{{ field.label }} *</label>
       {% if field.help_text %}<p class="small muted">{{ field.help_text }}</p>{% endif %}

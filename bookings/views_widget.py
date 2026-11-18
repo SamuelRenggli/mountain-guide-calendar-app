@@ -162,6 +162,7 @@ def _render(request, guide, *, start_value=None, end_value=None, month_value=Non
         "start": start,
         "end": tour_end,
         "picking_end": bool(start) and not end,
+        "request_days": (tour_end - start).days + 1 if start else 0,
         "max_request_days": settings.MAX_REQUEST_DAYS,
         "form": form if start else None,
         "notice": notice if not start else None,

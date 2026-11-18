@@ -89,7 +89,8 @@ def test_accept_needs_guest_agreement_and_explains_billing(guide, mailoutbox, dj
         booking = services.accept_offer(booking)
     assert booking.status == S.CONFIRMED and booking.deadline is None
     guest_mail = [m for m in mailoutbox if m.to == ["gina@example.com"]][-1]
-    assert "#angaben" in guest_mail.body
+    # the details came with the definite yes, so the email doesn't ask for them again
+    assert "Zusage ist definitiv" in guest_mail.body and "#angaben" not in guest_mail.body
 
 
 def test_accept_can_add_a_day_but_not_a_busy_one(guide, make_booking):

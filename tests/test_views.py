@@ -11,7 +11,7 @@ from accounts.models import AccessLog, DayRateTier
 from bookings.forms import form_timestamp_token
 from bookings.models import Booking, Departure, Tour
 
-from .conftest import in_days
+from .conftest import confirm_offer, in_days
 
 S = Booking.Status
 
@@ -109,9 +109,11 @@ def test_widget_shows_selection_and_rate_tiers(client, guide):
     url = reverse("widget:show", args=[guide.slug])
     html = client.get(url, {"von": in_days(10).isoformat(), "bis": in_days(13).isoformat()}).content.decode()
     assert 'id="booking-form"' in html and 'maxlength="500"' in html
-    assert html.count("day free selected") == 4
+    same_month = sum(1 for n in range(10, 14) if in_days(n).month == in_days(10).month)  # the calendar shows one month
+    assert html.count("day free selected") == same_month
     assert "1–4 Personen" in html and "ab 5 Personen" in html and "CHF 850 pro Tag" in html
-    assert 'data-rates="1:750,5:850"' in html
+    assert 'data-rates="1:750,5:850"' in html and 'data-days="4"' in html
+    assert ">Ts *<" not in html and "Ts *" not in html  # the hidden spam-check field has no label
 
 
 def test_widget_lists_open_departures_first(client, guide, make_departure, make_registration):
@@ -200,7 +202,7 @@ def test_guest_page_needs_valid_token(client, guide, make_booking):
 
 def test_guest_accepts_offer(client, guide, make_booking):
     booking = make_booking(guide, in_days(10), status=S.OFFERED, price=900)
-    client.post(reverse("guest:action", args=[booking.token, "annehmen"]))
+    confirm_offer(client, booking)
     booking.refresh_from_db()
     assert booking.status == S.CONFIRMED
 
@@ -270,7 +272,7 @@ def test_guide_accepts_with_day_rate_then_guest_confirms(client, guide, make_boo
     assert f"{in_days(8):%d.%m.%Y}" in mailoutbox[-1].body
     guest_html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
     assert "Spesen geschätzt ca. CHF 150" in guest_html and "Bezahlt wird erst nach der Tour" in guest_html
-    client.post(reverse("guest:action", args=[booking.token, "annehmen"]))
+    confirm_offer(client, booking)
     booking.refresh_from_db()
     assert booking.status == S.CONFIRMED
 
@@ -302,14 +304,21 @@ def test_guide_sets_answer_deadline_per_offer(client, guide, make_booking):
     assert response.status_code == 400 and "Antwortfrist" in response.content.decode()
 
 
-def test_guide_accepts_with_other_dates_and_own_price(client, guide, make_booking):
+def test_guide_accepts_with_other_dates_and_own_day_rate(client, guide, make_booking, mailoutbox,
+                                                         django_capture_on_commit_callbacks):
+    """"Anderer Tagessatz" replaces the usual rate: price = other rate x days. A rough meeting point goes along."""
     booking = make_booking(guide, in_days(10))
     client.force_login(guide)
-    client.post(reverse("dashboard:booking_action", args=[booking.pk, "accept"]),
-                accept_data(in_days(11), in_days(12), price="1600", message="Passt besser"))
+    with django_capture_on_commit_callbacks(execute=True):
+        client.post(reverse("dashboard:booking_action", args=[booking.pk, "accept"]),
+                    accept_data(in_days(11), in_days(12), other_rate="800", message="Passt besser",
+                                meeting="Bahnhof Andermatt, 9.00 Uhr"))
     booking.refresh_from_db()
     assert (booking.status, booking.start_date, booking.end_date, booking.price) == (
         S.OFFERED, in_days(11), in_days(12), 1600)
+    assert booking.meeting == "Bahnhof Andermatt, 9.00 Uhr" and "Bahnhof Andermatt" in mailoutbox[-1].body
+    form_html = client.get(reverse("dashboard:booking", args=[booking.pk])).content.decode()
+    assert 'name="accept-other_rate"' in form_html and 'value="800.00"' in form_html
 
 
 def test_accepting_onto_a_busy_day_keeps_the_form(client, guide, make_booking):

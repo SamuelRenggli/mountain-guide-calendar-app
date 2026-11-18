@@ -336,11 +336,46 @@ details.more { margin-top: .75rem; }
 .search input { max-width: 20rem; }
 
 /* Tour gallery: main picture plus up to 9 more */
-.gallery { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: .4rem; margin-bottom: 1rem; }
-.gallery img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; border-radius: 6px; display: block; }
-.gallery .gallery-main { grid-column: 1 / -1; }
-.gallery .gallery-main img { aspect-ratio: 16 / 9; }
+.gallery { margin-bottom: 1rem; }
+.gallery img { width: 100%; object-fit: cover; border-radius: 6px; display: block; }
+.gallery-main { position: relative; }
+.gallery-main img { aspect-ratio: 16 / 9; }
+.gallery-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 2.5rem; height: 2.5rem; border: 0; border-radius: 50%;
+  background: rgba(0, 0, 0, .45); color: #fff; font-size: 1.6rem; line-height: 1; cursor: pointer; padding: 0; }
+.gallery-nav:hover, .gallery-nav:focus-visible { background: rgba(0, 0, 0, .7); }
+.gallery-nav.prev { left: .5rem; }
+.gallery-nav.next { right: .5rem; }
+.gallery-count { position: absolute; right: .5rem; bottom: .5rem; background: rgba(0, 0, 0, .55); color: #fff; font-size: .8rem;
+  padding: .1rem .5rem; border-radius: 999px; }
+.gallery-thumbs { display: flex; gap: .4rem; margin-top: .4rem; overflow-x: auto; }
+.gallery-thumb { flex: 0 0 72px; padding: 0; border: 2px solid transparent; border-radius: 8px; background: none; cursor: pointer; opacity: .7; }
+.gallery-thumb img { aspect-ratio: 4 / 3; }
+.gallery-thumb.active { border-color: currentColor; opacity: 1; }
 /* Guest page: what is still missing before the booking is complete */
 .steps { margin: .5rem 0 .75rem 1.25rem; padding: 0; }
 .steps li { margin: .2rem 0; }
 .steps .done { color: var(--muted, #666); }
+/* Accept / decline: once a panel is open, both buttons go away (its form has a cancel button) */
+.choice:has(> details[open]) > details > summary { display: none; }
+/* Boxes that fold open: the heading is the toggle */
+details.fold-card > summary { list-style: none; cursor: pointer; display: flex; align-items: baseline; justify-content: space-between; gap: .75rem; flex-wrap: wrap; }
+details.fold-card > summary::-webkit-details-marker { display: none; }
+details.fold-card > summary h2 { margin: 0; }
+details.fold-card > summary h2::before { content: "▸ "; color: var(--muted); }
+details.fold-card[open] > summary { margin-bottom: 1rem; }
+details.fold-card[open] > summary h2::before { content: "▾ "; }
+/* Participants: one fold per person */
+.people { list-style: none; padding: 0; margin: 0 0 1rem; }
+.people > li { border-top: 1px solid var(--border); padding: .5rem 0; }
+details.person > summary { cursor: pointer; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+details.person[open] { padding-bottom: .5rem; }
+/* Amounts are typed, not clicked: no spinner arrows */
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+/* Participant list for printing / PDF */
+.print-person { break-inside: avoid; border-top: 1px solid var(--border); padding-top: .5rem; margin-top: .75rem; }
+@media print {
+  header, nav, footer, .no-print, .messages { display: none !important; }
+  body { background: #fff; }
+  .card { border: 0; box-shadow: none; padding: 0; }
+}

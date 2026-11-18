@@ -10,6 +10,7 @@ from django.core.validators import MaxLengthValidator, MaxValueValidator, MinVal
 from django.db import models
 from django.db.models import F, Func, Q, Sum
 from django.utils import timezone
+from django.utils.crypto import salted_hmac
 from django.utils.translation import gettext_lazy as _
 
 from accounts.models import LANGUAGE_CHOICES
@@ -431,6 +432,10 @@ class Booking(models.Model):
     language =models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default="de")  # guest's email language
     guest_message = models.TextField(blank=True)
     guide_message = models.TextField(blank=True)
+    # Rough meeting point and time the guide gives with the offer (not binding; fixed later by phone/WhatsApp).
+    meeting = models.CharField(max_length=200, blank=True)
+    # The guide's own notes, e.g. what was agreed on the phone. Never shown to the guest.
+    guide_notes = models.TextField(blank=True, validators=[MaxLengthValidator(5000)])
 
     # The guest accepted the guide's terms (R-002); the cancellation tiers are frozen at that moment.
     terms_accepted_at = models.DateTimeField(null=True, blank=True)
@@ -548,6 +553,21 @@ class Booking(models.Model):
     def has_sensitive_data(self) -> bool:
         return bool(self.guest_phone or self.emergency_contact or self.experience or self.guest_details)
 
+    @property
+    def guide_rate(self) -> Decimal:
+        """The guide's day rate for this group size (R-200)."""
+        return self.guide.rate_for(self.participants)
+
+    @property
+    def companion_code(self) -> str:
+        """Secret for the link fellow participants use to enter their own details. Separate from the booking token,
+        which can cancel the booking."""
+        return salted_hmac("companions", self.token).hexdigest()[:24]
+
+    @property
+    def companion_url(self) -> str:
+        return f"{settings.SITE_URL}/mitreisende/{self.pk}-{self.companion_code}/"
+
     def vat_included(self, amount=None) -> Decimal | None:
         """VAT contained in a gross amount, if the guide charges VAT (R-202)."""
         guide = self.guide
@@ -555,6 +575,29 @@ class Booking(models.Model):
             return None
         gross = Decimal(self.price if amount is None else amount)
         return money(gross * guide.vat_rate / (100 + guide.vat_rate))
+
+
+class Companion(models.Model):
+    """Someone who comes along on a booking. Enters their own planning details through the link the booking guest
+    passes on, or is added by the guide (e.g. after a WhatsApp message). The booking guest is not one of these."""
+
+    booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="companions")
+    name = models.CharField(_("Name"), max_length=100)
+    email = models.EmailField(_("E-Mail"), blank=True)
+    phone = EncryptedTextField(_("Telefon"), max_length=30)
+    details = EncryptedTextField()  # planning details as JSON, same keys as Booking.guest_details
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["created_at", "id"]
+
+    def saved_details(self) -> dict:
+        try:
+            details = json.loads(self.details) if self.details else {}
+        except ValueError:
+            return {}
+        return details if isinstance(details, dict) else {}
 
 
 class WaitlistEntry(models.Model):
@@ -665,6 +708,7 @@ class Notification(models.Model):
         BOOKING = "booking", _("Neue Buchung")
         REQUEST = "request", _("Neue Anfrage")
         MESSAGE = "message", _("Neue Nachricht")
+        CONFIRMED = "confirmed", _("Zusage")
 
     guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="notifications", null=True, blank=True)
@@ -683,6 +727,8 @@ class Notification(models.Model):
             return _("Du hast eine neue Buchung: %(guest)s") % {"guest": guest}
         if self.kind == self.Kind.REQUEST:
             return _("Du hast eine neue Anfrage: %(guest)s") % {"guest": guest}
+        if self.kind == self.Kind.CONFIRMED:
+            return _("%(guest)s hat definitiv zugesagt, die Tour ist bestätigt") % {"guest": guest}
         return _("Neue Nachricht von %(guest)s") % {"guest": guest}
 
 
@@ -775,13 +821,18 @@ class GuestProfile(models.Model):
     PLANNING_FIELDS = ("billing_address", "emergency_contact", "diet", "allergies", "club", "travel_card", "car_seats")
 
     @classmethod
-    def from_booking(cls, booking):
-        """What the guest entered on this booking as an unsaved profile (with .remark), or None."""
-        details = booking.saved_details()
+    def from_details(cls, guide_id, email, name, details, updated_at=None):
+        """Planning details (dict) as an unsaved profile (with .remark), or None when there are none."""
         if not details:
             return None
-        profile = cls(guide_id=booking.guide_id, email=booking.guest_email.lower(), name=booking.guest_name,
+        profile = cls(guide_id=guide_id, email=(email or "").lower(), name=name,
                       **{f: details[f] for f in cls.PLANNING_FIELDS if f in details and details[f] is not None})
         profile.remark = details.get("remark", "")
-        profile.updated_at = booking.updated_at
+        profile.updated_at = updated_at
         return profile
+
+    @classmethod
+    def from_booking(cls, booking):
+        """What the guest entered on this booking as an unsaved profile (with .remark), or None."""
+        return cls.from_details(booking.guide_id, booking.guest_email, booking.guest_name, booking.saved_details(),
+                                booking.updated_at)

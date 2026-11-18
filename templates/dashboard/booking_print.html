@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Teilnehmende" %} – {{ booking.title }}{% endblock %}
+{% block content %}
+<p class="no-print row">
+  <button class="btn" type="button" data-print>{% translate "Drucken / als PDF speichern" %}</button>
+  <a class="btn btn-secondary" href="{% url 'dashboard:booking' booking.pk %}">{% translate "Zurück" %}</a>
+</p>
+<h1>{{ booking.title }}</h1>
+<p>{{ booking.start_date|date:"D d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"D d.m.Y" }}{% endif %}
+  · {% blocktranslate count n=booking.participants trimmed %}{{ n }} Person{% plural %}{{ n }} Personen{% endblocktranslate %}
+  {% if booking.meeting %}· {% translate "Treffpunkt" %}: {{ booking.meeting }}{% endif %}</p>
+<section class="card">
+  {% for p in people %}
+  <div class="print-person">
+    <h2>{{ p.name }}{% if p.booker %} <span class="small muted">({% translate "bucht" %})</span>{% endif %}</h2>
+    <p class="small">{{ p.email }}{% if p.email and p.phone %} · {% endif %}{{ p.phone }}</p>
+    {% if p.profile %}{% include "dashboard/_profile_facts.html" with profile=p.profile %}{% else %}<p class="small muted">{% translate "Noch keine Angaben." %}</p>{% endif %}
+  </div>
+  {% endfor %}
+</section>
+{% if booking.guide_notes %}<section class="card"><h2>{% translate "Notizen" %}</h2><p class="pre">{{ booking.guide_notes }}</p></section>{% endif %}
+{% endblock %}

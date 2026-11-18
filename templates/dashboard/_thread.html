@@ -1,5 +1,5 @@
-{% load i18n %}<section class="card" id="nachrichten">
-  <h2>{% translate "Nachrichten" %}</h2>
+{% load i18n %}<details class="card fold-card" id="nachrichten">
+  <summary><h2>{% translate "E-Mail-Antworten" %}</h2></summary>
   {% if thread %}
   <ol class="thread">
     {% for m in thread %}
@@ -18,15 +18,6 @@
     </li>
     {% endfor %}
   </ol>
-  {% else %}
-  <p class="small muted">{% translate "Noch keine Nachrichten. Der Gast erhält deine Nachricht per E-Mail und antwortet einfach darauf. Die Antwort erscheint hier." %}</p>
   {% endif %}
-  <form method="post" action="{% url 'dashboard:booking_message' booking.pk %}">{% csrf_token %}
-    {% include "_form.html" with form=message_form %}
-    <div class="row">
-      <button class="btn" type="submit">{% blocktranslate with name=booking.guest_name trimmed %}An {{ name }} senden{% endblocktranslate %}</button>
-      {% if whatsapp %}<a class="btn btn-secondary" href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener">{% translate "WhatsApp öffnen" %}</a>{% endif %}
-    </div>
-    <p class="small muted">{% translate "Per E-Mail gesendete Nachrichten und die Antworten bleiben hier im Verlauf. WhatsApp-Nachrichten erscheinen nicht im Verlauf." %}</p>
-  </form>
-</section>
+  <p class="small muted">{% translate "Antworten des Gastes auf Tourchef-E-Mails. Antworte ihm am besten direkt per Telefon oder WhatsApp." %}</p>
+</details>

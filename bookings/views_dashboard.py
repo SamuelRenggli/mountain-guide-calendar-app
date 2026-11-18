@@ -1,5 +1,7 @@
 """Guide dashboard. Every query is scoped to request.user — guides only ever see their own data."""
 
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.admin.views.decorators import staff_member_required
@@ -23,13 +25,13 @@ from . import (
     availability, calsync, departures, export, messaging, monthgrid, pagetitle, partners, pictures, services,
 )
 from .forms import (
-    AcceptForm, BlockedPeriodForm, ChangeBookingForm, DepartureForm, EraseGuestDataForm, ExpenseFormSet, ExportForm,
+    AcceptForm, AddCompanionForm, BlockedPeriodForm, ChangeBookingForm, DepartureForm, EraseGuestDataForm, ExpenseFormSet, ExportForm,
     ExternalTourForm, GuestsMessageForm, GuideCancelForm, GuideMessageForm, InvoiceForm, MessageForm, MoveDepartureForm,
-    OpenPeriodForm, PartnerForm, PartnerPeriodForm, PictureInfoForm, ProposeDateForm, RefundExtraForm, TourForm,
+    NotesForm, OpenPeriodForm, PartnerForm, PartnerPeriodForm, PictureInfoForm, ProposeDateForm, RefundExtraForm, TourForm,
     library_groups,
 )
 from .models import (
-    BlockedPeriod, Booking, Departure, Draft, ExternalTour, GuestProfile, Message, Notification, OpenPeriod, Partner, PartnerPeriod,
+    BlockedPeriod, Booking, Companion, Departure, Draft, ExternalTour, GuestProfile, Message, Notification, OpenPeriod, Partner, PartnerPeriod,
     Picture, Tour, TourCategory,
 )
 
@@ -58,12 +60,31 @@ def upcoming_tours(guide, today):
     return sorted(entries, key=lambda e: (e["start"], e["end"]))
 
 
+DECISION_LEAD_DAYS = 7  # decisions show up in the to-do list this many days ahead
+
+
+def decisions_due(guide, today):
+    """Tours the guide still has to decide on (weather, conditions), soonest first: confirmed requests with a decision
+    day and scheduled dates waiting for their decision deadline."""
+    soon = today + timedelta(days=DECISION_LEAD_DAYS)
+    entries = [{"day": b.decision_date, "title": b.title, "who": b.guest_name, "url": booking_url(b), "start": b.start_date}
+               for b in guide.bookings.filter(departure__isnull=True, status=S.CONFIRMED, decision_date__gte=today,
+                                              decision_date__lte=soon).select_related("tour")]
+    for d in guide.departures.filter(status=D.OPEN, decision_deadline__gte=timezone.now(),
+                                     decision_deadline__date__lte=soon):
+        entries.append({"day": timezone.localtime(d.decision_deadline).date(), "title": d.title, "start": d.start_date,
+                        "who": _("%(n)s angemeldet (min. %(min)s)") % {"n": d.seats_confirmed(), "min": d.min_participants},
+                        "url": reverse("dashboard:departure", args=[d.pk])})
+    return sorted(entries, key=lambda e: e["day"])
+
+
 @login_required
 def home(request):
     requests = request.user.bookings.filter(departure__isnull=True).select_related("tour")
     today = timezone.localdate()
     upcoming_departures = request.user.departures.filter(status__in=[D.OPEN, D.CONFIRMED], end_date__gte=today)
     return render(request, "dashboard/home.html", {
+        "decisions": decisions_due(request.user, today),
         "needs_action": requests.filter(status=S.REQUESTED).order_by("deadline"),
         "upcoming": upcoming_tours(request.user, today),
         "to_invoice": requests.filter(status=S.CONFIRMED, end_date__lte=today),
@@ -84,7 +105,23 @@ def _own_booking(request, pk):
     return get_object_or_404(Booking.objects.select_related("tour", "guide", "departure"), pk=pk, guide=request.user)
 
 
+def participant_list(booking) -> list:
+    """The booking guest first, then everyone coming along, each with their planning details (profile or None)."""
+    people = [{"name": booking.guest_name, "email": booking.guest_email, "phone": booking.guest_phone, "booker": True,
+               # What the guest entered on this booking, else the guest file from earlier tours.
+               "profile": GuestProfile.from_booking(booking) or GuestProfile.for_booking(booking)}]
+    for c in booking.companions.all():
+        people.append({"name": c.name, "email": c.email, "phone": c.phone, "pk": c.pk,
+                       "remove_action": f"remove_companion-{c.pk}",
+                       "profile": GuestProfile.from_details(booking.guide_id, c.email, c.name, c.saved_details(),
+                                                            c.updated_at)})
+    for person in people:
+        person["whatsapp"] = whatsapp_number(person["phone"])
+    return people
+
+
 def _detail_context(booking, **forms):
+    people = participant_list(booking)
     context = {
         "booking": booking,
         "events": booking.events.all(),
@@ -95,17 +132,19 @@ def _detail_context(booking, **forms):
             "start_date": booking.start_date, "end_date": booking.end_date, "participants": booking.participants,
             "price": booking.price,
         }),
-        "propose_form": ProposeDateForm(prefix="propose"),
+        "companion_form": AddCompanionForm(prefix="companion"),
+        "notes_form": NotesForm(prefix="notes", initial={"guide_notes": booking.guide_notes}),
         "refund_form": RefundExtraForm(prefix="refund"),
         "invoice_lines": booking.invoice_lines.all(),
         "today": timezone.localdate(),
-        "guide_rate": booking.guide.rate_for(booking.participants),
+        "guide_rate": booking.guide_rate,
         "vat": booking.vat_included(),
         "thread": booking.messages.all(),
-        "message_form": GuideMessageForm(prefix="msg"),
         "whatsapp": whatsapp_number(booking.guest_phone),
-        # What the guest entered on this booking, else the guest file from earlier tours.
-        "profile": GuestProfile.from_booking(booking) or GuestProfile.for_booking(booking),
+        "people": people,
+        "people_with_details": sum(1 for p in people if p["profile"]),
+        "phone_list": "\n".join(f"{p['name']}: {p['phone']}" for p in people if p["phone"]),
+        "profile": people[0]["profile"],
     }
     context.update(forms)
     return context
@@ -117,6 +156,14 @@ def booking_detail(request, pk):
     AccessLog.record(request, AccessLog.Action.VIEW_BOOKING, f"booking:{booking.pk}")
     messaging.mark_read(request.user, booking)
     return render(request, "dashboard/booking_detail.html", _detail_context(booking))
+
+
+@login_required
+def booking_print(request, pk):
+    """Participant list with all planning details, laid out for printing or saving as PDF."""
+    booking = _own_booking(request, pk)
+    AccessLog.record(request, AccessLog.Action.VIEW_BOOKING, f"booking:{booking.pk}:print")
+    return render(request, "dashboard/booking_print.html", {"booking": booking, "people": participant_list(booking)})
 
 
 def whatsapp_number(phone: str) -> str:
@@ -199,7 +246,7 @@ def booking_action(request, pk, name):
                 services.accept_request(booking, start_date=d["start_date"], end_date=d["end_date"],
                                         price=form.final_price(), message=d["message"],
                                         estimated_expenses=d["estimated_expenses"], decision_date=d["decision_date"],
-                                        answer_deadline=d["answer_deadline"])
+                                        answer_deadline=d["answer_deadline"], meeting=d["meeting"])
             except services.DatesUnavailable as exc:  # keep what the guide typed
                 form.add_error("end_date", str(exc))
                 return _rerender(request, booking, accept_form=form)
@@ -229,6 +276,29 @@ def booking_action(request, pk, name):
             departures.refund_extra(booking, form.cleaned_data["amount"])
         elif name == "paid":
             services.mark_paid_manually(booking)
+        elif name == "notes":
+            form = NotesForm(post, prefix=name)
+            if not form.is_valid():
+                return _rerender(request, booking, notes_form=form)
+            Booking.objects.filter(pk=booking.pk).update(guide_notes=form.cleaned_data["guide_notes"])
+            messages.success(request, _("Notizen gespeichert."))
+            return redirect(f"{booking_url(booking)}#notizen")
+        elif name == "add_companion":
+            form = AddCompanionForm(post, prefix="companion")
+            if not form.is_valid():
+                return _rerender(request, booking, companion_form=form)
+            Companion.objects.create(booking=booking, **form.cleaned_data)
+            services.log(booking, services.Actor.GUIDE, booking.status, booking.status,
+                         f"Teilnehmer hinzugefügt: {form.cleaned_data['name']}")
+            messages.success(request, _("Teilnehmer hinzugefügt."))
+            return redirect(f"{booking_url(booking)}#teilnehmende")
+        elif name.startswith("remove_companion-"):
+            companion = get_object_or_404(Companion, pk=name.split("-", 1)[1], booking=booking)
+            services.log(booking, services.Actor.GUIDE, booking.status, booking.status,
+                         f"Teilnehmer entfernt: {companion.name}")
+            companion.delete()
+            messages.success(request, _("Teilnehmer entfernt. Passe unter «Buchung ändern» Gruppengrösse und Preis an."))
+            return redirect(f"{booking_url(booking)}#teilnehmende")
         elif name == "ask_details":
             if not booking.planning_open:
                 raise services.InvalidTransition()

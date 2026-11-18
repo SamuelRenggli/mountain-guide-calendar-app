@@ -66,12 +66,12 @@
   {{ form.start_date }}{{ form.end_date }}{{ form.ts }}{{ form.language }}
   {% if form.non_field_errors %}<div class="alert error">{{ form.non_field_errors }}</div>{% endif %}
 
-  {% for field in form %}{% if field.name in "guest_message participants guest_name guest_email guest_phone" %}
+  {% for field in form.visible_fields %}{% if field.name != "accept_terms" and field.name != "website" %}
     <div class="field{% if field.errors %} has-error{% endif %}">
       <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>
       {% if field.help_text %}<p class="small muted">{{ field.help_text }}{% if field.field.max_length %} {% blocktranslate with n=field.field.max_length trimmed %}(max. {{ n }} Zeichen){% endblocktranslate %}{% endif %}</p>{% endif %}
       {{ field }}
-      {% if field.name == "participants" %}<p class="small muted" data-rate-hint data-rates="{% for lo, hi, rate in rate_table %}{{ lo }}:{{ rate|floatformat:'-2' }}{% if not forloop.last %},{% endif %}{% endfor %}" data-template="{% translate 'Richtpreis: CHF {rate} pro Tag + Spesen' %}"></p>{% endif %}
+      {% if field.name == "participants" %}<p class="small muted" data-rate-hint data-rates="{% for lo, hi, rate in rate_table %}{{ lo }}:{{ rate|floatformat:'-2' }}{% if not forloop.last %},{% endif %}{% endfor %}" data-days="{{ request_days }}" data-template="{% translate 'Richtpreis für {n} Pers.: CHF {rate} pro Tag' %}" data-template-total="{% translate 'Richtpreis für {n} Pers.: CHF {rate} pro Tag × {days} Tage = CHF {total} + Spesen' %}" data-template-day="{% translate 'Richtpreis für {n} Pers.: CHF {rate} + Spesen' %}"></p>{% endif %}
       {{ field.errors }}
     </div>
   {% endif %}{% endfor %}

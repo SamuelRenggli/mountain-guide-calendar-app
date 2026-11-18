@@ -1,27 +1,42 @@
-{% load i18n %}{% if booking.status != "requested" and booking.status != "rejected" and booking.status != "expired" %}
-<section class="card" id="angaben">
-  <div class="spread">
-    <h2>{% translate "Angaben für die Tourenplanung" %}</h2>
-    {% if profile %}<span class="small muted">{% blocktranslate with day=profile.updated_at|date:"d.m.Y" trimmed %}vom Gast, Stand {{ day }}{% endblocktranslate %}</span>{% endif %}
+{% load i18n %}<details class="card fold-card" id="teilnehmende">
+  <summary>
+    <h2>{% translate "Teilnehmende" %}</h2>
+    <span class="small muted">{% blocktranslate with n=people_with_details total=booking.participants trimmed %}Angaben von {{ n }} / {{ total }}{% endblocktranslate %}</span>
+  </summary>
+  <ul class="people">
+    {% for p in people %}
+    <li>
+      <details class="person">
+        <summary>
+          <strong>{{ p.name }}</strong>{% if p.booker %} <span class="small muted">({% translate "bucht" %})</span>{% endif %}
+          {% if p.profile %}<span class="badge badge-confirmed">{% translate "Angaben da" %}</span>{% else %}<span class="badge badge-requested">{% translate "Angaben fehlen" %}</span>{% endif %}
+        </summary>
+        <p class="small">{% if p.email %}<a href="mailto:{{ p.email|urlencode:'@' }}">{{ p.email }}</a>{% endif %}
+          {% if p.phone %}{% if p.email %} · {% endif %}<a href="tel:{{ p.phone|cut:' ' }}">{{ p.phone }}</a>{% if p.whatsapp %} · <a href="https://wa.me/{{ p.whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}{% endif %}</p>
+        {% if p.profile %}
+          {% if p.booker and p.profile.updated_at %}<p class="small muted">{% blocktranslate with day=p.profile.updated_at|date:"d.m.Y" trimmed %}Stand {{ day }}{% endblocktranslate %}</p>{% endif %}
+          {% include "dashboard/_profile_facts.html" with profile=p.profile %}
+        {% else %}
+          <p class="small muted">{% translate "Noch keine Angaben." %}</p>
+        {% endif %}
+        {% if p.pk and booking.status == "confirmed" %}
+        <form method="post" action="{% url 'dashboard:booking_action' booking.pk p.remove_action %}" class="inline" data-confirm="{% translate 'Diese Person von der Liste entfernen?' %}">{% csrf_token %}
+          <button class="btn btn-danger btn-small" type="submit">{% translate "Entfernen" %}</button>
+        </form>
+        {% endif %}
+      </details>
+    </li>
+    {% endfor %}
+  </ul>
+  <pre hidden id="phone-list">{{ phone_list }}</pre>
+  <div class="row">
+    {% if people|length > 1 and phone_list %}<button class="btn btn-secondary btn-small" type="button" data-copy="#phone-list">{% translate "Nummern kopieren (WhatsApp-Gruppe)" %}</button>{% endif %}
+    <a class="btn btn-secondary btn-small" href="{% url 'dashboard:booking_print' booking.pk %}" target="_blank" rel="noopener">{% translate "Drucken / PDF" %}</a>
+    {% if booking.planning_open %}
+    <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'ask_details' %}" class="inline">{% csrf_token %}
+      <button class="btn btn-secondary btn-small" type="submit">{% if profile %}{% translate "Gast bitten, die Angaben zu prüfen" %}{% else %}{% translate "Gast um diese Angaben bitten" %}{% endif %}</button>
+    </form>
+    {% endif %}
   </div>
-  {% if profile and profile.is_filled %}
-  <dl class="facts">
-    <dt>{% translate "Rechnungsadresse" %}</dt><dd class="pre">{{ profile.billing_address|default:"–" }}</dd>
-    <dt>{% translate "Notfallkontakt" %}</dt><dd>{{ profile.emergency_contact|default:"–" }}</dd>
-    <dt>{% translate "Ernährung" %}</dt><dd>{{ profile.get_diet_display|default:"–" }}</dd>
-    <dt>{% translate "Allergien, Gesundheit" %}</dt><dd class="pre">{{ profile.allergies|default:"–" }}</dd>
-    <dt>{% translate "Alpenverein" %}</dt><dd>{{ profile.get_club_display|default:"–" }}{% if profile.club and profile.club != "none" %} <span class="small muted">{% if profile.has_reciprocal_rights %}({% translate "Gegenrecht in SAC-Hütten" %}){% else %}({% translate "kein Gegenrecht" %}){% endif %}</span>{% endif %}</dd>
-    <dt>{% translate "ÖV-Abo" %}</dt><dd>{{ profile.get_travel_card_display|default:"–" }}</dd>
-    <dt>{% translate "Auto" %}</dt><dd>{% if profile.car_seats is None %}{% translate "kein Auto" %}{% elif profile.car_seats == 0 %}{% translate "Auto, keine freien Plätze" %}{% else %}{% blocktranslate count n=profile.car_seats trimmed %}Auto, {{ n }} freier Platz{% plural %}Auto, {{ n }} freie Plätze{% endblocktranslate %}{% endif %}</dd>
-    {% if profile.remark %}<dt>{% translate "Weitere Bemerkung" %}</dt><dd class="pre">{{ profile.remark }}</dd>{% endif %}
-  </dl>
-  {% else %}
-  <p class="small muted">{% translate "Rechnungsadresse, Notfallkontakt, Ernährung, Allergien, Alpenverein (Gegenrecht), GA/Halbtax und Auto: Der Gast trägt das auf seiner Buchungsseite ein. Fehlt es nach einem Tag noch, erinnert Tourchef den Gast einmal per E-Mail." %}</p>
-  {% endif %}
-  {% if booking.planning_open %}
-  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'ask_details' %}" class="inline">{% csrf_token %}
-    <button class="btn btn-secondary btn-small" type="submit">{% if profile and profile.is_filled %}{% translate "Gast bitten, die Angaben zu prüfen" %}{% else %}{% translate "Gast um diese Angaben bitten" %}{% endif %}</button>
-  </form>
-  {% endif %}
-</section>
-{% endif %}
+  {% if people|length > 1 %}<p class="small muted">{% translate "WhatsApp-Gruppe: Nummern kopieren, in WhatsApp eine neue Gruppe erstellen und die Nummern hinzufügen. Automatisch anlegen lässt WhatsApp nicht zu." %}</p>{% endif %}
+</details>

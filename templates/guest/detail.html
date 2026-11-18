@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% load i18n %}
+{% load static i18n %}
 {% block title %}{% translate "Deine Buchung" %} – Tourchef{% endblock %}
 {% block container_class %}narrow{% endblock %}
 {% block content %}
@@ -16,7 +16,10 @@
       <dt>{% translate "Treffpunkt" %}</dt><dd>{{ d.meeting_point }}{% if d.meeting_time %}, {{ d.meeting_time|time:"H:i" }}{% endif %}</dd>
       <dt>{% translate "Entscheid" %}</dt><dd>{% if d.status == "confirmed" %}{% translate "Die Tour findet statt." %}{% elif d.status == "cancelled" %}{% translate "Abgesagt" %}{% else %}{% blocktranslate with day=d.decision_deadline|date:"d.m.Y H:i" trimmed %}bis {{ day }}{% endblocktranslate %}{% endif %}</dd>
       {% endwith %}
-    {% elif booking.decision_date and booking.status == "confirmed" %}
+    {% elif booking.meeting %}
+      <dt>{% translate "Treffpunkt" %}</dt><dd>{{ booking.meeting }} <span class="small muted">({% translate "unverbindlich, Details folgen" %})</span></dd>
+    {% endif %}
+    {% if not booking.is_registration and booking.decision_date and booking.status == "confirmed" %}
       <dt>{% translate "Entscheid" %}</dt><dd>{% blocktranslate with day=booking.decision_date|date:"d.m.Y" trimmed %}bis {{ day }} (Wetter, Verhältnisse){% endblocktranslate %}</dd>
     {% endif %}
     {% if booking.deadline %}<dt>{% translate "Antwort bis" %}</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
@@ -28,15 +31,13 @@
 
 {% if booking.status == "requested" %}
   <p>{% blocktranslate with name=booking.guide.display_name trimmed %}Deine Anfrage wartet auf die Antwort von {{ name }}. Du erhältst eine E-Mail.{% endblocktranslate %}</p>
-{% elif booking.status == "offered" %}
+{% elif booking.status == "offered" and not confirming %}
   <section class="card">
     <h2>{% translate "Bitte bestätigen" %}</h2>
-    <p>{% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} hat deine Anfrage angenommen und schlägt dir die Daten und den Preis oben vor. Sagst du zu, ist die Tour fix gebucht.{% endblocktranslate %}</p>
+    <p>{% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} hat deine Anfrage angenommen und schlägt dir die Daten und den Preis oben vor.{% endblocktranslate %}</p>
     <p class="small muted">{% translate "Bezahlt wird erst nach der Tour. Abgerechnet wird nach effektivem Aufwand: Seid ihr einen Tag mehr oder weniger unterwegs oder müsst abbrechen, ändert sich der Betrag. Dazu kommen die effektiven Spesen (Hütte, Bahn, Reise). Bis dahin wird nichts belastet." %}</p>
     <div class="row">
-      <form method="post" action="{% url 'guest:action' booking.token 'annehmen' %}" class="inline">{% csrf_token %}
-        <button class="btn" type="submit">{% translate "Zusagen" %}</button>
-      </form>
+      <a class="btn" href="?zusagen=1#angaben">{% translate "Zusagen" %}</a>
       <form method="post" action="{% url 'guest:action' booking.token 'ablehnen' %}" class="inline">{% csrf_token %}
         <button class="btn btn-danger" type="submit">{% translate "Ablehnen" %}</button>
       </form>
@@ -80,7 +81,26 @@
   <p class="small">{% translate "Kontakt" %}: {{ booking.guide.display_name }}, <a href="mailto:{{ booking.guide.email|urlencode:'@' }}">{{ booking.guide.email }}</a> {{ booking.guide.phone }}</p>
 {% endif %}
 
-{% if details_form %}
+{% if details_form and confirming %}
+<section class="card" id="angaben">
+  <h2>{% translate "Angaben für die Tourenplanung" %}</h2>
+  <ol class="steps small">
+    <li class="done">✓ {% translate "Zusagen" %}</li>
+    <li><strong>{% translate "Angaben eintragen" %}</strong></li>
+    <li>{% translate "Definitiv zusagen" %}</li>
+  </ol>
+  <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Damit {{ name }} die Tour planen kann (Hütte, Anreise, Verpflegung). Nur {{ name }} sieht diese Angaben. Erst mit «Definitiv zusagen» ist die Tour gebucht.{% endblocktranslate %}</p>
+  <form method="post" action="{% url 'guest:details' booking.token %}">{% csrf_token %}
+    {% include "_form.html" with form=details_form %}
+    <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Mit dem Häkchen bewahrt {{ name }} deine Angaben für weitere Touren mit dir auf. Ohne Häkchen gelten sie nur für diese Tour.{% endblocktranslate %}</p>
+    {% if booking.participants > 1 %}<p class="small muted">{% translate "Deine Mitreisenden tragen ihre Angaben danach selbst ein: Du erhältst einen Link zum Weiterleiten." %}</p>{% endif %}
+    <div class="row">
+      <button class="btn" type="submit">{% translate "Definitiv zusagen" %}</button>
+      <a class="btn btn-secondary" href="{% url 'guest:detail' booking.token %}">{% translate "Zurück" %}</a>
+    </div>
+  </form>
+</section>
+{% elif details_form %}
 <section class="card" id="angaben">
   <h2>{% translate "Angaben für die Tourenplanung" %}</h2>
   {% if details_just_saved %}
@@ -98,6 +118,18 @@
       <button class="btn" type="submit">{% translate "Speichern" %}</button>
     </form>
   </details>
+</section>
+{% endif %}
+
+{% if companions_open %}
+<section class="card" id="mitreisende">
+  <h2>{% translate "Deine Mitreisenden" %}</h2>
+  <p class="small">{% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} braucht die Angaben aller Teilnehmenden. Leite diesen Link deinen Mitreisenden weiter, z. B. per WhatsApp. Jede Person trägt ihre eigenen Angaben ein.{% endblocktranslate %}</p>
+  <code class="embed" id="companion-link">{{ booking.companion_url }}</code>
+  <p class="row">
+    <button class="btn btn-secondary btn-small" type="button" data-copy="#companion-link">{% translate "Kopieren" %}</button>
+    <button class="btn btn-secondary btn-small" type="button" data-share="#companion-link" data-share-title="{{ booking.title }}">{% translate "Teilen" %}</button></p>
+  <p class="small muted">{% blocktranslate count n=companion_names|length trimmed %}{{ n }} Person hat ihre Angaben schon eingetragen{% plural %}{{ n }} Personen haben ihre Angaben schon eingetragen{% endblocktranslate %}{% if companion_names %}: {{ companion_names|join:", " }}{% endif %}.</p>
 </section>
 {% endif %}
 
@@ -148,3 +180,4 @@
   </section>
 {% endif %}
 {% endblock %}
+{% block scripts %}<script src="{% static 'js/copy.js' %}"></script>{% endblock %}

@@ -84,14 +84,17 @@
     if (start.value) end.min = start.value;
   });
 
-  // --- Two-way choice (accept / decline): one button opens its panel, the other closes ---------------
+  // --- Two-way choice (accept / decline): one button opens its panel, both buttons hide (CSS) -------
   document.querySelectorAll("[data-choice]").forEach(function (group) {
-    var panels = group.querySelectorAll("details");
+    var panels = group.querySelectorAll(":scope > details");
     panels.forEach(function (panel) {
       panel.addEventListener("toggle", function () {
         if (!panel.open) return;
         panels.forEach(function (other) { if (other !== panel) other.open = false; });
       });
+    });
+    group.querySelectorAll("[data-choice-close]").forEach(function (button) {
+      button.addEventListener("click", function () { panels.forEach(function (panel) { panel.open = false; }); });
     });
   });
 
@@ -132,6 +135,10 @@
       }
       next(0);
     });
+  });
+
+  document.querySelectorAll("[data-print]").forEach(function (button) {
+    button.addEventListener("click", function () { window.print(); });
   });
 
   document.querySelectorAll("[data-confirm-click]").forEach(function (button) {

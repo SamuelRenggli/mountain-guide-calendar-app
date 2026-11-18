@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Angaben für die Tourenplanung" %} – Tourchef{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+<h1>{% translate "Angaben für die Tourenplanung" %}</h1>
+<section class="card">
+  <h2>{{ booking.title }}</h2>
+  <dl class="facts">
+    <dt>{% translate "Bergführer" %}</dt><dd>{{ booking.guide.display_name }}</dd>
+    <dt>{% translate "Datum" %}</dt><dd>{{ booking.start_date|date:"l, d.m.Y" }}{% if booking.end_date != booking.start_date %} – {{ booking.end_date|date:"l, d.m.Y" }}{% endif %}</dd>
+    <dt>{% translate "Gebucht von" %}</dt><dd>{{ booking.guest_name }}</dd>
+  </dl>
+</section>
+{% if saved %}
+<div class="alert success" role="status">{% blocktranslate with name=booking.guide.display_name trimmed %}Vielen Dank für deine Angaben, {{ name }} wird sich melden.{% endblocktranslate %}</div>
+<p class="small"><a href="?">{% translate "Für eine weitere Person ausfüllen" %}</a></p>
+{% else %}
+<section class="card" id="angaben">
+  <p class="small muted">{% blocktranslate with name=booking.guide.display_name guest=booking.guest_name trimmed %}Du kommst mit {{ guest }} auf diese Tour. Damit {{ name }} planen kann (Hütte, Anreise, Verpflegung), trag bitte deine eigenen Angaben ein. Nur {{ name }} sieht sie.{% endblocktranslate %}</p>
+  <form method="post">{% csrf_token %}
+    {% include "_form.html" with form=form %}
+    <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Mit dem Häkchen bewahrt {{ name }} deine Angaben für weitere Touren mit dir auf. Ohne Häkchen gelten sie nur für diese Tour.{% endblocktranslate %}</p>
+    <button class="btn" type="submit">{% translate "Angaben senden" %}</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

@@ -427,6 +427,41 @@ class GuestDetailsForm(forms.ModelForm):
         return super().save(commit)
 
 
+class CompanionDetailsForm(GuestDetailsForm):
+    """A fellow participant enters their own details through the link the booking guest passed on. The bill goes to
+    the booking guest, so the address is optional here."""
+
+    name = forms.CharField(label=_("Name"), max_length=100)
+    email = forms.EmailField(label=_("E-Mail"), required=False)
+    phone = PhoneField(label=_("Telefon"), help_text=_("Mit Vorwahl, damit dich dein Bergführer auch per WhatsApp erreicht."))
+
+    field_order = ("name", "email", "phone") + GuestDetailsForm.field_order
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["billing_address"].required = False
+
+    def clean_name(self):
+        return single_line(self.cleaned_data["name"])
+
+
+class AddCompanionForm(forms.Form):
+    """The guide adds someone who joins later (usually heard by phone or WhatsApp)."""
+
+    name = forms.CharField(label=_("Name"), max_length=100)
+    phone = PhoneField(label=_("Telefon"), required=False)
+    email = forms.EmailField(label=_("E-Mail"), required=False)
+
+    def clean_name(self):
+        return single_line(self.cleaned_data["name"])
+
+
+class NotesForm(forms.Form):
+    guide_notes = forms.CharField(label=_("Notizen"), max_length=5000, required=False,
+                                  widget=forms.Textarea(attrs={"rows": 4, "maxlength": 5000}),
+                                  help_text=_("Nur für dich, z. B. was ihr am Telefon abgemacht habt."))
+
+
 def split_contact(value: str) -> tuple[str, str]:
     """"Paul Muster, +41 791234567" -> name and phone. Older free text stays in the name for the guest to tidy up."""
     value = (value or "").strip()
@@ -572,12 +607,16 @@ class AcceptForm(forms.Form):
     end_date = forms.DateField(label=_("Letzter Tag"), widget=_date_input(),
                                help_text=_("Du kannst Tage dazunehmen oder ein anderes Datum wählen. Die Tage werden "
                                            "provisorisch reserviert, bis der Gast zusagt."))
-    guide_rate = _money(_("Tagesansatz (CHF)"), help_text=_("Aus deinen Stufen nach Gruppengrösse."))
-    price = _money(_("Preis ohne Spesen (CHF)"), required=False,
-                   help_text=_("Leer lassen: Tagesansatz × Tage. Oder einen eigenen Preis eintragen."))
+    guide_rate = _money(_("Tagesansatz (CHF)"), required=False,
+                        help_text=_("Dein Tarif für diese Gruppengrösse (Einstellungen)."))
+    other_rate = _money(_("Anderer Tagessatz (CHF)"), required=False,
+                        help_text=_("Optional, z. B. ein Spezialpreis. Ersetzt den Tagesansatz oben."))
     estimated_expenses = _money(_("Geschätzte Spesen (CHF)"), required=False,
                                 help_text=_("Grobe Schätzung für den Gast, z. B. Reise, Hütte, Bahn. Abgerechnet werden "
                                             "die effektiven Spesen nach der Tour."))
+    meeting = forms.CharField(label=_("Treffpunkt und Zeit (unverbindlich)"), max_length=200, required=False,
+                              widget=forms.TextInput(attrs={"placeholder": _("z. B. Bahnhof Andermatt, 9.00 Uhr")}),
+                              help_text=_("Erste Idee für den Gast. Definitiv abgemacht wird später, z. B. per WhatsApp."))
     decision_date = forms.DateField(
         label=_("Entscheid-Frist"), widget=_date_input(),
         help_text=_("Bis dann entscheidest du definitiv, ob die Tour stattfindet (Wetter, Verhältnisse)."),
@@ -594,15 +633,17 @@ class AcceptForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["guide_rate"].widget.attrs["data-calc-guide-rate"] = ""  # read by static/js/pricing.js
-        self.fields["price"].widget.attrs["data-price"] = ""
+        self.fields["other_rate"].widget.attrs["data-calc-other-rate"] = ""
 
     @classmethod
     def initial_for(cls, booking) -> dict:
         today = timezone.localdate()
+        rate = booking.guide_rate
+        other = money(booking.price / booking.days) if booking.has_price else None
         return {"start_date": booking.start_date, "end_date": booking.end_date,
-                "guide_rate": booking.guide.rate_for(booking.participants),
-                "price": booking.price if booking.has_price else None,
-                "estimated_expenses": booking.estimated_expenses,
+                "guide_rate": rate,
+                "other_rate": other if other is not None and other != rate else None,
+                "estimated_expenses": booking.estimated_expenses, "meeting": booking.meeting,
                 "decision_date": booking.decision_date or max(booking.start_date - timedelta(days=2), today),
                 "answer_deadline": default_answer_deadline(booking.start_date, today),
                 "message": booking.guide_message if booking.status == "offered" else ""}
@@ -624,6 +665,8 @@ class AcceptForm(forms.Form):
             self.add_error("decision_date", _("Das Datum liegt in der Vergangenheit."))
         elif decide and s and decide > s:
             self.add_error("decision_date", _("Die Entscheid-Frist muss vor dem Tourenbeginn liegen."))
+        if cleaned.get("guide_rate") is None and cleaned.get("other_rate") is None and "guide_rate" not in self.errors:
+            self.add_error("guide_rate", _("Bitte einen Tagesansatz eintragen."))
         return cleaned
 
     @property
@@ -632,10 +675,10 @@ class AcceptForm(forms.Form):
         return (d["end_date"] - d["start_date"]).days + 1
 
     def final_price(self):
+        """Day rate × days; another day rate, if given, wins."""
         d = self.cleaned_data
-        if d.get("price") is not None:
-            return money(d["price"])
-        return money(d["guide_rate"] * Decimal(self.days))
+        rate = d["other_rate"] if d.get("other_rate") is not None else d["guide_rate"]
+        return money(rate * Decimal(self.days))
 
 
 class ChangeBookingForm(forms.Form):

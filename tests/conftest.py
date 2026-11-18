@@ -35,6 +35,17 @@ def in_days(n):
     return timezone.localdate() + timedelta(days=n)
 
 
+DETAILS = {"angaben-billing_address": "Gina Gast, Bahnhofstr. 1, 3000 Bern", "angaben-emergency_name": "Paul Gast",
+           "angaben-emergency_phone_0": "41", "angaben-emergency_phone_1": "079 123 45 67"}
+
+
+def confirm_offer(client, booking, **extra):
+    """The guest's definite yes to an offer: planning details plus "Definitiv zusagen" in one step."""
+    from django.urls import reverse
+
+    return client.post(reverse("guest:details", args=[booking.token]), {**DETAILS, **extra})
+
+
 def at(day, hour=18):
     return timezone.make_aware(datetime.combine(day, time(hour, 0)))
 

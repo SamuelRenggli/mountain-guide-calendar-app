@@ -97,7 +97,7 @@ def test_departure_new_other_guides_template_404(gclient, other_guide):
 
 ACTIONS = {
     "accept": lambda b: {"accept-start_date": in_days(20).isoformat(), "accept-end_date": in_days(20).isoformat(),
-                         "accept-guide_rate": "600", "accept-price": "", "accept-decision_date": in_days(18).isoformat(),
+                         "accept-guide_rate": "600", "accept-other_rate": "", "accept-decision_date": in_days(18).isoformat(),
                          "accept-answer_deadline": in_days(5).isoformat()},
     "reject": lambda b: {"reject-message": "nein"},
     "cancel": lambda b: {"cancel-message": "weg", "cancel-sure": "on"},
@@ -151,7 +151,7 @@ def test_accept_twice_updates_offer(gclient, guide, make_booking):
     url = reverse("dashboard:booking_action", args=[b.pk, "accept"])
     data = ACTIONS["accept"](b)
     gclient.post(url, data)
-    data["accept-price"] = "999"
+    data["accept-other_rate"] = "999"  # another day rate wins over the usual one
     gclient.post(url, data)
     b.refresh_from_db()
     assert b.status == S.OFFERED and b.price == Decimal("999")

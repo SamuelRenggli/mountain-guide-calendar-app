@@ -46,9 +46,8 @@ MESSAGES = {
     ),
     "offer_accepted_guest": (
         _("Deine Tour am {start} ist bestätigt"),
-        _("Hallo {guest}\n\nDanke! Deine Tour ist bestätigt:\n\n{summary}\n\n{payment_terms}\n\n"
-          "Für die Planung braucht {guide} noch ein paar Angaben (Rechnungsadresse, Notfallkontakt, Ernährung, "
-          "Alpenverein, Abo, Auto). Bitte trag sie hier ein:\n{details_link}"),
+        _("Hallo {guest}\n\nDanke! Deine Zusage ist definitiv, die Tour ist bestätigt:\n\n{summary}\n\n"
+          "{payment_terms}\n{companion_note}\nDeine Buchung: {guest_link}"),
     ),
     "offer_declined": (
         _("Gegenangebot abgelehnt"),
@@ -211,6 +210,9 @@ SUMMARY = _("Tour:          {tour}\nDatum:         {dates}\nTeilnehmende:  {part
 GUEST_CONTACT = _("Gast:          {guest}\nE-Mail:        {guest_email}\nTelefon:       {guest_phone}")
 GUIDE_NOTE = _("\nNachricht von {guide}:\n{message}\n")
 DECISION_NOTE = _("\nDefinitiver Entscheid, ob die Tour stattfindet (Wetter, Verhältnisse): bis {day}.\n")
+MEETING_NOTE = _("\nTreffpunkt (unverbindlich, Details folgen): {meeting}\n")
+COMPANION_NOTE = _("\n{guide} braucht die Angaben aller Teilnehmenden. Leite diesen Link deinen Mitreisenden weiter, "
+                   "jede Person trägt ihre eigenen Angaben ein:\n{companion_link}\n")
 PRICE_BASE = _("CHF {rate} pro Tag + Spesen")
 PRICE_QUOTED = _("CHF {price} + Spesen")
 PRICE_EXPENSES = _("CHF {price} + Spesen (geschätzt ca. CHF {expenses}, unverbindlich)")
@@ -390,6 +392,10 @@ def _context(b) -> dict:
     ctx["breakdown"] = _breakdown(b)
     if b.decision_date and not b.is_invoiced:
         ctx["breakdown"] += DECISION_NOTE.format(day=f"{b.decision_date:%d.%m.%Y}")
+    if b.meeting and not b.departure_id and not b.is_invoiced:
+        ctx["breakdown"] += MEETING_NOTE.format(meeting=b.meeting)
+    ctx["companion_note"] = (COMPANION_NOTE.format(guide=ctx["guide"], companion_link=b.companion_url)
+                             if b.participants > 1 and not b.departure_id else "")
     ctx["billing_hint"] = BILLING_HINT.format(**ctx)
     ctx["payment_terms"] = str(PAYMENT_TERMS)
     ctx["details_link"] = f"{b.guest_url}#angaben"

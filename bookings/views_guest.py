@@ -11,6 +11,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone, translation
+from django.utils.crypto import constant_time_compare
 from django.utils.translation import gettext as _
 from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_POST
@@ -19,8 +20,8 @@ from core.ratelimit import allow, client_ip
 from payments import stripe_service
 
 from . import services
-from .forms import GuestDetailsForm
-from .models import Booking, GuestProfile, money
+from .forms import CompanionDetailsForm, GuestDetailsForm
+from .models import Booking, BookingEvent, Companion, GuestProfile, money
 
 S = Booking.Status
 FINISHED = (S.PAID, S.DECLINED, S.REJECTED, S.CANCELLED, S.EXPIRED)
@@ -58,6 +59,12 @@ def _details_form(booking, data=None):
 @never_cache
 def detail(request, token, details_form=None, status=200):
     booking = _booking(request, token)
+    # An offer: the details form only opens once the guest clicked "Zusagen"; saving it is the definite yes.
+    confirming = booking.status == S.OFFERED and (request.GET.get("zusagen") == "1" or details_form is not None)
+    if booking.status == S.OFFERED and not confirming:
+        details_form = None
+    else:
+        details_form = details_form or _details_form(booking)
     can_cancel = booking.status in ((S.PAID, S.RESCHEDULE_PROPOSED) if booking.is_registration
                                     else (S.REQUESTED, S.OFFERED, S.CONFIRMED))
     # Same rules and rounding as the cancellation itself (services.guest_cancel / departures.guest_cancel).
@@ -76,15 +83,23 @@ def detail(request, token, details_form=None, status=200):
         "fee": fee,
         "refund": money(Decimal(fee_base) - fee),
         "vat": booking.vat_included(),
-        "details_form": details_form or _details_form(booking),
+        "guide_rate": booking.guide_rate,
+        "details_form": details_form,
+        "confirming": confirming,
+        "companions_open": companions_open(booking),
+        "companion_names": [c.name for c in booking.companions.all()],
     }, status=status)
     response.headers["X-Robots-Tag"] = "noindex"
     return response
 
 
+def companions_open(booking) -> bool:
+    """Fellow participants can enter their details: a group booking that is agreed and not over yet."""
+    return booking.participants > 1 and booking.planning_open and booking.status != S.OFFERED
+
+
+# The yes to an offer is no action of its own: it comes with the planning details (details() below).
 GUEST_ACTIONS = {
-    "annehmen": (services.accept_offer,
-                 lambda: _("Danke! Deine Tour ist bestätigt. Es fehlen nur noch deine Angaben für die Tourenplanung.")),
     "ablehnen": (services.decline_offer, lambda: _("Du hast das Angebot abgelehnt.")),
     "ersatzdatum-annehmen": (services.accept_new_date, lambda: _("Danke! Das neue Datum ist bestätigt.")),
     "ersatzdatum-ablehnen": (services.decline_new_date, lambda: _("Die Buchung ist kostenlos storniert.")),
@@ -115,21 +130,71 @@ def details(request, token):
         return redirect("guest:detail", token=token)
     if not form.is_valid():
         return detail(request, token, details_form=form, status=400)
-    entered = form.save(commit=False)
-    keep = form.cleaned_data["keep"]
-    details = {f: getattr(entered, f) for f in GuestProfile.PLANNING_FIELDS}
-    with transaction.atomic():
-        Booking.objects.filter(pk=booking.pk).update(
-            guest_details=json.dumps({**details, "remark": form.cleaned_data["remark"], "keep": keep}),
-            updated_at=timezone.now())
-        if keep:  # the guest agreed that the guide keeps the details in the guest file for later tours
-            profile = GuestProfile.for_booking(booking) or GuestProfile(guide=booking.guide,
-                                                                        email=booking.guest_email.lower())
-            profile.name = booking.guest_name
-            for field, value in details.items():
-                setattr(profile, field, value)
-            profile.save()
+    try:
+        with transaction.atomic():
+            Booking.objects.filter(pk=booking.pk).update(guest_details=_entered_details(form),
+                                                         updated_at=timezone.now())
+            _keep_in_guest_file(booking.guide, booking.guest_email, booking.guest_name, form)
+            if booking.status == S.OFFERED:
+                services.accept_offer(booking)  # the definite yes; rolls the details back if too late
+    except services.BookingError as exc:
+        messages.error(request, str(exc))
+        return redirect("guest:detail", token=token)
+    if booking.status == S.OFFERED:
+        messages.success(request, _("Danke! Deine Zusage ist definitiv, die Tour ist bestätigt."))
+        return redirect("guest:detail", token=token)
     return redirect(reverse("guest:detail", args=[token]) + "?angaben=1#angaben")
+
+
+def _entered_details(form) -> str:
+    entered = form.save(commit=False)
+    details = {f: getattr(entered, f) for f in GuestProfile.PLANNING_FIELDS}
+    return json.dumps({**details, "remark": form.cleaned_data["remark"], "keep": form.cleaned_data["keep"]})
+
+
+def _keep_in_guest_file(guide, email, name, form):
+    """The guest agreed that the guide keeps the details in the guest file for later tours."""
+    if not form.cleaned_data["keep"] or not email:
+        return
+    entered = form.instance
+    profile = GuestProfile.objects.filter(guide=guide, email__iexact=email).first() or GuestProfile(
+        guide=guide, email=email.lower())
+    profile.name = name
+    for field in GuestProfile.PLANNING_FIELDS:
+        setattr(profile, field, getattr(entered, field))
+    profile.save()
+
+
+@never_cache
+def companion(request, pk, code):
+    """A fellow participant enters their own details through the link the booking guest passed on (no login).
+    Each submission adds one person; they never see anyone else's details."""
+    if not allow(f"companion:{client_ip(request)}", limit=60, window_seconds=10 * 60):
+        raise Http404
+    booking = get_object_or_404(Booking.objects.select_related("guide", "tour", "departure"), pk=pk)
+    if not constant_time_compare(code, booking.companion_code) or not companions_open(booking):
+        raise Http404
+    if not request.language_from_url and not request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME):
+        translation.activate(booking.language)
+        request.LANGUAGE_CODE = booking.language
+    form = CompanionDetailsForm(request.POST or None, instance=GuestProfile(guide=booking.guide), prefix="angaben")
+    saved = request.GET.get("gespeichert") == "1"
+    if request.method == "POST":
+        if booking.companions.count() >= services.MAX_CUSTOM_PARTICIPANTS:
+            raise Http404
+        if form.is_valid():
+            d = form.cleaned_data
+            with transaction.atomic():
+                Companion.objects.create(booking=booking, name=d["name"], email=d["email"], phone=d["phone"],
+                                         details=_entered_details(form))
+                _keep_in_guest_file(booking.guide, d["email"], d["name"], form)
+                services.log(booking, BookingEvent.Actor.GUEST, booking.status, booking.status,
+                             f"Angaben von Mitreisendem: {d['name']}")
+            return redirect(reverse("companion", args=[pk, code]) + "?gespeichert=1")
+    response = render(request, "guest/companion.html", {"booking": booking, "form": None if saved else form,
+                                                        "saved": saved}, status=400 if form.errors else 200)
+    response.headers["X-Robots-Tag"] = "noindex"
+    return response
 
 
 @require_POST

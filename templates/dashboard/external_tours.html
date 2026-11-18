@@ -49,7 +49,7 @@
     <details class="fold manual"{% if form.errors or found_dates %} open{% endif %}>
       <summary class="btn btn-secondary btn-small">{% translate "Manuelle Eingabe" %}</summary>
       <p class="small muted">{% translate "Nur nötig, wenn der Link fehlt oder etwas nicht richtig übernommen wurde." %}</p>
-      {% for field in form.visible_fields %}{% if field.name in "title provider start_date end_date note" %}{% include "_field.html" %}{% endif %}{% endfor %}
+      {% for field in form.visible_fields %}{% if field.name == "title" or field.name == "provider" or field.name == "start_date" or field.name == "end_date" or field.name == "note" %}{% include "_field.html" %}{% endif %}{% endfor %}
     </details>
     <button class="btn" type="submit">{% translate "Eintragen" %}</button>
   </form>

@@ -8,6 +8,7 @@ urlpatterns = [
     path("", v.home, name="home"),
     path("buchungen/<int:pk>/", v.booking_detail, name="booking"),
     path("buchungen/<int:pk>/abrechnen/", v.invoice, name="invoice"),
+    path("buchungen/<int:pk>/drucken/", v.booking_print, name="booking_print"),
     path("buchungen/<int:pk>/nachricht/", v.booking_message, name="booking_message"),
     path("buchungen/<int:pk>/nachricht/<int:message_pk>/<slug:name>/", v.booking_message_action,
          name="booking_message_action"),

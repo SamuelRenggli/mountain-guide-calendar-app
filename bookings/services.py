@@ -171,7 +171,8 @@ def check_days_free(booking: Booking, start_date: date, end_date: date) -> None:
 
 
 def accept_request(booking: Booking, *, start_date: date, end_date: date, price, message: str = "",
-                   estimated_expenses=None, decision_date=None, answer_deadline: date | None = None) -> Booking:
+                   estimated_expenses=None, decision_date=None, answer_deadline: date | None = None,
+                   meeting: str = "") -> Booking:
     """The guide takes the request: price, estimated expenses and possibly other or more days. The days are held
     provisionally; the booking is confirmed once the guest agrees by the answer deadline the guide sets on each offer
     (questionnaire Q3; default GUEST_RESPONSE_DAYS). Can be repeated to adjust the proposal while the guest hasn't
@@ -196,6 +197,7 @@ def accept_request(booking: Booking, *, start_date: date, end_date: date, price,
         booking, {S.REQUESTED, S.OFFERED}, S.OFFERED, Actor.GUIDE, f"{note}. {message}".strip(),
         start_date=start_date, end_date=end_date, is_window=False, price=price, price_breakdown=[],
         estimated_expenses=estimated_expenses, guide_message=message, deadline=deadline, decision_date=decision_date,
+        meeting=meeting,
     )
     transaction.on_commit(lambda: emails.offer_sent(booking))
     return booking
@@ -349,8 +351,10 @@ def check_answer_in_time(booking: Booking) -> None:
 
 
 def accept_offer(booking: Booking) -> Booking:
+    """The guest's definite yes, given together with the planning details (views_guest.details)."""
     check_answer_in_time(booking)
     booking = transition(booking, {S.OFFERED}, S.CONFIRMED, Actor.GUEST, deadline=None)
+    messaging.notify(booking.guide, Notification.Kind.CONFIRMED, booking)
     transaction.on_commit(lambda: emails.offer_accepted(booking))
     return booking
 

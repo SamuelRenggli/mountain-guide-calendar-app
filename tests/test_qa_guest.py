@@ -13,7 +13,7 @@ from bookings import availability, services
 from bookings.forms import form_timestamp_token
 from bookings.models import Booking, Departure
 
-from .conftest import in_days
+from .conftest import confirm_offer, in_days
 
 S = Booking.Status
 
@@ -42,6 +42,8 @@ def signup_post(client, departure, **extra):
 
 
 def act(client, booking, name):
+    if name == "annehmen":  # the yes comes with the planning details
+        return confirm_offer(client, booking)
     return client.post(reverse("guest:action", args=[booking.token, name]))
 
 

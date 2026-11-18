@@ -42,8 +42,22 @@
   }
 
   document.querySelectorAll("form[data-pricing]").forEach(function (form) {
+    // "Anderer Tagessatz": typing one empties the usual day rate (and counts); clearing it brings the rate back.
+    var rate = form.querySelector("[data-calc-guide-rate]");
+    var other = form.querySelector("[data-calc-other-rate]");
+    if (rate && other) {
+      var usual = rate.value;
+      if (other.value.trim()) rate.value = "";
+      other.addEventListener("input", function () {
+        if (other.value.trim()) { if (rate.value) usual = rate.value; rate.value = ""; }
+        else if (!rate.value) rate.value = usual;
+      });
+    }
     wire(form, function () { return daysOf(form); },
-      function (name) { return form.querySelector("[data-calc-" + name + "]"); },
+      function (name) {
+        if (name === "guide-rate" && other && other.value.trim()) return other;
+        return form.querySelector("[data-calc-" + name + "]");
+      },
       function () { return form.querySelectorAll("input[data-price]"); });
   });
 

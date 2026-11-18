@@ -315,3 +315,8 @@ def test_tour_gallery_up_to_ten_pictures(client, stripe_guide, other_guide, make
     assert departure.gallery_pictures() == [own[0], own[2], own[1]]
     html = client.get(departure.public_url).content.decode()
     assert own[2].url in html and foreign.url not in html
+    # browsed in place with arrows and thumbnails, never opened in a new tab
+    gallery = html[html.index("data-gallery"):html.index("</section>", html.index("data-gallery"))]
+    assert "data-gallery-prev" in gallery and "data-gallery-next" in gallery
+    assert 'target="_blank"' not in gallery and "<a " not in gallery
+    assert gallery.count("data-gallery-thumb") == 3

@@ -5,5 +5,8 @@
     <span>{% translate "Tagesansatz × Tage" %}</span>
     <span><strong>CHF <span data-calc-result>–</span></strong></span>
   </div>
-  <button class="btn" type="submit">{{ submit_label }}</button>
+  <div class="row">
+    <button class="btn" type="submit">{{ submit_label }}</button>
+    <button class="btn btn-secondary" type="button" data-choice-close>{% translate "Abbrechen" %}</button>
+  </div>
 </form>
