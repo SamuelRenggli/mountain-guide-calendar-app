@@ -2,32 +2,49 @@
 {% load i18n %}
 {% block title %}{% translate "Gäste" %} – Tourchef{% endblock %}
 {% block content %}
-<h1>{% translate "Gäste" %}</h1>
-<p class="muted">{% translate "Alle, die bei dir gebucht haben (bestätigte Touren und bezahlte Anmeldungen). Reine Anfragen kommen nicht in die Kartei. Die Angaben für die Tourenplanung trägt der Gast selbst ein – einmal, danach sind sie bei jeder Tour ausgefüllt." %}</p>
+<div class="spread"><h1>{% translate "Gäste" %}</h1><span class="small muted">{% blocktranslate count n=total trimmed %}{{ n }} Gast{% plural %}{{ n }} Gäste{% endblocktranslate %}</span></div>
+<p class="small muted">{% translate "Alle, die bei dir gebucht haben (bestätigte Touren und bezahlte Anmeldungen). Reine Anfragen kommen nicht in die Kartei. Die Angaben für die Tourenplanung trägt der Gast selbst ein – einmal, danach sind sie bei jeder Tour ausgefüllt." %}</p>
+
+<details class="card fold-card" id="newsletter"{% if newsletter_form.errors %} open{% endif %}>
+  <summary><h2>{% translate "Gäste anschreiben" %}</h2><span class="small muted">{% blocktranslate count n=subscriber_count trimmed %}{{ n }} Gast möchte informiert werden{% plural %}{{ n }} Gäste möchten informiert werden{% endblocktranslate %}</span></summary>
+  <p class="small muted">{% translate "Gäste kreuzen bei der Buchung an, ob sie über neue Touren und Spontantouren informiert werden wollen. Schreibst du eine Tour aus, erhalten sie automatisch eine E-Mail. Hier schreibst du ihnen zusätzlich selbst, z. B. für eine Spontantour." %}</p>
+  {% if subscriber_count %}
+  <form method="post" data-confirm="{% blocktranslate count n=subscriber_count trimmed %}Jetzt an {{ n }} Gast senden?{% plural %}Jetzt an {{ n }} Gäste senden?{% endblocktranslate %}">{% csrf_token %}
+    {% include "_form.html" with form=newsletter_form %}
+    <button class="btn" type="submit">{% blocktranslate count n=subscriber_count trimmed %}An {{ n }} Gast senden{% plural %}An {{ n }} Gäste senden{% endblocktranslate %}</button>
+  </form>
+  {% else %}<p class="empty">{% translate "Noch niemand hat sich dafür angemeldet." %}</p>{% endif %}
+</details>
 
 <form method="get" class="row search">
-  <input type="search" name="q" value="{{ query }}" placeholder="{% translate 'Name oder E-Mail' %}" aria-label="{% translate 'Suchen' %}">
+  <input type="search" name="q" value="{{ query }}" placeholder="{% translate 'Name, E-Mail oder Tour' %}" aria-label="{% translate 'Suchen' %}">
   <button class="btn btn-secondary" type="submit">{% translate "Suchen" %}</button>
+  {% if query %}<a class="small" href="{% url 'dashboard:guests' %}">{% translate "Alle zeigen" %}</a>{% endif %}
 </form>
 
 {% if rows %}
-<div class="table-wrap"><table>
-  <thead><tr><th>{% translate "Gast" %}</th><th>{% translate "Touren" %}</th><th>{% translate "Angaben" %}</th></tr></thead>
-  <tbody>
+<div class="card guest-list">
   {% for r in rows %}
-    <tr>
-      <td><strong>{{ r.name }}</strong><br><span class="small"><a href="mailto:{{ r.email|urlencode:'@' }}">{{ r.email }}</a>{% if r.phone %} · <a href="tel:{{ r.phone|cut:' ' }}">{{ r.phone }}</a>{% endif %}</span></td>
-      <td class="small">{% for b in r.bookings %}<a href="{% url 'dashboard:booking' b.pk %}">{{ b.start_date|date:"d.m.Y" }}</a> {{ b.title }}{% if b.start_date > today %} <span class="muted">({% translate "kommend" %})</span>{% endif %}{% if not forloop.last %}<br>{% endif %}{% endfor %}</td>
-      <td class="small">{% with p=r.profile %}{% if p and p.is_filled %}
-        {% if p.diet %}{{ p.get_diet_display }}{% endif %}{% if p.allergies %} · <strong>{% translate "Allergien" %}</strong>{% endif %}
-        {% if p.club and p.club != "none" %}<br>{{ p.club }}{% if p.has_reciprocal_rights %} ({% translate "Gegenrecht" %}){% endif %}{% endif %}
-        {% if p.travel_card and p.travel_card != "none" %} · {{ p.get_travel_card_display }}{% endif %}
-        {% if p.car_seats %} · {% blocktranslate count n=p.car_seats trimmed %}Auto, {{ n }} Platz{% plural %}Auto, {{ n }} Plätze{% endblocktranslate %}{% endif %}
-      {% else %}<span class="muted">{% translate "noch keine" %}</span>{% endif %}{% endwith %}</td>
-    </tr>
+  <details class="guest">
+    <summary>
+      <span class="guest-name"><strong>{{ r.name }}</strong>{% if r.news %} <span class="badge badge-confirmed" title="{% translate 'Möchte über neue Touren informiert werden' %}">{% translate "News" %}</span>{% endif %}</span>
+      <span class="small muted">{% blocktranslate count n=r.bookings|length trimmed %}{{ n }} Tour{% plural %}{{ n }} Touren{% endblocktranslate %} · {% translate "zuletzt" %} {{ r.bookings.0.start_date|date:"d.m.Y" }}</span>
+    </summary>
+    <div class="guest-body">
+      <p class="small"><a href="mailto:{{ r.email|urlencode:'@' }}">{{ r.email }}</a>{% if r.phone %} · <a href="tel:{{ r.phone|cut:' ' }}">{{ r.phone }}</a>{% endif %}</p>
+      <h3 class="small">{% translate "Touren" %}</h3>
+      <div class="table-wrap"><table>
+        <thead><tr><th>{% translate "Datum" %}</th><th>{% translate "Tour" %}</th><th>{% translate "Pers." %}</th><th>{% translate "Status" %}</th></tr></thead>
+        <tbody>{% for b in r.bookings %}
+          <tr><td><a href="{% url 'dashboard:booking' b.pk %}">{{ b.start_date|date:"d.m.Y" }}</a></td><td>{{ b.title }}{% if b.start_date > today %} <span class="small muted">({% translate "kommend" %})</span>{% endif %}</td><td>{{ b.participants }}</td><td>{% include "_status.html" with booking=b %}</td></tr>
+        {% endfor %}</tbody>
+      </table></div>
+      <h3 class="small">{% translate "Angaben" %}</h3>
+      {% if r.profile and r.profile.is_filled %}{% include "dashboard/_profile_facts.html" with profile=r.profile %}{% else %}<p class="small muted">{% translate "Keine gespeicherten Angaben (der Gast hat sie nicht für weitere Touren freigegeben)." %}</p>{% endif %}
+    </div>
+  </details>
   {% endfor %}
-  </tbody>
-</table></div>
+</div>
 {% else %}
 <p class="empty">{% if query %}{% translate "Niemand gefunden." %}{% else %}{% translate "Noch keine Gäste." %}{% endif %}</p>
 {% endif %}

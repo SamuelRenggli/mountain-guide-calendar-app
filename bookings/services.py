@@ -275,8 +275,8 @@ def invoice(booking: Booking, lines: list[InvoiceLine], message: str = "") -> Bo
     """Bill the guest after the tour (lines are unsaved). Can be repeated to correct the bill until it is paid."""
     if booking.is_registration:
         raise InvalidTransition()
-    if booking.end_date > timezone.localdate():
-        raise BookingError(_("Abgerechnet wird nach der Tour, ab dem letzten Tourentag."))
+    if booking.start_date > timezone.localdate():
+        raise BookingError(_("Abrechnen kannst du ab dem Tourentag, z. B. auf der Heimfahrt."))
     if not lines:
         raise BookingError(_("Die Rechnung hat keine Posten."))
     total = sum((line.amount for line in lines), Decimal("0.00"))
@@ -361,6 +361,7 @@ def accept_offer(booking: Booking) -> Booking:
 
 def decline_offer(booking: Booking) -> Booking:
     booking = transition(booking, {S.OFFERED}, S.DECLINED, Actor.GUEST, deadline=None)
+    messaging.notify(booking.guide, Notification.Kind.DECLINED, booking)
     transaction.on_commit(lambda: emails.offer_declined(booking))
     return booking
 
@@ -373,6 +374,7 @@ def accept_new_date(booking: Booking) -> Booking:
     check_answer_in_time(booking)
     booking = transition(booking, {S.RESCHEDULE_PROPOSED}, S.CONFIRMED, Actor.GUEST, deadline=None,
                          incurred_costs=0, incurred_costs_note="")
+    messaging.notify(booking.guide, Notification.Kind.NEW_DATE, booking)
     transaction.on_commit(lambda: emails.new_date_answered(booking, accepted=True))
     return booking
 
@@ -389,6 +391,8 @@ def decline_new_date(booking: Booking, actor=Actor.GUEST) -> Booking:
         booking = _bill_costs(booking, actor, [line], "Ersatzdatum abgelehnt, angefallene Kosten")
     else:
         booking = transition(booking, {S.RESCHEDULE_PROPOSED}, S.CANCELLED, actor, "Ersatzdatum abgelehnt", deadline=None)
+    messaging.notify(booking.guide, Notification.Kind.NEW_DATE if actor == Actor.GUEST else Notification.Kind.EXPIRED,
+                     booking)
     transaction.on_commit(lambda: emails.new_date_answered(booking, accepted=False))
     return booking
 
@@ -407,6 +411,7 @@ def guest_cancel(booking: Booking) -> Booking:
         booking = _bill_costs(booking, Actor.GUEST, [line], f"Vom Gast storniert, {percent} %")
     else:
         booking = transition(booking, {S.REQUESTED, S.OFFERED, S.CONFIRMED}, S.CANCELLED, Actor.GUEST, deadline=None)
+    messaging.notify(booking.guide, Notification.Kind.CANCELLED, booking)
     transaction.on_commit(lambda: emails.cancelled_by_guest(booking))
     return booking
 
@@ -420,6 +425,7 @@ def mark_paid_by_stripe(booking: Booking, session_id: str, payment_intent: str =
         payment_method=Booking.PaymentMethod.STRIPE, paid_at=timezone.now(), deadline=None, amount_paid=booking.price,
         stripe_checkout_session_id=session_id, stripe_payment_intent_id=payment_intent,
     )
+    messaging.notify(booking.guide, Notification.Kind.PAID, booking)
     transaction.on_commit(lambda: emails.paid(booking))
     return booking
 
@@ -452,6 +458,8 @@ def expire_overdue() -> int:
         except InvalidTransition:
             continue  # changed concurrently
         transaction.on_commit(lambda b=expired: emails.expired(b))
+        if booking.status == S.OFFERED:  # the guest never answered the offer
+            messaging.notify(expired.guide, Notification.Kind.EXPIRED, expired)
         count += 1
     for booking in Booking.objects.filter(status=S.RESCHEDULE_PROPOSED, deadline__lt=now).select_related("guide"):
         try:

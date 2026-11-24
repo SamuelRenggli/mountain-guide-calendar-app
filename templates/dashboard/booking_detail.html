@@ -19,9 +19,19 @@
     </div>
     <div>
       <h2>{% translate "Was" %}</h2>
+      {% if booking.is_registration %}
       <p class="summary-main">{{ booking.title }}</p>
+      {% else %}
+      <details class="title-edit"{% if title_form.errors %} open{% endif %}>
+        <summary><span class="summary-main">{{ booking.title }}</span> <span class="edit-hint" title="{% translate 'Tour benennen' %}">✎ {% translate "benennen" %}</span></summary>
+        <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'rename' %}">{% csrf_token %}
+          {% include "_form.html" with form=title_form %}
+          <button class="btn btn-secondary btn-small" type="submit">{% translate "Speichern" %}</button>
+        </form>
+      </details>
+      {% endif %}
       <p class="small">{% blocktranslate count n=booking.participants trimmed %}{{ n }} Person{% plural %}{{ n }} Personen{% endblocktranslate %}</p>
-      {% if booking.guest_message %}<p class="small pre">{{ booking.guest_message }}</p>{% endif %}
+      {% if booking.guest_message %}<p class="small muted original-label">{% translate "Anfrage des Gastes" %}:</p><p class="small pre">{{ booking.guest_message }}</p>{% endif %}
       {% if booking.is_registration and booking.experience %}<p class="small pre">{{ booking.experience }}</p>{% endif %}
     </div>
     <div>
@@ -82,53 +92,47 @@
   {% include "dashboard/_planning.html" %}
 {% endif %}
 
+{% if booking.status == "confirmed" and not booking.is_registration %}
+<details class="card fold-card" id="aendern"{% if change_form.errors or adjusting %} open{% endif %}>
+  <summary><h2>{% translate "Buchung ändern" %}</h2></summary>
+  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'change' %}">{% csrf_token %}
+    {% if adjusting %}<div class="alert info small">{% translate "Vorgeschlagen: neue Gruppengrösse mit deinem Tagesansatz dafür (Einstellungen). Prüfe den Preis und speichere – erst dann erhält der Gast eine E-Mail." %}</div>{% endif %}
+    <p class="small muted">{% translate "Datum, Gruppengrösse oder Preis anpassen, z. B. nach einem neuen Datum oder wenn jemand abspringt oder dazukommt. Die Änderung wird protokolliert und der Gast erhält eine E-Mail." %}</p>
+    {% include "_form.html" with form=change_form %}
+    <button class="btn btn-secondary" type="submit">{% translate "Änderung speichern" %}</button>
+  </form>
+</details>
+{% endif %}
+
+{% if booking.status != "requested" and booking.status != "offered" %}
+<details class="card fold-card" id="notizen"{% if notes_form.errors %} open{% endif %}>
+  <summary><h2>{% translate "Notizen" %}</h2>{% if booking.guide_notes or person_notes %}<span class="small muted">✎ {% translate "vorhanden" %}</span>{% endif %}</summary>
+  {% if person_notes %}
+  <h3 class="small">{% translate "Zu einzelnen Personen" %}</h3>
+  <ul class="small">{% for p in person_notes %}<li><strong>{{ p.name }}:</strong> {{ p.note }}</li>{% endfor %}</ul>
+  <p class="small muted">{% translate "Ändern unter «Teilnehmende» bei der Person." %}</p>
+  {% endif %}
+  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'notes' %}">{% csrf_token %}
+    {% include "_form.html" with form=notes_form %}
+    <button class="btn btn-secondary btn-small" type="submit">{% translate "Notizen speichern" %}</button>
+  </form>
+</details>
+
+<details class="card fold-card" id="tourenblatt">
+  <summary><h2>{% translate "Tourenblatt" %}</h2></summary>
+  <p class="small muted">{% translate "Alles auf einem Blatt: Tour, Datum, Treffpunkt, Teilnehmerliste mit allen Angaben und deine Notizen." %}</p>
+  <a class="btn" href="{% url 'dashboard:booking_sheet' booking.pk %}">{% translate "Tourenblatt als PDF exportieren" %}</a>
+</details>
+{% endif %}
+
+{% include "dashboard/_thread.html" %}
+
 {% if album %}{% if album.took_place %}
 <section class="card">
   <div class="spread"><h2>{% translate "Fotos" %}</h2><a class="btn btn-small" href="{{ album.path }}">{% translate "Fotoalbum öffnen" %}</a></div>
   <p class="small muted">{% blocktranslate count n=album_count trimmed %}{{ n }} Foto im Album. Teile es mit den Gästen und behalte die besten für deine Bildbibliothek.{% plural %}{{ n }} Fotos im Album. Teile es mit den Gästen und behalte die besten für deine Bildbibliothek.{% endblocktranslate %}</p>
 </section>
 {% endif %}
-{% endif %}
-
-{% if booking.status == "confirmed" and not booking.is_registration %}
-<details class="card fold-card" id="aendern"{% if change_form.errors or companion_form.errors %} open{% endif %}>
-  <summary><h2>{% translate "Buchung ändern" %}</h2></summary>
-  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'change' %}">{% csrf_token %}
-    <p class="small muted">{% translate "Datum, Gruppengrösse oder Preis anpassen, z. B. nach einem neuen Datum oder wenn jemand abspringt oder dazukommt. Die Änderung wird protokolliert und der Gast erhält eine E-Mail." %}</p>
-    {% include "_form.html" with form=change_form %}
-    <button class="btn btn-secondary" type="submit">{% translate "Änderung speichern" %}</button>
-  </form>
-  <h3>{% translate "Teilnehmende hinzufügen" %}</h3>
-  <p class="small muted">{% translate "Kommt jemand dazu, schick dem Gast diesen Link zum Weiterleiten: Die Person trägt ihre Angaben selbst ein und erscheint dann oben in der Liste." %}</p>
-  <code class="embed" id="companion-link">{{ booking.companion_url }}</code>
-  <p class="row"><button class="btn btn-secondary btn-small" type="button" data-copy="#companion-link">{% translate "Link kopieren" %}</button></p>
-  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'add_companion' %}">{% csrf_token %}
-    <p class="small muted">{% translate "Oder selbst eintragen, z. B. nach einem Anruf:" %}</p>
-    {% include "_form.html" with form=companion_form %}
-    <button class="btn btn-secondary" type="submit">{% translate "Hinzufügen" %}</button>
-  </form>
-</details>
-{% endif %}
-
-{% if booking.status != "requested" and booking.status != "offered" %}
-<details class="card fold-card" id="notizen"{% if booking.guide_notes or notes_form.errors %} open{% endif %}>
-  <summary><h2>{% translate "Notizen" %}</h2></summary>
-  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'notes' %}">{% csrf_token %}
-    {% include "_form.html" with form=notes_form %}
-    <button class="btn btn-secondary btn-small" type="submit">{% translate "Notizen speichern" %}</button>
-  </form>
-</details>
-{% endif %}
-
-{% if thread %}{% include "dashboard/_thread.html" %}{% endif %}
-
-{% if booking.is_registration and booking.refundable > 0 and booking.status == "cancelled" or booking.is_registration and booking.refundable > 0 and booking.status == "expired" %}
-<form method="post" action="{% url 'dashboard:booking_action' booking.pk 'refund' %}" class="card">{% csrf_token %}
-  <h2>{% translate "Kulanz: mehr zurückzahlen" %}</h2>
-  <p class="small muted">{% blocktranslate with max=booking.refundable trimmed %}Du kannst zusätzlich bis CHF {{ max }} zurückzahlen. Der Betrag wird von deinem Stripe-Konto abgezogen.{% endblocktranslate %}</p>
-  {% include "_form.html" with form=refund_form %}
-  <button class="btn btn-secondary" type="submit">{% translate "Zurückzahlen" %}</button>
-</form>
 {% endif %}
 
 {% if booking.status == "confirmed" and not booking.is_registration %}
@@ -143,8 +147,8 @@
 {% endif %}
 
 {% if booking.status != "requested" and booking.status != "offered" %}
-<section class="card">
-  {% if booking.status == "confirmed" and not booking.is_registration %}<h2>{% translate "Abrechnen" %}</h2>{% else %}<h2>{% translate "Preis und Bedingungen" %}</h2>{% endif %}
+<details class="card fold-card" id="abrechnen"{% if booking.status == "confirmed" and booking.start_date <= today and not booking.is_registration %} open{% endif %}>
+  <summary>{% if booking.status == "confirmed" and not booking.is_registration %}<h2>{% translate "Abrechnen" %}</h2>{% else %}<h2>{% translate "Preis und Bedingungen" %}</h2>{% endif %}</summary>
   <dl class="facts">
       <dt>{% translate "Preis" %}</dt><dd>{% include "_price.html" %}</dd>
       {% if booking.deadline %}<dt>{% translate "Frist" %}</dt><dd>{{ booking.deadline|date:"d.m.Y H:i" }}</dd>{% endif %}
@@ -154,15 +158,19 @@
   </dl>
   {% include "_breakdown.html" %}
   {% if booking.status == "confirmed" and not booking.is_registration %}
-    {% if booking.end_date <= today %}
-      <p class="small muted">{% translate "Passe Tage und Preis an den effektiven Verlauf an (Tag mehr oder weniger, Abbruch) und trage die effektiven Spesen ein. Der Gast bekommt die Rechnung per E-Mail." %}</p>
-      <a class="btn" href="{% url 'dashboard:invoice' booking.pk %}">{% translate "Abrechnung auslösen" %}</a>
-    {% else %}
-      <button class="btn" type="button" disabled>{% translate "Abrechnung auslösen" %}</button>
-      <p class="small muted">{% blocktranslate with day=booking.end_date|date:"d.m.Y" trimmed %}Wird nach der Tour freigeschaltet, ab dem letzten Tourentag ({{ day }}). Bricht ihr früher ab, passe zuerst unter «Buchung ändern» das Enddatum an.{% endblocktranslate %}</p>
-    {% endif %}
+    <p class="small muted">{% translate "Passe Tage und Preis an den effektiven Verlauf an (Tag mehr oder weniger, Abbruch) und trage die effektiven Spesen ein. Der Gast bekommt die Rechnung per E-Mail." %}</p>
+    <a class="btn" href="{% url 'dashboard:invoice' booking.pk %}">{% translate "Abrechnung auslösen" %}</a>
+    {% if booking.start_date > today %}<p class="small muted">{% blocktranslate with day=booking.start_date|date:"d.m.Y" trimmed %}Möglich ab dem Tourentag ({{ day }}) – z. B. direkt auf der Heimfahrt im Zug.{% endblocktranslate %}</p>{% endif %}
   {% endif %}
-</section>
+  {% if booking.is_registration and booking.refundable > 0 and booking.status == "cancelled" or booking.is_registration and booking.refundable > 0 and booking.status == "expired" %}
+  <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'refund' %}">{% csrf_token %}
+    <h3>{% translate "Kulanz: mehr zurückzahlen" %}</h3>
+    <p class="small muted">{% blocktranslate with max=booking.refundable trimmed %}Du kannst zusätzlich bis CHF {{ max }} zurückzahlen. Der Betrag wird von deinem Stripe-Konto abgezogen.{% endblocktranslate %}</p>
+    {% include "_form.html" with form=refund_form %}
+    <button class="btn btn-secondary" type="submit">{% translate "Zurückzahlen" %}</button>
+  </form>
+  {% endif %}
+</details>
 {% endif %}
 
 {% if booking.is_invoiced %}
@@ -182,8 +190,14 @@
 {% endif %}
 
 {% if booking.status != "requested" %}
-<details class="card fold-card">
+<details class="card fold-card" id="verlauf">
   <summary><h2>{% translate "Verlauf" %}</h2></summary>
+  {% if booking.guest_message %}
+  <div class="original-request">
+    <p class="small muted">{% blocktranslate with day=booking.created_at|date:"d.m.Y H:i" trimmed %}Ursprüngliche Anfrage des Gastes, {{ day }}{% endblocktranslate %}</p>
+    <p class="pre">{{ booking.guest_message }}</p>
+  </div>
+  {% endif %}
   <table>
     {% for event in events %}
     <tr>

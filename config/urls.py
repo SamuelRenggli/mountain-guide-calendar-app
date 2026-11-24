@@ -26,6 +26,7 @@ urlpatterns = [
     path("", include("bookings.urls_widget")),
     path("b/", include("bookings.urls_guest")),
     path("mitreisende/<int:pk>-<str:code>/", views_guest.companion, name="companion"),
+    path("abmelden/<str:token>/", views_guest.unsubscribe, name="unsubscribe"),
     path("album/<str:code>/", views_album.page, name="album"),
     path("album/<str:code>/hochladen/", views_album.start_upload, name="album_start"),
     path("album/<str:code>/fertig/", views_album.finish_upload, name="album_finish"),

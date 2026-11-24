@@ -209,7 +209,7 @@ def test_invoice_future_tour_shows_error(gclient, guide, make_booking):
     b = make_booking(guide, in_days(5), status=S.CONFIRMED, price=Decimal("500"))
     r = gclient.post(reverse("dashboard:invoice", args=[b.pk]), {
         "price": "500", "spesen-TOTAL_FORMS": "0", "spesen-INITIAL_FORMS": "0"})
-    assert r.status_code == 200
+    assert r.status_code == 302  # back to the booking with a note: billing opens on the day of the tour
     b.refresh_from_db()
     assert b.status == S.CONFIRMED
 

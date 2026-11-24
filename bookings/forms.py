@@ -219,13 +219,6 @@ class RegistrationForm(PublicForm):
     guest_email = forms.EmailField(label=_("E-Mail"))
     guest_phone = PhoneField(label=_("Telefon"),
                              help_text=_("Mit Vorwahl, damit dich dein Bergführer auch per WhatsApp erreicht."))
-    emergency_contact = forms.CharField(
-        label=_("Notfallkontakt"), max_length=200, help_text=_("Name und Telefonnummer einer Person, die nicht mitkommt."),
-    )
-    experience = forms.CharField(
-        label=_("Erfahrung / Niveau"), max_length=500,
-        help_text=_("Kurz: ähnliche Touren, Kondition, Klettergrad …"), widget=forms.Textarea(attrs={"rows": 3}),
-    )
     language = forms.ChoiceField(choices=LANGUAGE_CHOICES, widget=forms.HiddenInput)
     accept_terms = _terms_field()
 
@@ -236,8 +229,6 @@ class RegistrationForm(PublicForm):
             self.fields["seats"].widget.attrs["max"] = max_seats
             self.fields["seats"].validators.append(_max_validator(max_seats))
 
-    def clean_emergency_contact(self):
-        return single_line(self.cleaned_data["emergency_contact"])
 
 
 def _max_validator(limit):
@@ -384,22 +375,34 @@ class GuestDetailsForm(forms.ModelForm):
                              widget=forms.Textarea(attrs={"rows": 2, "maxlength": 500}),
                              help_text=_("Falls noch etwas wichtig ist, das oben nicht abgefragt wurde."))
     keep = forms.BooleanField(label=_("Meine Angaben für weitere Touren speichern"), required=False)
+    news = forms.BooleanField(required=False)  # label names the guide, see __init__
 
     class Meta:
         model = GuestProfile
-        fields = ("billing_address", "diet", "allergies", "club", "travel_card")
-        widgets = {"billing_address": forms.Textarea(attrs={"rows": 3}), "allergies": forms.Textarea(attrs={"rows": 2})}
+        fields = ("billing_address", "experience", "diet", "allergies", "club", "travel_card")
+        widgets = {"billing_address": forms.Textarea(attrs={"rows": 3}), "allergies": forms.Textarea(attrs={"rows": 2}),
+                   "experience": forms.Textarea(attrs={"rows": 2, "maxlength": 500})}
         help_texts = {
+            "experience": _("Kurz: ähnliche Touren, Kondition, Technik (z. B. Klettergrad, Skifahren abseits der Piste)."),
             "allergies": _("Nur was für die Tour wichtig ist, z. B. Nussallergie, Asthma, Medikamente."),
             "club": _("Mitglieder von Alpenvereinen mit Gegenrecht zahlen in SAC-Hütten den Mitgliederpreis."),
         }
 
-    field_order = ("billing_address", "emergency_name", "emergency_phone", "diet", "allergies", "club", "travel_card",
-                   "car", "remark", "keep")
+    field_order = ("billing_address", "emergency_name", "emergency_phone", "experience", "diet", "allergies", "club",
+                   "travel_card", "car", "remark", "keep", "news", "forward_link")
 
-    def __init__(self, *args, remark="", keep=False, **kwargs):
+    def __init__(self, *args, remark="", keep=False, guide_name="", forward_link=False, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["billing_address"].required = True
+        self.fields["experience"].required = True
+        self.fields["news"].label = _("Ich möchte über neue Touren und Spontantouren von %(name)s informiert werden "
+                                      "(jederzeit abbestellbar)") % {"name": guide_name or _("meinem Bergführer")}
+        if forward_link:
+            # A group booking: the definite yes only once the guest knows the others have to enter their own details.
+            self.fields["forward_link"] = forms.BooleanField(
+                label=_("Ich leite den Link meinen Mitreisenden weiter, damit sie ihre eigenen Angaben eintragen."),
+                error_messages={"required": _("Bitte bestätige, dass du den Link deinen Mitreisenden weiterleitest.")},
+            )
         self.fields["diet"].choices = [("", "–")] + list(GuestProfile.Diet.choices)
         self.fields["club"].choices = [("", "–")] + list(GuestProfile.Club.choices)
         self.fields["travel_card"].choices = [("", "–")] + list(GuestProfile.TravelCard.choices)
@@ -429,7 +432,7 @@ class GuestDetailsForm(forms.ModelForm):
 
 class CompanionDetailsForm(GuestDetailsForm):
     """A fellow participant enters their own details through the link the booking guest passed on. The bill goes to
-    the booking guest, so the address is optional here."""
+    the booking guest only, so there is no billing address here."""
 
     name = forms.CharField(label=_("Name"), max_length=100)
     email = forms.EmailField(label=_("E-Mail"), required=False)
@@ -439,10 +442,19 @@ class CompanionDetailsForm(GuestDetailsForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["billing_address"].required = False
+        del self.fields["billing_address"]
 
     def clean_name(self):
         return single_line(self.cleaned_data["name"])
+
+
+class RegistrationDetailsForm(GuestDetailsForm):
+    """The planning details, asked right with the signup for a scheduled date, so everything is done once the guest has
+    paid. Paid online up front, so no billing address."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        del self.fields["billing_address"]
 
 
 class AddCompanionForm(forms.Form):
@@ -454,6 +466,25 @@ class AddCompanionForm(forms.Form):
 
     def clean_name(self):
         return single_line(self.cleaned_data["name"])
+
+
+class NewsletterForm(forms.Form):
+    subject = forms.CharField(label=_("Betreff"), max_length=150)
+    body = forms.CharField(label=_("Text"), max_length=5000, widget=forms.Textarea(attrs={"rows": 6, "maxlength": 5000}),
+                           help_text=_("z. B. eine Spontantour am Wochenende. Die Anrede und der Abmelde-Link kommen "
+                                       "automatisch dazu."))
+
+    def clean_subject(self):
+        return single_line(self.cleaned_data["subject"])
+
+
+class TitleForm(forms.Form):
+    """The guide names the tour, e.g. "Skitour Rossstock" for the guest's "irgendeine Skitour Zentralschweiz"."""
+
+    custom_title = forms.CharField(label=_("Name der Tour"), max_length=200)
+
+    def clean_custom_title(self):
+        return single_line(self.cleaned_data["custom_title"])
 
 
 class NotesForm(forms.Form):

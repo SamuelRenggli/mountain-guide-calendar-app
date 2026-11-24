@@ -147,8 +147,10 @@ def test_new_request_shows_top_right_until_opened(client, guide):
     client.force_login(guide)
     html = client.get(reverse("dashboard:home")).content.decode()
     assert "Du hast eine neue Anfrage: Gina Gast" in html
+    assert 'class="notif-count">1<' in html
     client.get(reverse("dashboard:booking", args=[booking.pk]))
-    assert "Du hast eine neue Anfrage" not in client.get(reverse("dashboard:home")).content.decode()
+    html = client.get(reverse("dashboard:home")).content.decode()
+    assert "notif-count" not in html and 'class="unread"' not in html  # still listed, but read
 
 
 def test_paid_registration_notifies_new_booking(stripe_guide, make_departure, make_registration):

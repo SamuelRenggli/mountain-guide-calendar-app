@@ -17,9 +17,9 @@ from core.middleware import widget_csp
 from core.ratelimit import allow, client_ip
 from payments import stripe_service
 
-from . import availability, departures, monthgrid, partners, services
-from .forms import BookingRequestForm, PartnerOfferForm, RegistrationForm, WaitlistForm
-from .models import Departure, ExternalTour, Partner, Picture
+from . import availability, departures, monthgrid, partners, services, views_guest
+from .forms import BookingRequestForm, PartnerOfferForm, RegistrationDetailsForm, RegistrationForm, WaitlistForm
+from .models import Departure, ExternalTour, GuestProfile, Partner, Picture
 
 
 def _guide(slug):
@@ -221,15 +221,22 @@ def _departure(public_id):
     return get_object_or_404(Departure.objects.select_related("guide"), public_id=public_id, guide__is_active=True)
 
 
-def _departure_page(request, departure, *, form=None, waitlist_form=None, status=200, joined=False):
+def _details_form(departure, data=None):
+    return RegistrationDetailsForm(data, instance=GuestProfile(guide=departure.guide), prefix="angaben",
+                                   guide_name=departure.guide.display_name)
+
+
+def _departure_page(request, departure, *, form=None, details_form=None, waitlist_form=None, status=200, joined=False):
     lang = translation.get_language()
     free = departure.seats_free
     if form is None and free:
         form = RegistrationForm(initial={"language": lang}, max_seats=free)
+    if details_form is None and free:
+        details_form = _details_form(departure)
     if waitlist_form is None and not free:
         waitlist_form = WaitlistForm(initial={"language": lang})
     response = render(request, "widget/departure.html", {
-        "guide": departure.guide, "departure": departure, "seats_free": free, "form": form,
+        "guide": departure.guide, "departure": departure, "seats_free": free, "form": form, "details_form": details_form,
         "waitlist_form": waitlist_form, "joined": joined, "cancelled_payment": request.GET.get("abgebrochen") == "1",
         "can_pay": departure.guide.can_take_card_payments,
     }, status=status)
@@ -246,30 +253,35 @@ def departure_page(request, public_id):
 def departure_signup(request, public_id):
     departure = _departure(public_id)
     form = RegistrationForm(request.POST, max_seats=max(departure.seats_free, 1))
-    if not form.is_valid():
-        return _departure_page(request, departure, form=form, status=400)
+    details = _details_form(departure, request.POST)
+    page = lambda status: _departure_page(request, departure, form=form, details_form=details, status=status)  # noqa: E731
+    if not (form.is_valid() & details.is_valid()):  # both, so all errors show at once
+        return page(400)
     if form.is_spam():
         return redirect("widget:departure", public_id=public_id)
     if form.refuse_if_stale():
-        return _departure_page(request, departure, form=form, status=400)
+        return page(400)
     if _rate_limited(request, "signup"):
         form.add_error(None, _("Zu viele Anmeldungen. Bitte versuche es später erneut."))
-        return _departure_page(request, departure, form=form, status=429)
+        return page(429)
     d = form.cleaned_data
+    entered = details.save(commit=False)  # unsaved profile holding the details
     try:
         booking = departures.start_registration(
             departure, seats=d["seats"], guest_name=d["guest_name"], guest_email=d["guest_email"],
-            guest_phone=d["guest_phone"], emergency_contact=d["emergency_contact"], experience=d["experience"],
-            language=d["language"],
+            guest_phone=d["guest_phone"], emergency_contact=entered.emergency_contact, experience=entered.experience,
+            language=d["language"], guest_details=views_guest.entered_details(details),
         )
+        views_guest.keep_in_guest_file(departure.guide, d["guest_email"], d["guest_name"], details)
+        views_guest.subscribe(departure.guide, d["guest_email"], d["guest_name"], d["language"], details)
         url = stripe_service.create_registration_checkout(booking)
     except services.BookingError as exc:
         form.add_error(None, str(exc))
-        return _departure_page(request, departure, form=form, status=400)
+        return page(400)
     except stripe_service.PaymentError as exc:
         departures.payment_failed(booking)
         form.add_error(None, str(exc))
-        return _departure_page(request, departure, form=form, status=400)
+        return page(400)
     return redirect(url)
 
 

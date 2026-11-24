@@ -8,31 +8,32 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
-from django.http import Http404, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.translation import gettext as _
 from django.views.decorators.http import require_POST
 
-from accounts.forms import CalendarSyncForm, ProfileForm, RateTierFormSet
+from accounts.forms import CalendarSyncForm, ProfileForm, RateTableForm
 from accounts.models import AccessLog
 from accounts.views import recent_auth_required
 from core.ratelimit import allow
 from payments import stripe_service
 
 from . import (
-    album as albums, availability, calsync, departures, export, messaging, monthgrid, pagetitle, partners, pictures, services,
+    album as albums, availability, calsync, departures, emails, export, messaging, monthgrid, pagetitle, partners, pictures, services,
+    tourenblatt,
 )
 from .forms import (
     AcceptForm, AddCompanionForm, BlockedPeriodForm, ChangeBookingForm, DepartureForm, EraseGuestDataForm, ExpenseFormSet, ExportForm,
     ExternalTourForm, GuestsMessageForm, GuideCancelForm, GuideMessageForm, InvoiceForm, MessageForm, MoveDepartureForm,
-    NotesForm, OpenPeriodForm, PartnerForm, PartnerPeriodForm, PictureInfoForm, ProposeDateForm, RefundExtraForm, TourForm,
-    library_groups,
+    NewsletterForm, NotesForm, OpenPeriodForm, PartnerForm, PartnerPeriodForm, PictureInfoForm, ProposeDateForm, RefundExtraForm, TitleForm,
+    TourForm, library_groups,
 )
 from .models import (
     BlockedPeriod, Booking, Companion, Departure, Draft, ExternalTour, GuestProfile, Message, Notification, OpenPeriod, Partner, PartnerPeriod,
-    Picture, Tour, TourCategory,
+    Picture, TodoDismissal, Tour, TourCategory,
 )
 
 S = Booking.Status
@@ -43,15 +44,18 @@ SAVED = lambda: _("Gespeichert. Der Gast wurde per E-Mail informiert.")  # noqa:
 def upcoming_tours(guide, today):
     """Everything coming up, in date order: confirmed requests, own scheduled dates and tours for other providers."""
     entries = []
-    for b in guide.bookings.filter(departure__isnull=True, status=S.CONFIRMED, end_date__gt=today).select_related("tour"):
+    for b in guide.bookings.filter(departure__isnull=True, status=S.CONFIRMED, end_date__gte=today).select_related("tour"):
         entries.append({"kind": _("Auf Anfrage"), "start": b.start_date, "end": b.end_date, "title": b.title,
                         "who": f"{b.guest_name} · {b.participants} P.", "url": booking_url(b),
+                        "notes_url": booking_url(b) + "#notizen", "has_notes": bool(b.guide_notes),
                         "status": b.get_status_display(), "badge": f"badge-{b.status}"})
     for d in guide.departures.filter(status__in=[D.OPEN, D.CONFIRMED], end_date__gte=today):
         entries.append({"kind": _("Ausgeschrieben"), "start": d.start_date, "end": d.end_date, "title": d.title,
                         "who": _("%(n)s von %(max)s angemeldet (min. %(min)s)") % {
                             "n": d.seats_confirmed(), "max": d.max_participants, "min": d.min_participants},
                         "url": reverse("dashboard:departure", args=[d.pk]),
+                        "notes_url": reverse("dashboard:departure", args=[d.pk]) + "#notizen",
+                        "has_notes": bool(d.guide_notes),
                         "status": d.get_status_display(), "badge": f"badge-d-{d.status}"})
     for t in guide.external_tours.filter(status=ExternalTour.Status.CONFIRMED, end_date__gte=today):
         entries.append({"kind": _("Externer Anbieter"), "start": t.start_date, "end": t.end_date, "title": t.title,
@@ -67,15 +71,50 @@ def decisions_due(guide, today):
     """Tours the guide still has to decide on (weather, conditions), soonest first: confirmed requests with a decision
     day and scheduled dates waiting for their decision deadline."""
     soon = today + timedelta(days=DECISION_LEAD_DAYS)
-    entries = [{"day": b.decision_date, "title": b.title, "who": b.guest_name, "url": booking_url(b), "start": b.start_date}
+    entries = [{"day": b.decision_date, "title": b.title, "who": b.guest_name, "url": booking_url(b), "start": b.start_date,
+                "key": f"decide-b{b.pk}"}
                for b in guide.bookings.filter(departure__isnull=True, status=S.CONFIRMED, decision_date__gte=today,
                                               decision_date__lte=soon).select_related("tour")]
     for d in guide.departures.filter(status=D.OPEN, decision_deadline__gte=timezone.now(),
                                      decision_deadline__date__lte=soon):
         entries.append({"day": timezone.localtime(d.decision_deadline).date(), "title": d.title, "start": d.start_date,
                         "who": _("%(n)s angemeldet (min. %(min)s)") % {"n": d.seats_confirmed(), "min": d.min_participants},
-                        "url": reverse("dashboard:departure", args=[d.pk])})
+                        "url": reverse("dashboard:departure", args=[d.pk]), "key": f"decide-d{d.pk}"})
     return sorted(entries, key=lambda e: e["day"])
+
+
+def todo_items(guide, today) -> list:
+    """Everything the guide still has to do, as one list. Items with a `key` can be clicked away (TodoDismissal);
+    answering requests and offers from providers can't, they expire on their own."""
+    items = []
+    for b in guide.bookings.filter(departure__isnull=True, status=S.REQUESTED).select_related("tour").order_by("deadline"):
+        items.append({"label": _("Anfrage beantworten"), "title": b.title, "who": f"{b.guest_name} · {b.participants} P.",
+                      "day": b.start_date, "url": booking_url(b), "until": b.deadline, "urgent": True})
+    for e in decisions_due(guide, today):
+        items.append({"label": _("Durchführung entscheiden"), "title": e["title"], "who": e["who"], "day": e["start"],
+                      "url": e["url"], "until": e["day"], "key": e["key"]})
+    for b in guide.bookings.filter(departure__isnull=True, status=S.CONFIRMED, end_date__lte=today).select_related("tour"):
+        items.append({"label": _("Abrechnen"), "title": b.title, "who": b.guest_name, "day": b.start_date,
+                      "url": reverse("dashboard:invoice", args=[b.pk]), "key": f"invoice-{b.pk}"})
+    for a in albums.photo_reminders(guide, today):
+        kind = "d" if isinstance(a.owner, Departure) else "b"
+        items.append({"label": _("Fotos hochladen"), "title": a.title, "who": "", "day": a.start_date, "url": a.path,
+                      "key": f"photos-{kind}{a.owner.pk}"})
+    for t in guide.external_tours.filter(status=ExternalTour.Status.PENDING):
+        items.append({"label": _("Angebot eines Anbieters beantworten"), "title": t.title, "who": t.provider,
+                      "day": t.start_date, "url": reverse("dashboard:external_tours"), "urgent": True})
+    dismissed = set(guide.todo_dismissals.values_list("key", flat=True))
+    return [i for i in items if i.get("key") not in dismissed]
+
+
+@login_required
+@require_POST
+def todo_dismiss(request):
+    key = (request.POST.get("key") or "")[:40]
+    if key:
+        TodoDismissal.objects.get_or_create(guide=request.user, key=key)
+        messages.success(request, _("Pendenz entfernt."))
+    return redirect(reverse("dashboard:home") + "#todo")
 
 
 @login_required
@@ -84,16 +123,12 @@ def home(request):
     today = timezone.localdate()
     upcoming_departures = request.user.departures.filter(status__in=[D.OPEN, D.CONFIRMED], end_date__gte=today)
     return render(request, "dashboard/home.html", {
-        "decisions": decisions_due(request.user, today),
-        "photo_albums": albums.photo_reminders(request.user, today),
-        "needs_action": requests.filter(status=S.REQUESTED).order_by("deadline"),
+        "todos": todo_items(request.user, today),
         "upcoming": upcoming_tours(request.user, today),
-        "to_invoice": requests.filter(status=S.CONFIRMED, end_date__lte=today),
         "waiting_for_guest": requests.filter(status__in=[S.OFFERED, S.RESCHEDULE_PROPOSED, S.AWAITING_PAYMENT]),
         "history": requests.exclude(status__in=[S.REQUESTED, S.OFFERED, S.CONFIRMED, S.RESCHEDULE_PROPOSED,
                                                 S.AWAITING_PAYMENT]).order_by("-updated_at")[:50],
         "is_new": not request.user.bookings.exists() and not upcoming_departures.exists(),
-        "partner_offers": request.user.external_tours.filter(status=ExternalTour.Status.PENDING),
         "past_departures": request.user.departures.filter(Q(end_date__lt=today) | Q(status=D.CANCELLED))
                                                   .order_by("-start_date")[:50],
     })
@@ -109,11 +144,13 @@ def _own_booking(request, pk):
 def participant_list(booking) -> list:
     """The booking guest first, then everyone coming along, each with their planning details (profile or None)."""
     people = [{"name": booking.guest_name, "email": booking.guest_email, "phone": booking.guest_phone, "booker": True,
+               "note": booking.booker_note, "note_action": "person_note-booker", "experience": booking.experience,
                # What the guest entered on this booking, else the guest file from earlier tours.
                "profile": GuestProfile.from_booking(booking) or GuestProfile.for_booking(booking)}]
     for c in booking.companions.all():
         people.append({"name": c.name, "email": c.email, "phone": c.phone, "pk": c.pk,
-                       "remove_action": f"remove_companion-{c.pk}",
+                       "remove_action": f"remove_companion-{c.pk}", "note": c.guide_note,
+                       "note_action": f"person_note-{c.pk}",
                        "profile": GuestProfile.from_details(booking.guide_id, c.email, c.name, c.saved_details(),
                                                             c.updated_at)})
     for person in people:
@@ -121,18 +158,23 @@ def participant_list(booking) -> list:
     return people
 
 
-def _detail_context(booking, **forms):
+def _detail_context(booking, adjust_to=None, **forms):
     people = participant_list(booking)
+    days = booking.days
+    change_initial = {"start_date": booking.start_date, "end_date": booking.end_date,
+                      "participants": booking.participants, "price": booking.price}
+    if adjust_to:  # "Buchung auf n Personen anpassen": group size and the guide's rate for it, ready to save
+        change_initial.update(participants=adjust_to, price=booking.guide.rate_for(adjust_to) * days)
     context = {
         "booking": booking,
         "events": booking.events.all(),
         "accept_form": AcceptForm(prefix="accept", initial=AcceptForm.initial_for(booking)),
         "reject_form": MessageForm(prefix="reject"),
         "cancel_form": GuideCancelForm(prefix="cancel"),
-        "change_form": ChangeBookingForm(prefix="change", initial={
-            "start_date": booking.start_date, "end_date": booking.end_date, "participants": booking.participants,
-            "price": booking.price,
-        }),
+        "change_form": ChangeBookingForm(prefix="change", initial=change_initial),
+        "adjusting": bool(adjust_to),
+        "title_form": TitleForm(prefix="title", initial={"custom_title": booking.title}),
+        "person_notes": [p for p in people if p.get("note")],
         "companion_form": AddCompanionForm(prefix="companion"),
         "notes_form": NotesForm(prefix="notes", initial={"guide_notes": booking.guide_notes}),
         "refund_form": RefundExtraForm(prefix="refund"),
@@ -144,6 +186,7 @@ def _detail_context(booking, **forms):
         "whatsapp": whatsapp_number(booking.guest_phone),
         "people": people,
         "people_with_details": sum(1 for p in people if p["profile"]),
+        "people_mismatch": not booking.is_registration and len(people) != booking.participants,
         "phone_list": "\n".join(f"{p['name']}: {p['phone']}" for p in people if p["phone"]),
         "profile": people[0]["profile"],
         "album": albums.Album(booking) if not booking.is_registration else None,
@@ -158,7 +201,9 @@ def booking_detail(request, pk):
     booking = _own_booking(request, pk)
     AccessLog.record(request, AccessLog.Action.VIEW_BOOKING, f"booking:{booking.pk}")
     messaging.mark_read(request.user, booking)
-    return render(request, "dashboard/booking_detail.html", _detail_context(booking))
+    adjust = request.GET.get("anpassen", "")
+    adjust_to = int(adjust) if adjust.isdigit() and 1 <= int(adjust) <= 50 else None
+    return render(request, "dashboard/booking_detail.html", _detail_context(booking, adjust_to=adjust_to))
 
 
 @login_required
@@ -167,6 +212,42 @@ def booking_print(request, pk):
     booking = _own_booking(request, pk)
     AccessLog.record(request, AccessLog.Action.VIEW_BOOKING, f"booking:{booking.pk}:print")
     return render(request, "dashboard/booking_print.html", {"booking": booking, "people": participant_list(booking)})
+
+
+def _dates(obj) -> str:
+    start, end = obj.start_date, obj.end_date
+    return f"{start:%d.%m.%Y}" + (f" – {end:%d.%m.%Y}" if end != start else "")
+
+
+def _pdf_response(data: bytes, title: str, start) -> HttpResponse:
+    name = "".join(c if c.isalnum() else "-" for c in title)[:40].strip("-") or "tour"
+    response = HttpResponse(data, content_type="application/pdf")
+    response["Content-Disposition"] = f'inline; filename="tourenblatt-{start:%Y-%m-%d}-{name}.pdf"'
+    return response
+
+
+@login_required
+def booking_sheet(request, pk):
+    """Tourenblatt as PDF: tour, date, meeting point, participant table, notes."""
+    booking = _own_booking(request, pk)
+    AccessLog.record(request, AccessLog.Action.VIEW_BOOKING, f"booking:{booking.pk}:sheet")
+    meeting = booking.departure.meeting_point if booking.is_registration else booking.meeting
+    data = tourenblatt.render(title=booking.title, dates=_dates(booking), meeting=meeting, guide=booking.guide,
+                              people=participant_list(booking), notes=booking.guide_notes)
+    return _pdf_response(data, booking.title, booking.start_date)
+
+
+@login_required
+def departure_sheet(request, pk):
+    departure = _own_departure(request, pk)
+    AccessLog.record(request, AccessLog.Action.VIEW_PARTICIPANTS, f"departure:{departure.pk}:sheet")
+    people = []
+    for b in departure.registrations.filter(status__in=Booking.SEAT_STATUSES).order_by("created_at"):
+        people += participant_list(b)
+    meeting = departure.meeting_point + (f", {departure.meeting_time:%H:%M}" if departure.meeting_time else "")
+    data = tourenblatt.render(title=departure.title, dates=_dates(departure), meeting=meeting, guide=departure.guide,
+                              people=people, notes=departure.guide_notes)
+    return _pdf_response(data, departure.title, departure.start_date)
 
 
 def whatsapp_number(phone: str) -> str:
@@ -217,7 +298,7 @@ def notification_open(request, pk):
         note.read_at = timezone.now()
         note.save(update_fields=["read_at"])
     if note.booking_id:
-        anchor = "#nachrichten" if note.kind == Notification.Kind.MESSAGE else ""
+        anchor = {Notification.Kind.MESSAGE: "#nachrichten", Notification.Kind.DETAILS: "#teilnehmende"}.get(note.kind, "")
         return redirect(booking_url(note.booking) + anchor)
     return redirect("dashboard:home")
 
@@ -286,6 +367,27 @@ def booking_action(request, pk, name):
             Booking.objects.filter(pk=booking.pk).update(guide_notes=form.cleaned_data["guide_notes"])
             messages.success(request, _("Notizen gespeichert."))
             return redirect(f"{booking_url(booking)}#notizen")
+        elif name == "rename":
+            form = TitleForm(post, prefix="title")
+            if not form.is_valid():
+                return _rerender(request, booking, title_form=form)
+            new = form.cleaned_data["custom_title"]
+            if new != booking.title:
+                Booking.objects.filter(pk=booking.pk).update(custom_title=new, updated_at=timezone.now())
+                services.log(booking, services.Actor.GUIDE, booking.status, booking.status,
+                             f"Tour benannt: «{new}» (vorher «{booking.title}»)")
+            messages.success(request, _("Tourenname gespeichert. Die ursprüngliche Anfrage bleibt im Verlauf."))
+            return redirect("dashboard:booking", pk=pk)
+        elif name.startswith("person_note-"):
+            note = "".join(ch for ch in post.get("note", "") if ch.isprintable()).strip()[:200]
+            who = name.split("-", 1)[1]
+            if who == "booker":
+                Booking.objects.filter(pk=booking.pk).update(booker_note=note)
+            else:
+                companion = get_object_or_404(Companion, pk=who if who.isdigit() else 0, booking=booking)
+                Companion.objects.filter(pk=companion.pk).update(guide_note=note)
+            messages.success(request, _("Notiz gespeichert."))
+            return redirect(f"{booking_url(booking)}#teilnehmende")
         elif name == "add_companion":
             form = AddCompanionForm(post, prefix="companion")
             if not form.is_valid():
@@ -293,14 +395,14 @@ def booking_action(request, pk, name):
             Companion.objects.create(booking=booking, **form.cleaned_data)
             services.log(booking, services.Actor.GUIDE, booking.status, booking.status,
                          f"Teilnehmer hinzugefügt: {form.cleaned_data['name']}")
-            messages.success(request, _("Teilnehmer hinzugefügt."))
+            messages.success(request, _("Teilnehmer hinzugefügt. Prüfe, ob Gruppengrösse und Preis noch stimmen."))
             return redirect(f"{booking_url(booking)}#teilnehmende")
         elif name.startswith("remove_companion-"):
             companion = get_object_or_404(Companion, pk=name.split("-", 1)[1], booking=booking)
             services.log(booking, services.Actor.GUIDE, booking.status, booking.status,
                          f"Teilnehmer entfernt: {companion.name}")
             companion.delete()
-            messages.success(request, _("Teilnehmer entfernt. Passe unter «Buchung ändern» Gruppengrösse und Preis an."))
+            messages.success(request, _("Teilnehmer entfernt. Prüfe, ob Gruppengrösse und Preis noch stimmen."))
             return redirect(f"{booking_url(booking)}#teilnehmende")
         elif name == "ask_details":
             if not booking.planning_open:
@@ -322,6 +424,11 @@ def invoice(request, pk):
     if booking.is_registration or booking.status not in (S.CONFIRMED, S.AWAITING_PAYMENT):
         messages.error(request, _("Diese Buchung kann nicht abgerechnet werden."))
         return redirect("dashboard:booking", pk=pk)
+    if booking.start_date > timezone.localdate():
+        messages.info(request, _("Abrechnen kannst du ab dem Tourentag (%(day)s), z. B. direkt auf der Heimfahrt. "
+                                 "Ändert sich vorher etwas, passe es unter «Buchung ändern» an.")
+                      % {"day": f"{booking.start_date:%d.%m.%Y}"})
+        return redirect(reverse("dashboard:booking", args=[pk]) + "#abrechnen")
     # Start from the offered price, or from the existing bill when correcting it.
     lines = list(booking.invoice_lines.all())
     initial = {"price": booking.price or None}
@@ -448,6 +555,7 @@ def departure_detail(request, pk):
         "cancel_form": GuestsMessageForm(prefix="cancel"),
         "album": albums.Album(departure),
         "album_count": departure.photos.filter(status="ready").count(),
+        "notes_form": NotesForm(prefix="notes", initial={"guide_notes": departure.guide_notes}),
     })
 
 
@@ -456,6 +564,12 @@ def departure_detail(request, pk):
 def departure_action(request, pk, name):
     departure = _own_departure(request, pk)
     try:
+        if name == "notizen":
+            form = NotesForm(request.POST, prefix="notes")
+            if form.is_valid():
+                Departure.objects.filter(pk=departure.pk).update(guide_notes=form.cleaned_data["guide_notes"])
+                messages.success(request, _("Notizen gespeichert."))
+            return redirect(reverse("dashboard:departure", args=[pk]) + "#notizen")
         if name == "confirm":
             departures.confirm_departure(departure)
             messages.success(request, _("Der Termin findet statt. Alle Angemeldeten wurden informiert."))
@@ -579,23 +693,35 @@ def draft_delete(request, pk):
 @login_required
 def guests(request):
     """Everyone who has booked with the guide (confirmed tours and paid registrations; mere requests don't count),
-    with their planning details. One row per email address."""
+    with their planning details. One fold per email address. Plus the newsletter to guests who asked for news."""
     guide = request.user
+    newsletter_form = NewsletterForm(request.POST or None, prefix="news")
+    if request.method == "POST":
+        if newsletter_form.is_valid():
+            if not allow(f"newsletter:{guide.pk}", limit=5, window_seconds=24 * 3600):
+                messages.error(request, _("Heute wurden schon genug Newsletter gesendet. Bitte morgen wieder."))
+            else:
+                count = emails.newsletter(guide, newsletter_form.cleaned_data["subject"], newsletter_form.cleaned_data["body"])
+                messages.success(request, _("Newsletter an %(count)s Gäste gesendet.") % {"count": count})
+            return redirect("dashboard:guests")
     booked = (guide.bookings.filter(status__in=[S.CONFIRMED, S.AWAITING_PAYMENT, S.PAID])
               .select_related("tour", "departure").order_by("-start_date"))
     query = (request.GET.get("q") or "").strip().lower()
     profiles = {p.email.lower(): p for p in guide.guest_profiles.all()}
+    subscribed = set(guide.subscribers.values_list("email", flat=True))
     rows = {}
     for b in booked:
         key = b.guest_email.lower()
         row = rows.setdefault(key, {"name": b.guest_name, "email": b.guest_email, "phone": b.guest_phone,
-                                    "bookings": [], "profile": profiles.get(key)})
+                                    "bookings": [], "profile": profiles.get(key), "news": key in subscribed})
         row["bookings"].append(b)
-    found = [r for r in rows.values() if not query or query in r["name"].lower() or query in r["email"].lower()]
+    found = [r for r in rows.values() if not query or query in r["name"].lower() or query in r["email"].lower()
+             or any(query in b.title.lower() for b in r["bookings"])]
     AccessLog.record(request, AccessLog.Action.VIEW_BOOKING, "guests")
     return render(request, "dashboard/guests.html", {
         "rows": sorted(found, key=lambda r: r["name"].lower()), "query": query, "today": timezone.localdate(),
-    })
+        "newsletter_form": newsletter_form, "subscriber_count": len(subscribed), "total": len(rows),
+    }, status=400 if newsletter_form.errors else 200)
 
 
 # --- Picture library -----------------------------------------------------------
@@ -965,7 +1091,7 @@ def calendar_view(request):
 @login_required
 def settings_view(request):
     form = ProfileForm(request.POST or None, instance=request.user)
-    tiers = RateTierFormSet(request.POST or None, instance=request.user, prefix="tiers")
+    tiers = RateTableForm(request.POST or None, guide=request.user, prefix="tiers")
     if request.method == "POST" and form.is_valid() and tiers.is_valid():
         form.save()
         tiers.save()

@@ -33,7 +33,7 @@ def widget_post(client, guide, start, end=None, **extra):
 
 def signup_post(client, departure, **extra):
     data = {"seats": 2, "guest_name": "Neu", "guest_email": "neu@example.com", "guest_phone_0": "41", "guest_phone_1": "079 123 45 67",
-            "emergency_contact": "Mama 079 2", "experience": "Allalin", "language": "de", "accept_terms": "on",
+            "angaben-emergency_name": "Mama", "angaben-emergency_phone_0": "41", "angaben-emergency_phone_1": "079 222 22 22", "angaben-experience": "Allalin", "language": "de", "accept_terms": "on",
             "website": "", "ts": aged_token()}
     data.update(extra)
     return client.post(reverse("widget:departure_signup", args=[departure.public_id]), data)
@@ -146,10 +146,10 @@ def test_signup_redirects_to_stripe(client, stripe_guide, make_departure):
         response = signup_post(client, departure)
     assert response.status_code == 302 and response["Location"].startswith("https://checkout.stripe.com/")
     booking = Booking.objects.get()
-    assert (booking.status, booking.participants, booking.emergency_contact) == (S.PAYMENT_PENDING, 2, "Mama 079 2")
+    assert (booking.status, booking.participants, booking.emergency_contact[:6]) == (S.PAYMENT_PENDING, 2, "Mama, ")
 
 
-@pytest.mark.parametrize("missing", ["guest_phone_1", "emergency_contact", "experience", "accept_terms"])
+@pytest.mark.parametrize("missing", ["guest_phone_1", "angaben-emergency_name", "angaben-experience", "accept_terms"])
 def test_signup_requires_safety_data_and_terms(client, stripe_guide, make_departure, missing):
     """R-120, R-002."""
     response = signup_post(client, make_departure(stripe_guide), **{missing: ""})
@@ -344,7 +344,7 @@ def test_guest_enters_planning_details_once(client, guide, make_booking):
             "angaben-emergency_name": "Paul Gast", "angaben-emergency_phone_0": "41",
             "angaben-emergency_phone_1": "079 123 45 67", "angaben-diet": "vegan", "angaben-allergies": "Nüsse",
             "angaben-club": "DAV", "angaben-travel_card": "halbtax", "angaben-car": "3",
-            "angaben-remark": "Komme mit dem Zug", "angaben-keep": "on"}
+            "angaben-remark": "Komme mit dem Zug", "angaben-keep": "on", "angaben-experience": "Hochtouren"}
     response = client.post(url, data)
     assert response.status_code == 302 and "angaben=1" in response["Location"]
     page = client.get(response["Location"]).content.decode()
@@ -458,9 +458,7 @@ def test_settings_saves_terms_vat_and_tiers(client, guide):
             "widget_allowed_origins": "", "day_rate": "780", "aspirant_day_rate": "520", "iban": "ch9300762011623852957",
             "vat_number": "CHE-123.456.789 MWST", "vat_rate": "8.1", "cancel_free_days": "21", "cancel_partial_days": "10",
             "cancel_partial_percent": "40", "guest_terms": "", "current_password": "sehr-geheimes-pw-123",  # new IBAN
-            "tiers-TOTAL_FORMS": "2", "tiers-INITIAL_FORMS": "0", "tiers-MIN_NUM_FORMS": "0", "tiers-MAX_NUM_FORMS": "6",
-            "tiers-0-min_participants": "5", "tiers-0-day_rate": "850", "tiers-1-min_participants": "",
-            "tiers-1-day_rate": ""}
+            "tiers-rate_5": "850"}
     assert client.post(reverse("dashboard:settings"), data).status_code == 302
     guide.refresh_from_db()
     assert (guide.day_rate, guide.iban, guide.cancel_free_days, guide.language) == (780, "CH93 0076 2011 6238 5295 7", 21, "fr")
@@ -507,7 +505,7 @@ def test_dashboard_pages_show_upcoming_guests_and_pictures(client, guide, make_b
     client.force_login(guide)
     home = client.get(reverse("dashboard:home")).content.decode()
     assert home.index("Biancograt mit Bergschule") < home.index(confirmed.title)
-    assert "Kommende Touren" in home and "weitere anzeigen" in home
+    assert "Kommende Touren" in home and "Verlauf" in home
     guests = client.get(reverse("dashboard:guests")).content.decode()
     assert "Cora" in guests and "g1@example.com" not in guests
     assert client.get(reverse("dashboard:pictures")).status_code == 200
@@ -520,7 +518,7 @@ def test_planning_details_kept_only_with_consent(client, guide, make_booking):
 
     booking = make_booking(guide, in_days(10), status=S.CONFIRMED, price=Decimal("750"))
     data = {"angaben-billing_address": "Weg 1, 3000 Bern", "angaben-emergency_name": "Paul",
-            "angaben-emergency_phone_0": "49", "angaben-emergency_phone_1": "151 2345678"}
+            "angaben-emergency_phone_0": "49", "angaben-emergency_phone_1": "151 2345678", "angaben-experience": "-"}
     assert client.post(reverse("guest:details", args=[booking.token]), data).status_code == 302
     assert not GuestProfile.objects.exists()  # no tick: only for this tour
     booking.refresh_from_db()

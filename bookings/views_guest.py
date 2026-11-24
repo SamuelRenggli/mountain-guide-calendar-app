@@ -20,9 +20,9 @@ from core.ratelimit import allow, client_ip
 from payments import stripe_service
 
 from . import album as albums
-from . import services
-from .forms import CompanionDetailsForm, GuestDetailsForm
-from .models import Booking, BookingEvent, Companion, GuestProfile, money
+from . import messaging, services
+from .forms import CompanionDetailsForm, GuestDetailsForm, RegistrationDetailsForm
+from .models import Booking, BookingEvent, Companion, GuestProfile, Notification, Subscriber, money
 
 S = Booking.Status
 FINISHED = (S.PAID, S.DECLINED, S.REJECTED, S.CANCELLED, S.EXPIRED)
@@ -53,8 +53,10 @@ def _details_form(booking, data=None):
         guide=booking.guide, email=booking.guest_email.lower(), name=booking.guest_name,
         emergency_contact=booking.emergency_contact,  # from the signup form, if any
     )
-    return GuestDetailsForm(data, instance=profile, prefix="angaben", remark=saved.get("remark", ""),
-                            keep=saved.get("keep", False))
+    form_class = RegistrationDetailsForm if booking.is_registration else GuestDetailsForm  # paid online: no address
+    return form_class(data, instance=profile, prefix="angaben", remark=saved.get("remark", ""),
+                            keep=saved.get("keep", False), guide_name=booking.guide.display_name,
+                            forward_link=booking.status == S.OFFERED and booking.participants > 1)
 
 
 @never_cache
@@ -134,11 +136,14 @@ def details(request, token):
         return detail(request, token, details_form=form, status=400)
     try:
         with transaction.atomic():
-            Booking.objects.filter(pk=booking.pk).update(guest_details=_entered_details(form),
+            Booking.objects.filter(pk=booking.pk).update(guest_details=entered_details(form),
                                                          updated_at=timezone.now())
-            _keep_in_guest_file(booking.guide, booking.guest_email, booking.guest_name, form)
+            keep_in_guest_file(booking.guide, booking.guest_email, booking.guest_name, form)
+            subscribe(booking.guide, booking.guest_email, booking.guest_name, booking.language, form)
             if booking.status == S.OFFERED:
                 services.accept_offer(booking)  # the definite yes; rolls the details back if too late
+            else:
+                messaging.notify(booking.guide, Notification.Kind.DETAILS, booking)
     except services.BookingError as exc:
         messages.error(request, str(exc))
         return redirect("guest:detail", token=token)
@@ -148,13 +153,19 @@ def details(request, token):
     return redirect(reverse("guest:detail", args=[token]) + "?angaben=1#angaben")
 
 
-def _entered_details(form) -> str:
+def entered_details(form) -> str:
     entered = form.save(commit=False)
     details = {f: getattr(entered, f) for f in GuestProfile.PLANNING_FIELDS}
     return json.dumps({**details, "remark": form.cleaned_data["remark"], "keep": form.cleaned_data["keep"]})
 
 
-def _keep_in_guest_file(guide, email, name, form):
+def subscribe(guide, email, name, language, form):
+    """The guest ticked "tell me about new tours"."""
+    if form.cleaned_data.get("news"):
+        Subscriber.subscribe(guide, email, name, language)
+
+
+def keep_in_guest_file(guide, email, name, form):
     """The guest agreed that the guide keeps the details in the guest file for later tours."""
     if not form.cleaned_data["keep"] or not email:
         return
@@ -179,7 +190,8 @@ def companion(request, pk, code):
     if not request.language_from_url and not request.COOKIES.get(settings.LANGUAGE_COOKIE_NAME):
         translation.activate(booking.language)
         request.LANGUAGE_CODE = booking.language
-    form = CompanionDetailsForm(request.POST or None, instance=GuestProfile(guide=booking.guide), prefix="angaben")
+    form = CompanionDetailsForm(request.POST or None, instance=GuestProfile(guide=booking.guide), prefix="angaben",
+                                guide_name=booking.guide.display_name)
     saved = request.GET.get("gespeichert") == "1"
     if request.method == "POST":
         if booking.companions.count() >= services.MAX_CUSTOM_PARTICIPANTS:
@@ -188,8 +200,10 @@ def companion(request, pk, code):
             d = form.cleaned_data
             with transaction.atomic():
                 Companion.objects.create(booking=booking, name=d["name"], email=d["email"], phone=d["phone"],
-                                         details=_entered_details(form))
-                _keep_in_guest_file(booking.guide, d["email"], d["name"], form)
+                                         details=entered_details(form))
+                keep_in_guest_file(booking.guide, d["email"], d["name"], form)
+                subscribe(booking.guide, d["email"], d["name"], booking.language, form)
+                messaging.notify(booking.guide, Notification.Kind.DETAILS, booking)
                 services.log(booking, BookingEvent.Actor.GUEST, booking.status, booking.status,
                              f"Angaben von Mitreisendem: {d['name']}")
             return redirect(reverse("companion", args=[pk, code]) + "?gespeichert=1")
@@ -208,3 +222,18 @@ def pay(request, token):
         messages.error(request, str(exc))
         return redirect("guest:detail", token=token)
     return redirect(url)
+
+
+@never_cache
+def unsubscribe(request, token):
+    """The link in every tour announcement and newsletter. GET asks, POST unsubscribes (mail scanners open links)."""
+    if not allow(f"unsubscribe:{client_ip(request)}", limit=60, window_seconds=10 * 60):
+        raise Http404
+    sub = Subscriber.objects.select_related("guide").filter(token=token).first()
+    done = False
+    if request.method == "POST" and sub:
+        sub.delete()
+        done = True
+    response = render(request, "guest/unsubscribe.html", {"sub": sub, "done": done})
+    response.headers["X-Robots-Tag"] = "noindex"
+    return response

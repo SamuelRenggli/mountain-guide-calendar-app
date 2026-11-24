@@ -137,6 +137,16 @@
     });
   });
 
+  // --- Folded boxes: a link to #notizen opens the box with that id (and the boxes around it) ---------
+  function openTarget() {
+    var id = window.location.hash.slice(1);
+    var target = id && document.getElementById(id);
+    for (var el = target; el; el = el.parentElement) { if (el.tagName === "DETAILS") el.open = true; }
+    if (target) target.scrollIntoView();
+  }
+  openTarget();
+  window.addEventListener("hashchange", openTarget);
+
   document.querySelectorAll("[data-print]").forEach(function (button) {
     button.addEventListener("click", function () { window.print(); });
   });

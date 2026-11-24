@@ -77,8 +77,17 @@
     {% endfor %}
     </tbody>
   </table></div>
+  {% if seated %}<p class="row"><a class="btn btn-secondary btn-small" href="{% url 'dashboard:departure_sheet' departure.pk %}">{% translate "Tourenblatt als PDF exportieren" %}</a></p>{% endif %}
   {% else %}<p class="empty">{% translate "Noch keine Anmeldungen." %}</p>{% endif %}
 </section>
+
+<details class="card fold-card" id="notizen">
+  <summary><h2>{% translate "Notizen" %}</h2>{% if departure.guide_notes %}<span class="small muted">✎ {% translate "vorhanden" %}</span>{% endif %}</summary>
+  <form method="post" action="{% url 'dashboard:departure_action' departure.pk 'notizen' %}">{% csrf_token %}
+    {% include "_form.html" with form=notes_form %}
+    <button class="btn btn-secondary btn-small" type="submit">{% translate "Notizen speichern" %}</button>
+  </form>
+</details>
 
 {% if seated %}
 <form method="post" action="{% url 'dashboard:departure_action' departure.pk 'nachricht-an-alle' %}" class="card" id="nachricht-an-alle">{% csrf_token %}

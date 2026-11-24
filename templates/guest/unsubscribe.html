@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% load i18n %}
+{% block title %}{% translate "Abmelden" %} – Tourchef{% endblock %}
+{% block container_class %}narrow{% endblock %}
+{% block content %}
+<h1>{% translate "Abmelden" %}</h1>
+<section class="card">
+{% if done %}
+  <p>{% translate "Du bist abgemeldet und erhältst keine Tourenangebote mehr." %}</p>
+{% elif sub %}
+  <p>{% blocktranslate with name=sub.guide.display_name trimmed %}Keine E-Mails mehr über neue Touren von {{ name }} erhalten?{% endblocktranslate %}</p>
+  <form method="post">{% csrf_token %}<button class="btn" type="submit">{% translate "Ja, abmelden" %}</button></form>
+{% else %}
+  <p>{% translate "Diese Adresse ist bereits abgemeldet." %}</p>
+{% endif %}
+</section>
+{% endblock %}

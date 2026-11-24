@@ -1,15 +1,30 @@
-{% load i18n %}<details class="card fold-card" id="teilnehmende">
+{% load i18n %}<details class="card fold-card" id="teilnehmende"{% if companion_form.errors %} open{% endif %}>
   <summary>
     <h2>{% translate "Teilnehmende" %}</h2>
-    <span class="small muted">{% blocktranslate with n=people_with_details total=booking.participants trimmed %}Angaben von {{ n }} / {{ total }}{% endblocktranslate %}</span>
+    <span class="small muted">{% blocktranslate with n=people_with_details total=people|length trimmed %}Angaben von {{ n }} / {{ total }}{% endblocktranslate %}</span>
   </summary>
-  <ul class="people">
+
+  {% if people_mismatch and booking.status == "confirmed" %}
+  <div class="alert warning small">
+    {% blocktranslate count n=people|length with booked=booking.participants trimmed %}Auf der Liste steht {{ n }} Person, gebucht sind {{ booked }}.{% plural %}Auf der Liste stehen {{ n }} Personen, gebucht sind {{ booked }}.{% endblocktranslate %}
+    {% translate "Gruppengrösse und Preis passt du nicht automatisch an – das entscheidest du." %}
+    <a class="btn btn-secondary btn-small" href="?anpassen={{ people|length }}#aendern">{% blocktranslate count n=people|length trimmed %}Buchung auf {{ n }} Person anpassen{% plural %}Buchung auf {{ n }} Personen anpassen{% endblocktranslate %}</a>
+  </div>
+  {% endif %}
+
+  <div class="view-toggle" role="radiogroup" aria-label="{% translate 'Ansicht' %}">
+    <input type="radio" name="people-view" id="people-view-list" checked><label for="people-view-list">{% translate "Einzeln" %}</label>
+    <input type="radio" name="people-view" id="people-view-table"><label for="people-view-table">{% translate "Tabelle" %}</label>
+  </div>
+
+  <ul class="people view-list">
     {% for p in people %}
     <li>
       <details class="person">
         <summary>
           <strong>{{ p.name }}</strong>{% if p.booker %} <span class="small muted">({% translate "bucht" %})</span>{% endif %}
           {% if p.profile %}<span class="badge badge-confirmed">{% translate "Angaben da" %}</span>{% else %}<span class="badge badge-requested">{% translate "Angaben fehlen" %}</span>{% endif %}
+          {% if p.note %}<span class="person-note">✎ {{ p.note }}</span>{% endif %}
         </summary>
         <p class="small">{% if p.email %}<a href="mailto:{{ p.email|urlencode:'@' }}">{{ p.email }}</a>{% endif %}
           {% if p.phone %}{% if p.email %} · {% endif %}<a href="tel:{{ p.phone|cut:' ' }}">{{ p.phone }}</a>{% if p.whatsapp %} · <a href="https://wa.me/{{ p.whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}{% endif %}</p>
@@ -19,6 +34,13 @@
         {% else %}
           <p class="small muted">{% translate "Noch keine Angaben." %}</p>
         {% endif %}
+        <form method="post" action="{% url 'dashboard:booking_action' booking.pk p.note_action %}" class="person-note-form">{% csrf_token %}
+          <label class="small" for="note-{{ forloop.counter }}">{% translate "Deine Notiz zu dieser Person" %}</label>
+          <div class="row">
+            <input type="text" id="note-{{ forloop.counter }}" name="note" value="{{ p.note }}" maxlength="200" placeholder="{% translate 'z. B. braucht noch Steigeisen' %}">
+            <button class="btn btn-secondary btn-small" type="submit">{% translate "Speichern" %}</button>
+          </div>
+        </form>
         {% if p.pk and booking.status == "confirmed" %}
         <form method="post" action="{% url 'dashboard:booking_action' booking.pk p.remove_action %}" class="inline" data-confirm="{% translate 'Diese Person von der Liste entfernen?' %}">{% csrf_token %}
           <button class="btn btn-danger btn-small" type="submit">{% translate "Entfernen" %}</button>
@@ -28,15 +50,28 @@
     </li>
     {% endfor %}
   </ul>
-  <pre hidden id="phone-list">{{ phone_list }}</pre>
-  <div class="row">
-    {% if people|length > 1 and phone_list %}<button class="btn btn-secondary btn-small" type="button" data-copy="#phone-list">{% translate "Nummern kopieren (WhatsApp-Gruppe)" %}</button>{% endif %}
-    <a class="btn btn-secondary btn-small" href="{% url 'dashboard:booking_print' booking.pk %}" target="_blank" rel="noopener">{% translate "Drucken / PDF" %}</a>
-    {% if booking.planning_open %}
-    <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'ask_details' %}" class="inline">{% csrf_token %}
-      <button class="btn btn-secondary btn-small" type="submit">{% if profile %}{% translate "Gast bitten, die Angaben zu prüfen" %}{% else %}{% translate "Gast um diese Angaben bitten" %}{% endif %}</button>
-    </form>
-    {% endif %}
+
+  <div class="view-table">
+    {% include "dashboard/_people_table.html" %}
   </div>
-  {% if people|length > 1 %}<p class="small muted">{% translate "WhatsApp-Gruppe: Nummern kopieren, in WhatsApp eine neue Gruppe erstellen und die Nummern hinzufügen. Automatisch anlegen lässt WhatsApp nicht zu." %}</p>{% endif %}
+
+  <pre hidden id="phone-list">{{ phone_list }}</pre>
+  {% if people|length > 1 and phone_list %}
+  <p class="row"><button class="btn btn-secondary btn-small" type="button" data-copy="#phone-list">{% translate "Nummern kopieren (WhatsApp-Gruppe)" %}</button></p>
+  <p class="small muted">{% translate "WhatsApp-Gruppe: Nummern kopieren, in WhatsApp eine neue Gruppe erstellen und die Nummern hinzufügen. Automatisch anlegen lässt WhatsApp nicht zu." %}</p>
+  {% endif %}
+
+  {% if booking.status == "confirmed" and not booking.is_registration %}
+  <h3>{% translate "Teilnehmende hinzufügen" %}</h3>
+  <p class="small muted">{% translate "Kommt jemand dazu, schick dem Gast diesen Link zum Weiterleiten: Die Person trägt ihre Angaben selbst ein und erscheint dann oben in der Liste." %}</p>
+  <code class="embed" id="companion-link">{{ booking.companion_url }}</code>
+  <p class="row"><button class="btn btn-secondary btn-small" type="button" data-copy="#companion-link">{% translate "Link kopieren" %}</button></p>
+  <details class="fold"{% if companion_form.errors %} open{% endif %}>
+    <summary class="btn btn-secondary btn-small">{% translate "Oder selbst eintragen, z. B. nach einem Anruf" %}</summary>
+    <form method="post" action="{% url 'dashboard:booking_action' booking.pk 'add_companion' %}">{% csrf_token %}
+      {% include "_form.html" with form=companion_form %}
+      <button class="btn btn-secondary" type="submit">{% translate "Hinzufügen" %}</button>
+    </form>
+  </details>
+  {% endif %}
 </details>

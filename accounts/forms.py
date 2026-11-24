@@ -1,5 +1,6 @@
 import hmac
 import re
+from decimal import Decimal
 from urllib.parse import urlsplit
 
 from django import forms
@@ -82,14 +83,71 @@ class ProfileForm(forms.ModelForm):
         return cleaned
 
 
-class RateTierForm(forms.ModelForm):
-    class Meta:
-        model = DayRateTier
-        fields = ("min_participants", "day_rate")
+class RateTableForm(forms.Form):
+    """Day rate per group size: one row per size from 2 to 8 persons (1 person is the profile's day rate), plus own
+    sizes for bigger groups. An empty row means "same as the size before". Stored as DayRateTier ("from n persons")."""
 
+    TABLE_MAX = 8
+    EXTRA_ROWS = 3
 
-RateTierFormSet = forms.inlineformset_factory(User, DayRateTier, form=RateTierForm, extra=2, max_num=6,
-                                              can_delete=True)
+    def __init__(self, *args, guide, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.guide = guide
+        stored = {t.min_participants: t.day_rate for t in guide.rate_tiers.all()}
+        for n in range(2, self.TABLE_MAX + 1):
+            self.fields[f"rate_{n}"] = forms.DecimalField(
+                required=False, min_value=0, max_digits=7, decimal_places=2, initial=stored.get(n),
+                widget=forms.NumberInput(attrs={"step": "any", "inputmode": "decimal"}))
+        extra = sorted((n, rate) for n, rate in stored.items() if n > self.TABLE_MAX)
+        for i in range(self.EXTRA_ROWS):
+            n, rate = extra[i] if i < len(extra) else (None, None)
+            self.fields[f"size_{i}"] = forms.IntegerField(
+                required=False, min_value=self.TABLE_MAX + 1, max_value=50, initial=n,
+                widget=forms.NumberInput(attrs={"placeholder": str(self.TABLE_MAX + 1 + i)}))
+            self.fields[f"extra_rate_{i}"] = forms.DecimalField(
+                required=False, min_value=0, max_digits=7, decimal_places=2, initial=rate,
+                widget=forms.NumberInput(attrs={"step": "any", "inputmode": "decimal"}))
+
+    def clean(self):
+        cleaned = super().clean()
+        sizes = set()
+        for i in range(self.EXTRA_ROWS):
+            n, rate = cleaned.get(f"size_{i}"), cleaned.get(f"extra_rate_{i}")
+            if (n is None) != (rate is None):
+                self.add_error(f"size_{i}" if n is None else f"extra_rate_{i}",
+                               _("Bitte Gruppengrösse und Tagesansatz angeben."))
+            elif n is not None:
+                if n in sizes:
+                    self.add_error(f"size_{i}", _("Diese Gruppengrösse ist schon erfasst."))
+                sizes.add(n)
+        return cleaned
+
+    def rows(self):
+        """For the template: (persons, field, rate that applies when the field is left empty)."""
+        effective, rows = self.guide.day_rate, []
+        for n in range(2, self.TABLE_MAX + 1):
+            field = self[f"rate_{n}"]
+            value = field.value()
+            rows.append((n, field, effective))
+            if value not in (None, ""):
+                try:
+                    effective = Decimal(str(value))
+                except ArithmeticError:
+                    pass
+        return rows
+
+    def extra_rows(self):
+        return [(self[f"size_{i}"], self[f"extra_rate_{i}"]) for i in range(self.EXTRA_ROWS)]
+
+    def save(self):
+        d = self.cleaned_data
+        tiers = {n: d[f"rate_{n}"] for n in range(2, self.TABLE_MAX + 1) if d.get(f"rate_{n}") is not None}
+        for i in range(self.EXTRA_ROWS):
+            if d.get(f"size_{i}") is not None and d.get(f"extra_rate_{i}") is not None:
+                tiers[d[f"size_{i}"]] = d[f"extra_rate_{i}"]
+        self.guide.rate_tiers.all().delete()
+        DayRateTier.objects.bulk_create(DayRateTier(guide=self.guide, min_participants=n, day_rate=rate)
+                                        for n, rate in sorted(tiers.items()))
 
 
 class CalendarSyncForm(forms.ModelForm):

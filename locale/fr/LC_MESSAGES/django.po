@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-11-18 20:57+0100\n"
+"POT-Creation-Date: 2026-11-24 09:07+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -24,12 +24,8 @@ msgstr "E-mail"
 msgid "Einladungscode"
 msgstr "Code d’invitation"
 
-msgid ""
-"Ich akzeptiere die Nutzungsbedingungen von Tourchef inklusive "
-"Auftragsbearbeitung."
-msgstr ""
-"J’accepte les conditions d’utilisation de Tourchef, sous-traitance des "
-"données comprise."
+msgid "Ich akzeptiere die Nutzungsbedingungen von Tourchef inklusive Auftragsbearbeitung."
+msgstr "J’accepte les conditions d’utilisation de Tourchef, sous-traitance des données comprise."
 
 msgid "Bitte akzeptiere die Nutzungsbedingungen."
 msgstr "Merci d’accepter les conditions d’utilisation."
@@ -43,19 +39,11 @@ msgstr "Mot de passe actuel"
 msgid "Nur nötig, wenn du E-Mail oder IBAN änderst."
 msgstr "Nécessaire uniquement si tu modifies ton e-mail ou ton IBAN."
 
-msgid ""
-"Erscheint in der Widget-Adresse. Nur Kleinbuchstaben, Zahlen und "
-"Bindestriche."
-msgstr ""
-"Apparaît dans l’adresse du widget. Uniquement minuscules, chiffres et "
-"tirets."
+msgid "Erscheint in der Widget-Adresse. Nur Kleinbuchstaben, Zahlen und Bindestriche."
+msgstr "Apparaît dans l’adresse du widget. Uniquement minuscules, chiffres et tirets."
 
-msgid ""
-"Websites, auf denen dein Widget eingebettet werden darf, z. B. "
-"https://www.mein-bergfuehrer.ch (eine pro Zeile). Leer = überall erlaubt."
-msgstr ""
-"Sites web sur lesquels ton widget peut être intégré, p. ex. "
-"https://www.mein-bergfuehrer.ch (un par ligne). Vide = partout."
+msgid "Websites, auf denen dein Widget eingebettet werden darf, z. B. https://www.mein-bergfuehrer.ch (eine pro Zeile). Leer = überall erlaubt."
+msgstr "Sites web sur lesquels ton widget peut être intégré, p. ex. https://www.mein-bergfuehrer.ch (un par ligne). Vide = partout."
 
 #, python-format
 msgid "Ungültige Adresse: %(url)s (Beispiel: https://www.example.ch)"
@@ -68,16 +56,16 @@ msgid "Muss kleiner oder gleich der kostenlosen Frist sein."
 msgstr "Doit être inférieur ou égal au délai gratuit."
 
 msgid "Zum Ändern von E-Mail oder IBAN brauchen wir dein aktuelles Passwort."
-msgstr ""
-"Pour modifier ton e-mail ou ton IBAN, nous avons besoin de ton mot de passe "
-"actuel."
+msgstr "Pour modifier ton e-mail ou ton IBAN, nous avons besoin de ton mot de passe actuel."
 
-msgid ""
-"Google Kalender: Einstellungen → dein Kalender → «Privatadresse im iCal-"
-"Format». Belegte Tage werden automatisch für Anfragen gesperrt."
-msgstr ""
-"Google Agenda : Paramètres → ton agenda → « Adresse secrète au format iCal "
-"». Les jours occupés sont bloqués automatiquement pour les demandes."
+msgid "Bitte Gruppengrösse und Tagesansatz angeben."
+msgstr "Indique la taille du groupe et le tarif journalier."
+
+msgid "Diese Gruppengrösse ist schon erfasst."
+msgstr "Cette taille de groupe est déjà saisie."
+
+msgid "Google Kalender: Einstellungen → dein Kalender → «Privatadresse im iCal-Format». Belegte Tage werden automatisch für Anfragen gesperrt."
+msgstr "Google Agenda : Paramètres → ton agenda → « Adresse secrète au format iCal ». Les jours occupés sont bloqués automatiquement pour les demandes."
 
 msgid "Die Adresse muss mit https:// beginnen."
 msgstr "L’adresse doit commencer par https://."
@@ -118,13 +106,8 @@ msgstr "Réservable à l’avance (jours)"
 msgid "Tagesansatz Bergführer (CHF)"
 msgstr "Tarif journalier guide (CHF)"
 
-msgid ""
-"Tagesansatz für kleine Gruppen; für grössere Gruppen legst du unten Stufen "
-"fest. Vorgabe im Preisrechner, auch für einen zweiten Bergführer."
-msgstr ""
-"Tarif journalier pour petits groupes ; pour les groupes plus grands, définis"
-" des paliers ci-dessous. Valeur par défaut du calculateur, aussi pour un "
-"deuxième guide."
+msgid "Tagesansatz für kleine Gruppen; für grössere Gruppen legst du unten Stufen fest. Vorgabe im Preisrechner, auch für einen zweiten Bergführer."
+msgstr "Tarif journalier pour petits groupes ; pour les groupes plus grands, définis des paliers ci-dessous. Valeur par défaut du calculateur, aussi pour un deuxième guide."
 
 msgid "Tagesansatz Aspirant (CHF)"
 msgstr "Tarif journalier aspirant (CHF)"
@@ -136,18 +119,13 @@ msgid "IBAN für Überweisungen"
 msgstr "IBAN pour les virements"
 
 msgid "Steht auf der Rechnung, damit Gäste überweisen können."
-msgstr ""
-"Figure sur la facture pour que les clients puissent payer par virement."
+msgstr "Figure sur la facture pour que les clients puissent payer par virement."
 
 msgid "MWST-Nummer"
 msgstr "Numéro TVA"
 
-msgid ""
-"Nur wenn du mehrwertsteuerpflichtig bist, z. B. CHE-123.456.789 MWST. "
-"Rechnungen und Belege weisen dann die MWST aus."
-msgstr ""
-"Seulement si tu es assujetti à la TVA, p. ex. CHE-123.456.789 TVA. Les "
-"factures et quittances indiquent alors la TVA."
+msgid "Nur wenn du mehrwertsteuerpflichtig bist, z. B. CHE-123.456.789 MWST. Rechnungen und Belege weisen dann die MWST aus."
+msgstr "Seulement si tu es assujetti à la TVA, p. ex. CHE-123.456.789 TVA. Les factures et quittances indiquent alors la TVA."
 
 msgid "MWST-Satz (%)"
 msgstr "Taux de TVA (%)"
@@ -165,20 +143,13 @@ msgid "Storno-Kosten in dieser Zeit (%)"
 msgstr "Frais d’annulation pendant cette période (%)"
 
 msgid "Danach 100 %. Bei einer Absage wegen Wetter oder durch dich: 0 %."
-msgstr ""
-"Ensuite 100 %. En cas d’annulation pour cause de météo ou par toi : 0 %."
+msgstr "Ensuite 100 %. En cas d’annulation pour cause de météo ou par toi : 0 %."
 
 msgid "Eigene Bedingungen für Gäste"
 msgstr "Tes propres conditions pour les clients"
 
-msgid ""
-"Optional. Ersetzt den Text der Tourchef-Vorlage; Gäste akzeptieren ihn bei "
-"jeder Anfrage und Anmeldung. Die automatische Rückzahlung richtet sich "
-"weiterhin nach den Storno-Stufen oben."
-msgstr ""
-"Facultatif. Remplace le texte du modèle Tourchef ; les clients l’acceptent à"
-" chaque demande et inscription. Le remboursement automatique suit toujours "
-"les paliers d’annulation ci-dessus."
+msgid "Optional. Ersetzt den Text der Tourchef-Vorlage; Gäste akzeptieren ihn bei jeder Anfrage und Anmeldung. Die automatische Rückzahlung richtet sich weiterhin nach den Storno-Stufen oben."
+msgstr "Facultatif. Remplace le texte du modèle Tourchef ; les clients l’acceptent à chaque demande et inscription. Le remboursement automatique suit toujours les paliers d’annulation ci-dessus."
 
 msgid "iCal-Adresse"
 msgstr "Adresse iCal"
@@ -186,12 +157,8 @@ msgstr "Adresse iCal"
 msgid "Auch «verfügbare» Termine sperren"
 msgstr "Bloquer aussi les événements « disponibles »"
 
-msgid ""
-"Normalerweise sperren nur Termine, die im Kalender als «beschäftigt» "
-"markiert sind. Aktivieren, wenn jeder Termin die Tage sperren soll."
-msgstr ""
-"Normalement, seuls les événements marqués « occupé » bloquent des jours. "
-"Active cette option si chaque événement doit bloquer les jours."
+msgid "Normalerweise sperren nur Termine, die im Kalender als «beschäftigt» markiert sind. Aktivieren, wenn jeder Termin die Tage sperren soll."
+msgstr "Normalement, seuls les événements marqués « occupé » bloquent des jours. Active cette option si chaque événement doit bloquer les jours."
 
 msgid "Erlaubte Websites"
 msgstr "Sites web autorisés"
@@ -235,9 +202,7 @@ msgstr "Le code est incorrect."
 msgid "Der Code stimmt nicht. Prüfe die Uhrzeit deines Handys."
 msgstr "Le code est incorrect. Vérifie l’heure de ton téléphone."
 
-msgid ""
-"Bitte bestätige zuerst dein Passwort und sende das Formular dann noch "
-"einmal."
+msgid "Bitte bestätige zuerst dein Passwort und sende das Formular dann noch einmal."
 msgstr "Confirme d'abord ton mot de passe, puis renvoie le formulaire."
 
 msgid "Passwort oder Code stimmt nicht."
@@ -269,12 +234,8 @@ msgstr "Photos des clients seulement avec leur accord."
 msgid "Aus dem Album vom %(day)s, Foto: %(who)s"
 msgstr "De l'album du %(day)s, photo : %(who)s"
 
-msgid ""
-"Für ausgeschriebene Termine brauchst du Online-Zahlungen: Verbinde zuerst "
-"Stripe in den Einstellungen."
-msgstr ""
-"Pour publier des dates, il te faut les paiements en ligne : connecte d’abord"
-" Stripe dans les paramètres."
+msgid "Für ausgeschriebene Termine brauchst du Online-Zahlungen: Verbinde zuerst Stripe in den Einstellungen."
+msgstr "Pour publier des dates, il te faut les paiements en ligne : connecte d’abord Stripe dans les paramètres."
 
 msgid "Das Ende muss nach dem Beginn liegen."
 msgstr "La fin doit être après le début."
@@ -286,20 +247,13 @@ msgid "Die Höchstzahl muss mindestens so gross sein wie die Mindestzahl."
 msgstr "Le nombre maximal doit être au moins égal au nombre minimal."
 
 msgid "Anmeldeschluss und Entscheid-Frist müssen in der Zukunft liegen."
-msgstr ""
-"Le délai d’inscription et le délai de décision doivent être dans le futur."
+msgstr "Le délai d’inscription et le délai de décision doivent être dans le futur."
 
 msgid "Anmeldeschluss und Entscheid-Frist müssen vor dem Tourbeginn liegen."
-msgstr ""
-"Le délai d’inscription et le délai de décision doivent précéder le début de "
-"la course."
+msgstr "Le délai d’inscription et le délai de décision doivent précéder le début de la course."
 
-msgid ""
-"Datum und Preis lassen sich nicht mehr ändern, weil schon Gäste angemeldet "
-"sind. Für ein neues Datum: Termin verschieben."
-msgstr ""
-"La date et le prix ne peuvent plus être modifiés, car des clients sont déjà "
-"inscrits. Pour une nouvelle date : déplacer la date."
+msgid "Datum und Preis lassen sich nicht mehr ändern, weil schon Gäste angemeldet sind. Für ein neues Datum: Termin verschieben."
+msgstr "La date et le prix ne peuvent plus être modifiés, car des clients sont déjà inscrits. Pour une nouvelle date : déplacer la date."
 
 msgid "Die Höchstzahl ist kleiner als die bereits vergebenen Plätze."
 msgstr "Le nombre maximal est inférieur aux places déjà attribuées."
@@ -860,6 +814,60 @@ msgstr ""
 "{guest_link}"
 
 #, python-brace-format
+msgid "Neue Tour von {guide}: {tour}"
+msgstr "Nouvelle course de {guide} : {tour}"
+
+#, python-brace-format
+msgid ""
+"Hallo {guest}\n"
+"\n"
+"{guide} hat eine neue Tour ausgeschrieben:\n"
+"\n"
+"{tour}\n"
+"{dates}\n"
+"{price}\n"
+"\n"
+"Alle Infos und Anmeldung:\n"
+"{departure_url}\n"
+"\n"
+"Du erhältst diese E-Mail, weil du über neue Touren von {guide} informiert werden wolltest. Abmelden: {unsubscribe_url}"
+msgstr ""
+"Bonjour {guest}\n"
+"\n"
+"{guide} propose une nouvelle course :\n"
+"\n"
+"{tour}\n"
+"{dates}\n"
+"{price}\n"
+"\n"
+"Toutes les infos et l’inscription :\n"
+"{departure_url}\n"
+"\n"
+"Tu reçois cet e-mail car tu as souhaité être informé·e des nouvelles courses de {guide}. Se désabonner : {unsubscribe_url}"
+
+#, python-brace-format
+msgid "{subject}"
+msgstr "{subject}"
+
+#, python-brace-format
+msgid ""
+"Hallo {guest}\n"
+"\n"
+"{body}\n"
+"\n"
+"{guide}\n"
+"\n"
+"Du erhältst diese E-Mail, weil du über neue Touren von {guide} informiert werden wolltest. Abmelden: {unsubscribe_url}"
+msgstr ""
+"Bonjour {guest}\n"
+"\n"
+"{body}\n"
+"\n"
+"{guide}\n"
+"\n"
+"Tu reçois cet e-mail car tu as souhaité être informé·e des nouvelles courses de {guide}. Se désabonner : {unsubscribe_url}"
+
+#, python-brace-format
 msgid "Fotos von «{tour}»"
 msgstr "Photos de « {tour} »"
 
@@ -1359,14 +1367,8 @@ msgstr ""
 msgid "{persons} × {role} × {days} Tage × CHF {rate} = CHF {amount}"
 msgstr "{persons} × {role} × {days} jours × CHF {rate} = CHF {amount}"
 
-msgid ""
-"Bezahlt wird erst nach der Tour, nach effektivem Aufwand: Seid ihr einen Tag"
-" mehr oder weniger unterwegs oder müsst abbrechen, ändert sich der Betrag. "
-"Dazu kommen die effektiven Spesen. Bis dahin wird nichts belastet."
-msgstr ""
-"Le paiement n'a lieu qu'après la course, selon l'effort réel : si vous êtes "
-"en route un jour de plus ou de moins ou devez renoncer, le montant change. "
-"Les frais effectifs s'y ajoutent. Rien n'est débité d'ici là."
+msgid "Bezahlt wird erst nach der Tour, nach effektivem Aufwand: Seid ihr einen Tag mehr oder weniger unterwegs oder müsst abbrechen, ändert sich der Betrag. Dazu kommen die effektiven Spesen. Bis dahin wird nichts belastet."
+msgstr "Le paiement n'a lieu qu'après la course, selon l'effort réel : si vous êtes en route un jour de plus ou de moins ou devez renoncer, le montant change. Les frais effectifs s'y ajoutent. Rien n'est débité d'ici là."
 
 #, python-brace-format
 msgid ""
@@ -1449,19 +1451,11 @@ msgid "{guide} musste die Tour leider absagen."
 msgstr "{guide} a malheureusement dû annuler la course."
 
 #, python-brace-format
-msgid ""
-"Die Tour findet nicht statt: {guide} hat nicht rechtzeitig über die "
-"Durchführung entschieden."
-msgstr ""
-"La course n’a pas lieu : {guide} n’a pas décidé à temps de sa réalisation."
+msgid "Die Tour findet nicht statt: {guide} hat nicht rechtzeitig über die Durchführung entschieden."
+msgstr "La course n’a pas lieu : {guide} n’a pas décidé à temps de sa réalisation."
 
-msgid ""
-"Diese Gäste haben sich vorher abgemeldet und Storno-Kosten bezahlt. Ob du "
-"ihnen die Gebühr zurückzahlst, entscheidest du (Kulanz auf der Buchung):"
-msgstr ""
-"Ces clients se sont désinscrits auparavant et ont payé des frais "
-"d’annulation. C’est toi qui décides si tu leur rembourses ces frais (geste "
-"commercial sur la réservation):"
+msgid "Diese Gäste haben sich vorher abgemeldet und Storno-Kosten bezahlt. Ob du ihnen die Gebühr zurückzahlst, entscheidest du (Kulanz auf der Buchung):"
+msgstr "Ces clients se sont désinscrits auparavant et ont payé des frais d’annulation. C’est toi qui décides si tu leur rembourses ces frais (geste commercial sur la réservation):"
 
 #, python-brace-format
 msgid "- {guest}: CHF {fee} – {link}"
@@ -1545,19 +1539,11 @@ msgstr "Ce numéro de téléphone est trop court ou trop long."
 msgid "Zeit"
 msgstr "Heure"
 
-msgid ""
-"Das Formular war sehr lange offen. Bitte prüfe deine Angaben und sende es "
-"noch einmal."
-msgstr ""
-"Le formulaire est resté ouvert très longtemps. Vérifie tes informations et "
-"renvoie-le."
+msgid "Das Formular war sehr lange offen. Bitte prüfe deine Angaben und sende es noch einmal."
+msgstr "Le formulaire est resté ouvert très longtemps. Vérifie tes informations et renvoie-le."
 
-msgid ""
-"Ich akzeptiere die Bedingungen des Bergführers und habe die "
-"Datenschutzerklärung gelesen."
-msgstr ""
-"J’accepte les conditions du guide et j’ai lu la déclaration de protection "
-"des données."
+msgid "Ich akzeptiere die Bedingungen des Bergführers und habe die Datenschutzerklärung gelesen."
+msgstr "J’accepte les conditions du guide et j’ai lu la déclaration de protection des données."
 
 msgid "Bitte akzeptiere die Bedingungen."
 msgstr "Merci d’accepter les conditions."
@@ -1572,23 +1558,10 @@ msgid "Beschreibe kurz, was du unternehmen willst."
 msgstr "Décris brièvement ce que tu souhaites faire."
 
 msgid "Mit Vorwahl, damit dich dein Bergführer auch per WhatsApp erreicht."
-msgstr ""
-"Avec l'indicatif, pour que ton guide puisse aussi te joindre par WhatsApp."
+msgstr "Avec l'indicatif, pour que ton guide puisse aussi te joindre par WhatsApp."
 
 msgid "Anzahl Plätze"
 msgstr "Nombre de places"
-
-msgid "Notfallkontakt"
-msgstr "Contact d’urgence"
-
-msgid "Name und Telefonnummer einer Person, die nicht mitkommt."
-msgstr "Nom et numéro de téléphone d’une personne qui ne participe pas."
-
-msgid "Erfahrung / Niveau"
-msgstr "Expérience / niveau"
-
-msgid "Kurz: ähnliche Touren, Kondition, Klettergrad …"
-msgstr "En bref : courses similaires, condition physique, niveau d’escalade …"
 
 #, python-format
 msgid "Leider sind nur noch %(limit_value)s Plätze frei."
@@ -1602,8 +1575,7 @@ msgstr "Autres images (galerie)"
 
 #, python-format
 msgid "Bis zu %(n)s weitere Bilder, die Gäste unter dem Hauptbild sehen."
-msgstr ""
-"Jusqu’à %(n)s images supplémentaires, visibles sous l’image principale."
+msgstr "Jusqu’à %(n)s images supplémentaires, visibles sous l’image principale."
 
 msgid "Bild"
 msgstr "Image"
@@ -1611,12 +1583,8 @@ msgstr "Image"
 msgid "Das Bild ist zu gross (höchstens 8 MB)."
 msgstr "L’image est trop grande (8 Mo au maximum)."
 
-msgid ""
-"Neues Bild hochladen. Erscheint im Buchungskalender und kommt in deine "
-"Bibliothek. JPG, PNG, WebP oder HEIC, höchstens 8 MB."
-msgstr ""
-"Téléverser une nouvelle image. Elle apparaît dans le calendrier de "
-"réservation et rejoint ta bibliothèque. JPG, PNG, WebP ou HEIC, 8 Mo max."
+msgid "Neues Bild hochladen. Erscheint im Buchungskalender und kommt in deine Bibliothek. JPG, PNG, WebP oder HEIC, höchstens 8 MB."
+msgstr "Téléverser une nouvelle image. Elle apparaît dans le calendrier de réservation et rejoint ta bibliothèque. JPG, PNG, WebP ou HEIC, 8 Mo max."
 
 #, python-format
 msgid "Höchstens %(n)s weitere Bilder."
@@ -1668,18 +1636,39 @@ msgstr "Si quelque chose d’important n’a pas été demandé ci-dessus."
 msgid "Meine Angaben für weitere Touren speichern"
 msgstr "Enregistrer mes informations pour d’autres courses"
 
-msgid ""
-"Nur was für die Tour wichtig ist, z. B. Nussallergie, Asthma, Medikamente."
-msgstr ""
-"Seulement ce qui compte pour la course, p. ex. allergie aux noix, asthme, "
-"médicaments."
+msgid "Kurz: ähnliche Touren, Kondition, Technik (z. B. Klettergrad, Skifahren abseits der Piste)."
+msgstr "En bref : courses similaires, condition physique, technique (p. ex. niveau d’escalade, ski hors-piste)."
 
-msgid ""
-"Mitglieder von Alpenvereinen mit Gegenrecht zahlen in SAC-Hütten den "
-"Mitgliederpreis."
-msgstr ""
-"Les membres de clubs alpins avec droit de réciprocité paient le tarif membre"
-" dans les cabanes CAS."
+msgid "Nur was für die Tour wichtig ist, z. B. Nussallergie, Asthma, Medikamente."
+msgstr "Seulement ce qui compte pour la course, p. ex. allergie aux noix, asthme, médicaments."
+
+msgid "Mitglieder von Alpenvereinen mit Gegenrecht zahlen in SAC-Hütten den Mitgliederpreis."
+msgstr "Les membres de clubs alpins avec droit de réciprocité paient le tarif membre dans les cabanes CAS."
+
+#, python-format
+msgid "Ich möchte über neue Touren und Spontantouren von %(name)s informiert werden (jederzeit abbestellbar)"
+msgstr "Je souhaite être informé·e des nouvelles courses et sorties spontanées de %(name)s (désabonnement à tout moment)"
+
+msgid "meinem Bergführer"
+msgstr "mon guide"
+
+msgid "Ich leite den Link meinen Mitreisenden weiter, damit sie ihre eigenen Angaben eintragen."
+msgstr "Je transmets le lien à mes compagnons pour qu’ils saisissent leurs propres informations."
+
+msgid "Bitte bestätige, dass du den Link deinen Mitreisenden weiterleitest."
+msgstr "Confirme que tu transmets le lien à tes compagnons."
+
+msgid "Betreff"
+msgstr "Objet"
+
+msgid "Text"
+msgstr "Texte"
+
+msgid "z. B. eine Spontantour am Wochenende. Die Anrede und der Abmelde-Link kommen automatisch dazu."
+msgstr "p. ex. une sortie spontanée ce week-end. La salutation et le lien de désabonnement sont ajoutés automatiquement."
+
+msgid "Name der Tour"
+msgstr "Nom de la course"
 
 msgid "Notizen"
 msgstr "Notes"
@@ -1729,12 +1718,8 @@ msgstr "Premier jour"
 msgid "Letzter Tag"
 msgstr "Dernier jour"
 
-msgid ""
-"Du kannst Tage dazunehmen oder ein anderes Datum wählen. Die Tage werden "
-"provisorisch reserviert, bis der Gast zusagt."
-msgstr ""
-"Tu peux ajouter des jours ou choisir une autre date. Les jours sont réservés"
-" provisoirement jusqu'à l'accord du client."
+msgid "Du kannst Tage dazunehmen oder ein anderes Datum wählen. Die Tage werden provisorisch reserviert, bis der Gast zusagt."
+msgstr "Tu peux ajouter des jours ou choisir une autre date. Les jours sont réservés provisoirement jusqu'à l'accord du client."
 
 msgid "Dein Tarif für diese Gruppengrösse (Einstellungen)."
 msgstr "Ton tarif pour cette taille de groupe (paramètres)."
@@ -1743,18 +1728,13 @@ msgid "Anderer Tagessatz (CHF)"
 msgstr "Autre tarif journalier (CHF)"
 
 msgid "Optional, z. B. ein Spezialpreis. Ersetzt den Tagesansatz oben."
-msgstr ""
-"Facultatif, p. ex. un prix spécial. Remplace le tarif journalier ci-dessus."
+msgstr "Facultatif, p. ex. un prix spécial. Remplace le tarif journalier ci-dessus."
 
 msgid "Geschätzte Spesen (CHF)"
 msgstr "Frais estimés (CHF)"
 
-msgid ""
-"Grobe Schätzung für den Gast, z. B. Reise, Hütte, Bahn. Abgerechnet werden "
-"die effektiven Spesen nach der Tour."
-msgstr ""
-"Estimation approximative pour le client, p. ex. voyage, cabane, remontées. "
-"Les frais effectifs sont facturés après la course."
+msgid "Grobe Schätzung für den Gast, z. B. Reise, Hütte, Bahn. Abgerechnet werden die effektiven Spesen nach der Tour."
+msgstr "Estimation approximative pour le client, p. ex. voyage, cabane, remontées. Les frais effectifs sont facturés après la course."
 
 msgid "Treffpunkt und Zeit (unverbindlich)"
 msgstr "Point et heure de rendez-vous (indicatif)"
@@ -1762,43 +1742,29 @@ msgstr "Point et heure de rendez-vous (indicatif)"
 msgid "z. B. Bahnhof Andermatt, 9.00 Uhr"
 msgstr "p. ex. gare d'Andermatt, 9 h 00"
 
-msgid ""
-"Erste Idee für den Gast. Definitiv abgemacht wird später, z. B. per "
-"WhatsApp."
-msgstr ""
-"Une première idée pour le client. Vous fixerez les détails plus tard, p. ex."
-" par WhatsApp."
+msgid "Erste Idee für den Gast. Definitiv abgemacht wird später, z. B. per WhatsApp."
+msgstr "Une première idée pour le client. Vous fixerez les détails plus tard, p. ex. par WhatsApp."
 
 msgid "Entscheid-Frist"
 msgstr "Délai de décision"
 
-msgid ""
-"Bis dann entscheidest du definitiv, ob die Tour stattfindet (Wetter, "
-"Verhältnisse)."
-msgstr ""
-"D'ici là, tu décides définitivement si la course a lieu (météo, conditions)."
+msgid "Bis dann entscheidest du definitiv, ob die Tour stattfindet (Wetter, Verhältnisse)."
+msgstr "D'ici là, tu décides définitivement si la course a lieu (météo, conditions)."
 
 msgid "Antwortfrist für den Gast"
 msgstr "Délai de réponse du client"
 
-msgid ""
-"Bis zu diesem Tag kann der Gast dein Angebot bestätigen. Danach verfällt es "
-"und die Tage werden wieder frei."
-msgstr ""
-"Le client peut confirmer ton offre jusqu’à ce jour. Ensuite elle expire et "
-"les jours redeviennent libres."
+msgid "Bis zu diesem Tag kann der Gast dein Angebot bestätigen. Danach verfällt es und die Tage werden wieder frei."
+msgstr "Le client peut confirmer ton offre jusqu’à ce jour. Ensuite elle expire et les jours redeviennent libres."
 
-msgid ""
-"z. B. warum du einen Tag dazunimmst oder ein anderes Datum vorschlägst."
+msgid "z. B. warum du einen Tag dazunimmst oder ein anderes Datum vorschlägst."
 msgstr "p. ex. pourquoi tu ajoutes un jour ou proposes une autre date."
 
 msgid "Das Datum liegt in der Vergangenheit."
 msgstr "La date est dans le passé."
 
 msgid "Die Antwortfrist muss spätestens am ersten Tourentag enden."
-msgstr ""
-"Le délai de réponse doit se terminer au plus tard le premier jour de la "
-"course."
+msgstr "Le délai de réponse doit se terminer au plus tard le premier jour de la course."
 
 msgid "Die Entscheid-Frist muss vor dem Tourenbeginn liegen."
 msgstr "Le délai de décision doit précéder le début de la course."
@@ -1821,12 +1787,8 @@ msgstr "Date de remplacement : fin"
 msgid "Bereits angefallene Kosten (CHF)"
 msgstr "Frais déjà engagés (CHF)"
 
-msgid ""
-"z. B. verfallene Hüttenanzahlung. Trägt der Gast, falls er das Ersatzdatum "
-"ablehnt."
-msgstr ""
-"P. ex. acompte de cabane perdu. À la charge du client s’il refuse la date de"
-" remplacement."
+msgid "z. B. verfallene Hüttenanzahlung. Trägt der Gast, falls er das Ersatzdatum ablehnt."
+msgstr "P. ex. acompte de cabane perdu. À la charge du client s’il refuse la date de remplacement."
 
 msgid "Wofür?"
 msgstr "Pour quoi ?"
@@ -1858,44 +1820,29 @@ msgstr "À quoi correspondent ces frais ?"
 msgid "Betrag fehlt."
 msgstr "Montant manquant."
 
-msgid ""
-"Link zum Tourenangebot, z. B. auf der Website der Bergschule. Titel, "
-"Anbieter und Datum werden von der Seite übernommen."
-msgstr ""
-"Lien vers l'offre, p. ex. sur le site de l'école d'alpinisme. Titre, "
-"prestataire et date sont repris de la page."
+msgid "Link zum Tourenangebot, z. B. auf der Website der Bergschule. Titel, Anbieter und Datum werden von der Seite übernommen."
+msgstr "Lien vers l'offre, p. ex. sur le site de l'école d'alpinisme. Titre, prestataire et date sont repris de la page."
 
 msgid "Leer lassen: wird von der verlinkten Seite übernommen."
 msgstr "Laisser vide : repris de la page liée."
 
-msgid ""
-"Ohne eigenes Bild wird ein Bild dieser Tourenart aus deiner Bibliothek "
-"verwendet."
-msgstr ""
-"Sans image propre, une image de ce type de course de ta bibliothèque est "
-"utilisée."
+msgid "Ohne eigenes Bild wird ein Bild dieser Tourenart aus deiner Bibliothek verwendet."
+msgstr "Sans image propre, une image de ce type de course de ta bibliothèque est utilisée."
 
-msgid ""
-"Leer lassen: ein Bild dieser Tourenart aus deiner Bibliothek, sonst das Logo"
-" des Anbieters."
-msgstr ""
-"Laisser vide : une image de ce type de course de ta bibliothèque, sinon le "
-"logo du prestataire."
+msgid "Leer lassen: ein Bild dieser Tourenart aus deiner Bibliothek, sonst das Logo des Anbieters."
+msgstr "Laisser vide : une image de ce type de course de ta bibliothèque, sinon le logo du prestataire."
 
 msgid "Bitte einen Titel oder einen Link angeben."
 msgstr "Indique un titre ou un lien."
 
-msgid ""
-"Der Titel konnte nicht von der Seite gelesen werden. Bitte selbst eingeben."
+msgid "Der Titel konnte nicht von der Seite gelesen werden. Bitte selbst eingeben."
 msgstr "Impossible de lire le titre sur la page. Saisis-le toi-même."
 
 msgid "Bitte ein Datum angeben."
 msgstr "Indique une date."
 
-msgid ""
-"Auf der Seite stehen mehrere Daten. Wähle oben das richtige oder gib es ein."
-msgstr ""
-"La page contient plusieurs dates. Choisis la bonne ci-dessus ou saisis-la."
+msgid "Auf der Seite stehen mehrere Daten. Wähle oben das richtige oder gib es ein."
+msgstr "La page contient plusieurs dates. Choisis la bonne ci-dessus ou saisis-la."
 
 msgid "Auf der Seite wurde kein Datum gefunden. Bitte selbst eingeben."
 msgstr "Aucune date trouvée sur la page. Saisis-la toi-même."
@@ -2110,12 +2057,8 @@ msgstr "Annulée"
 msgid "Anmeldeschluss"
 msgstr "Délai d’inscription"
 
-msgid ""
-"Bis dann entscheidest du, ob der Termin stattfindet. Ohne Entscheid wird er "
-"automatisch abgesagt und alle erhalten ihr Geld zurück."
-msgstr ""
-"D’ici là, tu décides si la date a lieu. Sans décision, elle est annulée "
-"automatiquement et tout le monde est remboursé."
+msgid "Bis dann entscheidest du, ob der Termin stattfindet. Ohne Entscheid wird er automatisch abgesagt und alle erhalten ihr Geld zurück."
+msgstr "D’ici là, tu décides si la date a lieu. Sans décision, elle est annulée automatiquement et tout le monde est remboursé."
 
 msgid "Notiz"
 msgstr "Note"
@@ -2147,12 +2090,8 @@ msgstr "Retiré"
 msgid "Im Buchungskalender zeigen"
 msgstr "Afficher dans le calendrier de réservation"
 
-msgid ""
-"Gäste sehen die Tour mit Titel und Bild in deinem Kalender und buchen über "
-"den Link beim Anbieter."
-msgstr ""
-"Les clients voient la course avec titre et image dans ton calendrier et "
-"réservent via le lien chez le prestataire."
+msgid "Gäste sehen die Tour mit Titel und Bild in deinem Kalender und buchen über den Link beim Anbieter."
+msgstr "Les clients voient la course avec titre et image dans ton calendrier et réservent via le lien chez le prestataire."
 
 msgid "Anfrage offen"
 msgstr "Demande ouverte"
@@ -2223,6 +2162,18 @@ msgstr "Nouveau message"
 msgid "Zusage"
 msgstr "Confirmation"
 
+msgid "Absage des Gastes"
+msgstr "Refus du client"
+
+msgid "Zahlung"
+msgstr "Paiement"
+
+msgid "Angaben"
+msgstr "Informations"
+
+msgid "Ersatzdatum"
+msgstr "Date de remplacement"
+
 #, python-format
 msgid "Du hast eine neue Buchung: %(guest)s"
 msgstr "Tu as une nouvelle réservation : %(guest)s"
@@ -2234,6 +2185,30 @@ msgstr "Tu as une nouvelle demande : %(guest)s"
 #, python-format
 msgid "%(guest)s hat definitiv zugesagt, die Tour ist bestätigt"
 msgstr "%(guest)s a confirmé définitivement, la course est confirmée"
+
+#, python-format
+msgid "%(guest)s hat dein Angebot abgelehnt"
+msgstr "%(guest)s a refusé ton offre"
+
+#, python-format
+msgid "%(guest)s hat storniert"
+msgstr "%(guest)s a annulé"
+
+#, python-format
+msgid "%(guest)s hat bezahlt"
+msgstr "%(guest)s a payé"
+
+#, python-format
+msgid "Neue Angaben für die Tour von %(guest)s"
+msgstr "Nouvelles informations pour la course de %(guest)s"
+
+#, python-format
+msgid "%(guest)s hat auf das Ersatzdatum geantwortet"
+msgstr "%(guest)s a répondu à la date de remplacement"
+
+#, python-format
+msgid "Keine Antwort von %(guest)s, die Frist ist abgelaufen"
+msgstr "Pas de réponse de %(guest)s, le délai a expiré"
 
 #, python-format
 msgid "Neue Nachricht von %(guest)s"
@@ -2272,6 +2247,12 @@ msgstr "AG"
 msgid "Rechnungsadresse"
 msgstr "Adresse de facturation"
 
+msgid "Notfallkontakt"
+msgstr "Contact d’urgence"
+
+msgid "Erfahrung / Können"
+msgstr "Expérience / niveau"
+
 msgid "Ernährung"
 msgstr "Alimentation"
 
@@ -2285,8 +2266,7 @@ msgid "ÖV-Abo"
 msgstr "Abonnement transports publics"
 
 msgid "Leer: kein Auto. Sonst: wie viele freie Plätze du mitnehmen könntest."
-msgstr ""
-"Vide : pas de voiture. Sinon : combien de places libres tu pourrais offrir."
+msgstr "Vide : pas de voiture. Sinon : combien de places libres tu pourrais offrir."
 
 msgctxt "weekday"
 msgid "Mo"
@@ -2329,12 +2309,8 @@ msgid "Dieses Angebot wurde bereits beantwortet."
 msgstr "Cette offre a déjà reçu une réponse."
 
 #, python-format
-msgid ""
-"Diese Tage sind inzwischen belegt: %(days)s. Gib sie zuerst frei oder lehne "
-"das Angebot ab."
-msgstr ""
-"Ces jours sont entre-temps occupés : %(days)s. Libère-les d'abord ou refuse "
-"l'offre."
+msgid "Diese Tage sind inzwischen belegt: %(days)s. Gib sie zuerst frei oder lehne das Angebot ab."
+msgstr "Ces jours sont entre-temps occupés : %(days)s. Libère-les d'abord ou refuse l'offre."
 
 msgid "Diese Daten sind leider nicht mehr verfügbar."
 msgstr "Ces dates ne sont malheureusement plus disponibles."
@@ -2373,15 +2349,13 @@ msgid "An diesen Tagen bist du schon belegt: %(days)s"
 msgstr "Tu es déjà occupé ces jours-là : %(days)s"
 
 msgid "Die Antwortfrist muss zwischen heute und dem ersten Tourentag liegen."
-msgstr ""
-"Le délai de réponse doit se situer entre aujourd’hui et le premier jour de "
-"la course."
+msgstr "Le délai de réponse doit se situer entre aujourd’hui et le premier jour de la course."
 
 msgid "Es wurde nichts geändert."
 msgstr "Rien n’a été modifié."
 
-msgid "Abgerechnet wird nach der Tour, ab dem letzten Tourentag."
-msgstr "La facturation se fait après la course, dès le dernier jour."
+msgid "Abrechnen kannst du ab dem Tourentag, z. B. auf der Heimfahrt."
+msgstr "Tu peux facturer dès le jour de la course, p. ex. sur le trajet du retour."
 
 msgid "Die Rechnung hat keine Posten."
 msgstr "La facture ne contient aucun poste."
@@ -2395,6 +2369,22 @@ msgstr "Le délai pour ta réponse est dépassé."
 #, python-format
 msgid "Storno-Kosten %(percent)s %% gemäss Bedingungen"
 msgstr "Frais d’annulation %(percent)s %% selon les conditions"
+
+msgid "voll"
+msgstr "plein"
+
+msgid "Gegenrecht"
+msgstr "réciprocité"
+
+msgid "Ernährung, Allergien"
+msgstr "Alimentation, allergies"
+
+msgid "bucht"
+msgstr "réserve"
+
+#, python-format
+msgid "Erstellt am %(day)s mit Tourchef. Vertraulich: enthält Personendaten, nach der Tour vernichten."
+msgstr "Créé le %(day)s avec Tourchef. Confidentiel : contient des données personnelles, à détruire après la course."
 
 #, python-format
 msgid "%(n)s Fotos in deine Bildbibliothek übernommen."
@@ -2429,6 +2419,24 @@ msgstr "Prestataire externe"
 msgid "%(n)s angemeldet (min. %(min)s)"
 msgstr "%(n)s inscrits (min. %(min)s)"
 
+msgid "Anfrage beantworten"
+msgstr "Répondre à la demande"
+
+msgid "Durchführung entscheiden"
+msgstr "Décider si la course a lieu"
+
+msgid "Abrechnen"
+msgstr "Facturer"
+
+msgid "Fotos hochladen"
+msgstr "Téléverser des photos"
+
+msgid "Angebot eines Anbieters beantworten"
+msgstr "Répondre à l’offre d’un prestataire"
+
+msgid "Pendenz entfernt."
+msgstr "Tâche retirée."
+
 msgid "Nachricht gesendet. Die Antwort des Gastes erscheint hier."
 msgstr "Message envoyé. La réponse du participant apparaîtra ici."
 
@@ -2444,21 +2452,27 @@ msgstr "Envoyé. Dès que le client accepte, la course est confirmée."
 msgid "Notizen gespeichert."
 msgstr "Notes enregistrées."
 
-msgid "Teilnehmer hinzugefügt."
-msgstr "Participant ajouté."
+msgid "Tourenname gespeichert. Die ursprüngliche Anfrage bleibt im Verlauf."
+msgstr "Nom de la course enregistré. La demande d’origine reste dans l’historique."
 
-msgid ""
-"Teilnehmer entfernt. Passe unter «Buchung ändern» Gruppengrösse und Preis "
-"an."
-msgstr ""
-"Participant retiré. Adapte la taille du groupe et le prix sous « Modifier la"
-" réservation »."
+msgid "Notiz gespeichert."
+msgstr "Note enregistrée."
+
+msgid "Teilnehmer hinzugefügt. Prüfe, ob Gruppengrösse und Preis noch stimmen."
+msgstr "Participant ajouté. Vérifie si la taille du groupe et le prix sont toujours corrects."
+
+msgid "Teilnehmer entfernt. Prüfe, ob Gruppengrösse und Preis noch stimmen."
+msgstr "Participant retiré. Vérifie si la taille du groupe et le prix sont toujours corrects."
 
 msgid "Der Gast wurde per E-Mail gebeten, seine Angaben einzutragen."
 msgstr "Le client a été invité par e-mail à saisir ses informations."
 
 msgid "Diese Buchung kann nicht abgerechnet werden."
 msgstr "Cette réservation ne peut pas être facturée."
+
+#, python-format
+msgid "Abrechnen kannst du ab dem Tourentag (%(day)s), z. B. direkt auf der Heimfahrt. Ändert sich vorher etwas, passe es unter «Buchung ändern» an."
+msgstr "Tu peux facturer dès le jour de la course (%(day)s), p. ex. directement sur le trajet du retour. Si quelque chose change avant, adapte-le sous « Modifier la réservation »."
 
 msgid "Abrechnung über CHF 0 gespeichert. Die Tour ist erledigt."
 msgstr "Décompte de CHF 0 enregistré. La course est réglée."
@@ -2482,26 +2496,27 @@ msgid "Termin abgesagt. Alle erhalten den vollen Betrag zurück."
 msgstr "Date annulée. Tout le monde est remboursé du montant total."
 
 #, python-format
-msgid ""
-"Nachricht an %(count)s Angemeldete gesendet. Jede Antwort erscheint bei der "
-"jeweiligen Person."
-msgstr ""
-"Message envoyé à %(count)s inscrits. Chaque réponse apparaît chez la "
-"personne concernée."
+msgid "Nachricht an %(count)s Angemeldete gesendet. Jede Antwort erscheint bei der jeweiligen Person."
+msgstr "Message envoyé à %(count)s inscrits. Chaque réponse apparaît chez la personne concernée."
 
 msgid "Bitte gib ein gültiges Ersatzdatum an."
 msgstr "Indique une date de remplacement valable."
 
 msgid "Ersatzdatum gesendet. Die Gäste sagen zu oder stornieren kostenlos."
-msgstr ""
-"Date de remplacement envoyée. Les clients acceptent ou annulent "
-"gratuitement."
+msgstr "Date de remplacement envoyée. Les clients acceptent ou annulent gratuitement."
 
 msgid "Vorlage gespeichert."
 msgstr "Modèle enregistré."
 
 msgid "Entwurf gelöscht."
 msgstr "Brouillon supprimé."
+
+msgid "Heute wurden schon genug Newsletter gesendet. Bitte morgen wieder."
+msgstr "Assez de newsletters envoyées aujourd’hui. Réessaie demain."
+
+#, python-format
+msgid "Newsletter an %(count)s Gäste gesendet."
+msgstr "Newsletter envoyée à %(count)s clients."
 
 msgid "Bitte wähle mindestens ein Bild."
 msgstr "Merci de choisir au moins une image."
@@ -2510,12 +2525,8 @@ msgid "Höchstens 20 Bilder auf einmal."
 msgstr "20 images au maximum à la fois."
 
 #, python-format
-msgid ""
-"%(count)s Bild(er) hochgeladen. Sie liegen in der Zwischenablage: gib ihnen "
-"unten eine Tourenart."
-msgstr ""
-"%(count)s image(s) téléversée(s). Elles sont dans le presse-papiers : donne-"
-"leur un type de course ci-dessous."
+msgid "%(count)s Bild(er) hochgeladen. Sie liegen in der Zwischenablage: gib ihnen unten eine Tourenart."
+msgstr "%(count)s image(s) téléversée(s). Elles sont dans le presse-papiers : donne-leur un type de course ci-dessous."
 
 msgid "Bild gelöscht."
 msgstr "Image supprimée."
@@ -2548,11 +2559,8 @@ msgstr "Ouverture supprimée."
 msgid "Anbieter entfernt. Der Link funktioniert nicht mehr."
 msgstr "Prestataire supprimé. Le lien ne fonctionne plus."
 
-msgid ""
-"Eingetragen. Achtung: An mindestens einem dieser Tage hast du schon etwas "
-"anderes."
-msgstr ""
-"Enregistré. Attention : tu as déjà autre chose au moins un de ces jours."
+msgid "Eingetragen. Achtung: An mindestens einem dieser Tage hast du schon etwas anderes."
+msgstr "Enregistré. Attention : tu as déjà autre chose au moins un de ces jours."
 
 msgid "Tour eingetragen. Die Tage sind für Gäste gesperrt."
 msgstr "Course enregistrée. Les jours sont bloqués pour les clients."
@@ -2590,12 +2598,8 @@ msgid "Einstellungen gespeichert."
 msgstr "Paramètres enregistrés."
 
 #, python-format
-msgid ""
-"Personendaten in %(count)s Buchung(en) gelöscht. Buchungen und Rechnungen "
-"bleiben erhalten."
-msgstr ""
-"Données personnelles supprimées dans %(count)s réservation(s). Les "
-"réservations et factures sont conservées."
+msgid "Personendaten in %(count)s Buchung(en) gelöscht. Buchungen und Rechnungen bleiben erhalten."
+msgstr "Données personnelles supprimées dans %(count)s réservation(s). Les réservations et factures sont conservées."
 
 msgid "Bitte gib eine gültige E-Mail-Adresse an."
 msgstr "Indique une adresse e-mail valable."
@@ -2663,8 +2667,7 @@ msgstr "Paramètres"
 msgid "Online-Zahlung ist für diesen Bergführer nicht verfügbar."
 msgstr "Le paiement en ligne n’est pas disponible pour ce guide."
 
-msgid ""
-"Die Zahlung konnte nicht gestartet werden. Bitte später erneut versuchen."
+msgid "Die Zahlung konnte nicht gestartet werden. Bitte später erneut versuchen."
 msgstr "Le paiement n’a pas pu démarrer. Réessaie plus tard."
 
 msgid "Diese Buchung kann nicht bezahlt werden."
@@ -2735,14 +2738,8 @@ msgstr "Codes de récupération"
 msgid "Zwei-Faktor ist aktiv"
 msgstr "La connexion à deux facteurs est active"
 
-msgid ""
-"Notiere diese Wiederherstellungscodes und bewahre sie sicher auf. Jeder Code"
-" funktioniert einmal, falls du dein Handy verlierst. Sie werden nur jetzt "
-"angezeigt."
-msgstr ""
-"Note ces codes de récupération et conserve-les en lieu sûr. Chaque code "
-"fonctionne une fois si tu perds ton téléphone. Ils ne s’affichent que "
-"maintenant."
+msgid "Notiere diese Wiederherstellungscodes und bewahre sie sicher auf. Jeder Code funktioniert einmal, falls du dein Handy verlierst. Sie werden nur jetzt angezeigt."
+msgstr "Note ces codes de récupération et conserve-les en lieu sûr. Chaque code fonctionne une fois si tu perds ton téléphone. Ils ne s’affichent que maintenant."
 
 msgid "Weiter zum Dashboard"
 msgstr "Vers le tableau de bord"
@@ -2753,19 +2750,11 @@ msgstr "Configurer les deux facteurs"
 msgid "Zwei-Faktor-Anmeldung einrichten"
 msgstr "Configurer la connexion à deux facteurs"
 
-msgid ""
-"Zum Schutz der Gästedaten ist die Zwei-Faktor-Anmeldung Pflicht. Das dauert "
-"zwei Minuten."
-msgstr ""
-"Pour protéger les données des clients, la connexion à deux facteurs est "
-"obligatoire. Cela prend deux minutes."
+msgid "Zum Schutz der Gästedaten ist die Zwei-Faktor-Anmeldung Pflicht. Das dauert zwei Minuten."
+msgstr "Pour protéger les données des clients, la connexion à deux facteurs est obligatoire. Cela prend deux minutes."
 
-msgid ""
-"Installiere eine Authenticator-App auf deinem Handy (z. B. Google "
-"Authenticator, Microsoft Authenticator, 1Password)."
-msgstr ""
-"Installe une app d’authentification sur ton téléphone (p. ex. Google "
-"Authenticator, Microsoft Authenticator, 1Password)."
+msgid "Installiere eine Authenticator-App auf deinem Handy (z. B. Google Authenticator, Microsoft Authenticator, 1Password)."
+msgstr "Installe une app d’authentification sur ton téléphone (p. ex. Google Authenticator, Microsoft Authenticator, 1Password)."
 
 msgid "Scanne diesen QR-Code mit der App."
 msgstr "Scanne ce code QR avec l’app."
@@ -2785,22 +2774,14 @@ msgstr "Connexion à deux facteurs"
 msgid "Code eingeben"
 msgstr "Saisir le code"
 
-msgid ""
-"Öffne deine Authenticator-App (z. B. Google Authenticator, Microsoft "
-"Authenticator, 1Password) und gib den 6-stelligen Code für Tourchef ein."
-msgstr ""
-"Ouvre ton app d’authentification (p. ex. Google Authenticator, Microsoft "
-"Authenticator, 1Password) et saisis le code à 6 chiffres pour Tourchef."
+msgid "Öffne deine Authenticator-App (z. B. Google Authenticator, Microsoft Authenticator, 1Password) und gib den 6-stelligen Code für Tourchef ein."
+msgstr "Ouvre ton app d’authentification (p. ex. Google Authenticator, Microsoft Authenticator, 1Password) et saisis le code à 6 chiffres pour Tourchef."
 
 msgid "Bestätigen"
 msgstr "Confirmer"
 
-msgid ""
-"Handy verloren? Verwende einen deiner Wiederherstellungscodes oder melde "
-"dich beim Tourchef-Support."
-msgstr ""
-"Téléphone perdu ? Utilise l’un de tes codes de récupération ou contacte le "
-"support Tourchef."
+msgid "Handy verloren? Verwende einen deiner Wiederherstellungscodes oder melde dich beim Tourchef-Support."
+msgstr "Téléphone perdu ? Utilise l’un de tes codes de récupération ou contacte le support Tourchef."
 
 msgid "Anmelden"
 msgstr "Se connecter"
@@ -2838,12 +2819,8 @@ msgstr "Demander un nouveau lien"
 msgid "E-Mail unterwegs"
 msgstr "E-mail en route"
 
-msgid ""
-"Falls ein Konto mit dieser Adresse existiert, haben wir dir einen Link zum "
-"Zurücksetzen gesendet."
-msgstr ""
-"Si un compte existe avec cette adresse, nous t’avons envoyé un lien de "
-"réinitialisation."
+msgid "Falls ein Konto mit dieser Adresse existiert, haben wir dir einen Link zum Zurücksetzen gesendet."
+msgstr "Si un compte existe avec cette adresse, nous t’avons envoyé un lien de réinitialisation."
 
 #, python-format
 msgid ""
@@ -2864,12 +2841,8 @@ msgstr "Tourchef : réinitialiser le mot de passe"
 msgid "Bitte bestätige, dass du es bist"
 msgstr "Confirme que c’est bien toi"
 
-msgid ""
-"Für Exporte und das Löschen von Gästedaten brauchen wir dein Passwort noch "
-"einmal."
-msgstr ""
-"Pour les exports et la suppression de données de clients, il nous faut "
-"encore une fois ton mot de passe."
+msgid "Für Exporte und das Löschen von Gästedaten brauchen wir dein Passwort noch einmal."
+msgstr "Pour les exports et la suppression de données de clients, il nous faut encore une fois ton mot de passe."
 
 msgid "Registrieren"
 msgstr "S’enregistrer"
@@ -2892,8 +2865,7 @@ msgstr "Déjà enregistré ?"
 msgid "Registrierung geschlossen"
 msgstr "Inscriptions fermées"
 
-msgid ""
-"Tourchef ist im Testbetrieb. Bitte melde dich bei uns für einen Zugang."
+msgid "Tourchef ist im Testbetrieb. Bitte melde dich bei uns für einen Zugang."
 msgstr "Tourchef est en phase de test. Contacte-nous pour obtenir un accès."
 
 msgid "Zur Anmeldung"
@@ -2905,16 +2877,8 @@ msgstr "Photos"
 msgid "Mit den Gästen teilen"
 msgstr "Partager avec les clients"
 
-msgid ""
-"Lade deine Fotos hoch und schick den Link deinen Gästen: Sie laden die Fotos"
-" in voller Qualität herunter und legen ihre eigenen dazu. Was du behältst, "
-"landet in deiner Bildbibliothek – so wächst sie mit jeder Tour, und du hast "
-"die besten Bilder zur Hand, wenn du die nächste Tour ausschreibst."
-msgstr ""
-"Téléverse tes photos et envoie le lien à tes clients : ils téléchargent les "
-"photos en pleine qualité et ajoutent les leurs. Ce que tu gardes va dans ta "
-"photothèque – elle grandit à chaque course, et tu as tes meilleures images "
-"sous la main pour annoncer la prochaine."
+msgid "Lade deine Fotos hoch und schick den Link deinen Gästen: Sie laden die Fotos in voller Qualität herunter und legen ihre eigenen dazu. Was du behältst, landet in deiner Bildbibliothek – so wächst sie mit jeder Tour, und du hast die besten Bilder zur Hand, wenn du die nächste Tour ausschreibst."
+msgstr "Téléverse tes photos et envoie le lien à tes clients : ils téléchargent les photos en pleine qualité et ajoutent les leurs. Ce que tu gardes va dans ta photothèque – elle grandit à chaque course, et tu as tes meilleures images sous la main pour annoncer la prochaine."
 
 msgid "Link kopieren"
 msgstr "Copier le lien"
@@ -2939,9 +2903,6 @@ msgstr "Trop grande :"
 msgid "Bitte deinen Namen eintragen."
 msgstr "Merci d'indiquer ton nom."
 
-msgid "Fotos hochladen"
-msgstr "Téléverser des photos"
-
 msgid "Dein Name"
 msgstr "Ton nom"
 
@@ -2949,22 +2910,15 @@ msgid "Fotos auswählen"
 msgstr "Choisir des photos"
 
 #, python-format
-msgid ""
-"Mehrere auf einmal, in Originalqualität (JPG, PNG, WebP, HEIC), je höchstens"
-" %(mb)s MB."
-msgstr ""
-"Plusieurs à la fois, en qualité originale (JPG, PNG, WebP, HEIC), %(mb)s Mo "
-"max. chacune."
+msgid "Mehrere auf einmal, in Originalqualität (JPG, PNG, WebP, HEIC), je höchstens %(mb)s MB."
+msgstr "Plusieurs à la fois, en qualité originale (JPG, PNG, WebP, HEIC), %(mb)s Mo max. chacune."
 
 #, python-format
 msgid "%(name)s darf meine Fotos für Tourenausschreibungen verwenden."
 msgstr "%(name)s peut utiliser mes photos pour annoncer des courses."
 
-msgid ""
-"Lade nur Fotos hoch, mit deren Teilen alle Abgebildeten einverstanden sind."
-msgstr ""
-"Ne téléverse que des photos que toutes les personnes visibles acceptent de "
-"partager."
+msgid "Lade nur Fotos hoch, mit deren Teilen alle Abgebildeten einverstanden sind."
+msgstr "Ne téléverse que des photos que toutes les personnes visibles acceptent de partager."
 
 msgid "Hochladen"
 msgstr "Télécharger"
@@ -2982,12 +2936,8 @@ msgid "Alle herunterladen"
 msgstr "Tout télécharger"
 
 #, python-format
-msgid ""
-"Das Album bleibt bis %(day)s offen, danach werden die Fotos gelöscht. Lade "
-"herunter, was du behalten willst."
-msgstr ""
-"L'album reste ouvert jusqu'au %(day)s, ensuite les photos sont supprimées. "
-"Télécharge ce que tu veux garder."
+msgid "Das Album bleibt bis %(day)s offen, danach werden die Fotos gelöscht. Lade herunter, was du behalten willst."
+msgstr "L'album reste ouvert jusqu'au %(day)s, ensuite les photos sont supprimées. Télécharge ce que tu veux garder."
 
 msgid "Original herunterladen"
 msgstr "Télécharger l'original"
@@ -3008,13 +2958,8 @@ msgid "Markierte löschen"
 msgstr "Supprimer la sélection"
 
 #, python-format
-msgid ""
-"Behaltene Fotos kommen mit Tourenart, Ort und Datum in deine Bildbibliothek,"
-" das Original bleibt erhalten. Alle anderen werden am %(day)s gelöscht."
-msgstr ""
-"Les photos gardées vont dans ta photothèque avec le type de course, le lieu "
-"et la date ; l'original est conservé. Toutes les autres sont supprimées le "
-"%(day)s."
+msgid "Behaltene Fotos kommen mit Tourenart, Ort und Datum in deine Bildbibliothek, das Original bleibt erhalten. Alle anderen werden am %(day)s gelöscht."
+msgstr "Les photos gardées vont dans ta photothèque avec le type de course, le lieu et la date ; l'original est conservé. Toutes les autres sont supprimées le %(day)s."
 
 msgid "Noch keine Fotos."
 msgstr "Pas encore de photos."
@@ -3031,14 +2976,8 @@ msgstr "Se déconnecter"
 msgid "Unterbereiche"
 msgstr "Sous-rubriques"
 
-msgid ""
-"Der Gast bekommt deinen Vorschlag mit Datum, ungefähren Kosten und deiner "
-"Nachricht. Erst wenn er zusagt, ist die Tour fix. Bezahlt wird nach der "
-"Tour, nach effektivem Aufwand."
-msgstr ""
-"Le client reçoit ta proposition avec la date, le coût approximatif et ton "
-"message. La course n'est fixée qu'après son accord. Le paiement a lieu après"
-" la course, selon l'effort réel."
+msgid "Der Gast bekommt deinen Vorschlag mit Datum, ungefähren Kosten und deiner Nachricht. Erst wenn er zusagt, ist die Tour fix. Bezahlt wird nach der Tour, nach effektivem Aufwand."
+msgstr "Le client reçoit ta proposition avec la date, le coût approximatif et ton message. La course n'est fixée qu'après son accord. Le paiement a lieu après la course, selon l'effort réel."
 
 msgid "Tagesansatz × Tage"
 msgstr "Tarif journalier × jours"
@@ -3075,12 +3014,8 @@ msgstr "min. %(lo)s"
 msgid "Entwürfe"
 msgstr "Brouillons"
 
-msgid ""
-"Wird beim Tippen automatisch gespeichert. Hier machst du weiter, wo du "
-"aufgehört hast."
-msgstr ""
-"Enregistré automatiquement pendant la saisie. Reprends ici là où tu t'es "
-"arrêté."
+msgid "Wird beim Tippen automatisch gespeichert. Hier machst du weiter, wo du aufgehört hast."
+msgstr "Enregistré automatiquement pendant la saisie. Reprends ici là où tu t'es arrêté."
 
 #, python-format
 msgid "gespeichert %(day)s"
@@ -3120,8 +3055,18 @@ msgstr "Notifications"
 msgid "Alle als gelesen markieren"
 msgstr "Tout marquer comme lu"
 
-msgid "Keine neuen Benachrichtigungen."
-msgstr "Aucune nouvelle notification."
+#, python-format
+msgid "vor %(ago)s"
+msgstr "il y a %(ago)s"
+
+msgid "neu"
+msgstr "nouveau"
+
+msgid "Noch keine Benachrichtigungen."
+msgstr "Aucune notification pour l’instant."
+
+msgid "ja, voll"
+msgstr "oui, plein"
 
 msgid "eigene Bilder und Tourchef-Bilder, nach Tourenart"
 msgstr "tes images et celles de Tourchef, par type de course"
@@ -3136,8 +3081,29 @@ msgstr "Ouvrir la bibliothèque d'images"
 msgid "Angaben von %(n)s / %(total)s"
 msgstr "Informations : %(n)s / %(total)s"
 
-msgid "bucht"
-msgstr "réserve"
+#, python-format
+msgid "Auf der Liste steht %(n)s Person, gebucht sind %(booked)s."
+msgid_plural "Auf der Liste stehen %(n)s Personen, gebucht sind %(booked)s."
+msgstr[0] "%(n)s personne sur la liste, %(booked)s réservées."
+msgstr[1] "%(n)s personnes sur la liste, %(booked)s réservées."
+
+msgid "Gruppengrösse und Preis passt du nicht automatisch an – das entscheidest du."
+msgstr "La taille du groupe et le prix ne sont pas adaptés automatiquement – c’est toi qui décides."
+
+#, python-format
+msgid "Buchung auf %(n)s Person anpassen"
+msgid_plural "Buchung auf %(n)s Personen anpassen"
+msgstr[0] "Adapter la réservation à %(n)s personne"
+msgstr[1] "Adapter la réservation à %(n)s personnes"
+
+msgid "Ansicht"
+msgstr "Affichage"
+
+msgid "Einzeln"
+msgstr "Par personne"
+
+msgid "Tabelle"
+msgstr "Tableau"
 
 msgid "Angaben da"
 msgstr "Informations reçues"
@@ -3152,6 +3118,12 @@ msgstr "État au %(day)s"
 msgid "Noch keine Angaben."
 msgstr "Pas encore d'informations."
 
+msgid "Deine Notiz zu dieser Person"
+msgstr "Ta note sur cette personne"
+
+msgid "z. B. braucht noch Steigeisen"
+msgstr "p. ex. a encore besoin de crampons"
+
 msgid "Diese Person von der Liste entfernen?"
 msgstr "Retirer cette personne de la liste ?"
 
@@ -3161,29 +3133,26 @@ msgstr "Supprimer"
 msgid "Nummern kopieren (WhatsApp-Gruppe)"
 msgstr "Copier les numéros (groupe WhatsApp)"
 
-msgid "Drucken / PDF"
-msgstr "Imprimer / PDF"
+msgid "WhatsApp-Gruppe: Nummern kopieren, in WhatsApp eine neue Gruppe erstellen und die Nummern hinzufügen. Automatisch anlegen lässt WhatsApp nicht zu."
+msgstr "Groupe WhatsApp : copie les numéros, crée un nouveau groupe dans WhatsApp et ajoute-les. WhatsApp ne permet pas de créer des groupes automatiquement."
 
-msgid "Gast bitten, die Angaben zu prüfen"
-msgstr "Demander au client de vérifier les informations"
+msgid "Teilnehmende hinzufügen"
+msgstr "Ajouter des participants"
 
-msgid "Gast um diese Angaben bitten"
-msgstr "Demander ces informations au client"
+msgid "Kommt jemand dazu, schick dem Gast diesen Link zum Weiterleiten: Die Person trägt ihre Angaben selbst ein und erscheint dann oben in der Liste."
+msgstr "Quelqu'un se joint au groupe ? Envoie ce lien au client pour qu'il le transmette : la personne saisit ses informations et apparaît ensuite dans la liste ci-dessus."
 
-msgid ""
-"WhatsApp-Gruppe: Nummern kopieren, in WhatsApp eine neue Gruppe erstellen "
-"und die Nummern hinzufügen. Automatisch anlegen lässt WhatsApp nicht zu."
-msgstr ""
-"Groupe WhatsApp : copie les numéros, crée un nouveau groupe dans WhatsApp et"
-" ajoute-les. WhatsApp ne permet pas de créer des groupes automatiquement."
+msgid "Oder selbst eintragen, z. B. nach einem Anruf"
+msgstr "Ou l’ajouter toi-même, p. ex. après un appel"
+
+msgid "Hinzufügen"
+msgstr "Ajouter"
 
 msgid "Preisrechner"
 msgstr "Calculateur de prix"
 
 msgid "Nur eine Hilfe für den Tourenpreis. Spesen trägst du oben separat ein."
-msgstr ""
-"Simple aide pour le prix de la course. Saisis les frais séparément ci-"
-"dessus."
+msgstr "Simple aide pour le prix de la course. Saisis les frais séparément ci-dessus."
 
 #, python-format
 msgid "Tagesansatz Bergführer für %(n)s Pers. (CHF)"
@@ -3228,46 +3197,39 @@ msgstr[1] "voiture, %(n)s places libres"
 msgid "Vorschlag aus Tagen × Tagesansätzen"
 msgstr "Proposition jours × tarifs journaliers"
 
-msgid "E-Mail-Antworten"
-msgstr "Réponses par e-mail"
+msgid "E-Mails vom Gast"
+msgstr "E-mails du client"
+
+msgid "Antwortet der Gast auf eine E-Mail von Tourchef (Bestätigung, Rechnung, Erinnerung …), landet seine Antwort hier – und du bekommst sie zusätzlich per E-Mail. So geht nichts verloren. Absprachen machst du am besten direkt per Telefon oder WhatsApp."
+msgstr "Quand le client répond à un e-mail de Tourchef (confirmation, facture, rappel …), sa réponse arrive ici – et tu la reçois aussi par e-mail. Rien ne se perd. Le mieux est de s’arranger directement par téléphone ou WhatsApp."
 
 msgid "Du"
 msgstr "Toi"
 
 #, python-format
-msgid ""
-"Diese Antwort kam von %(sender)s, nicht von der Adresse des Gastes. Der Gast"
-" sieht sie nicht."
-msgstr ""
-"Cette réponse vient de %(sender)s, pas de l'adresse du participant. Le "
-"participant ne la voit pas."
+msgid "Diese Antwort kam von %(sender)s, nicht von der Adresse des Gastes (z. B. von einer mitreisenden Person). Der Gast sieht sie nicht."
+msgstr "Cette réponse vient de %(sender)s, pas de l’adresse du client (p. ex. d’un compagnon). Le client ne la voit pas."
 
 msgid "Gehört dazu"
 msgstr "C'est bien lui"
 
-msgid ""
-"Antworten des Gastes auf Tourchef-E-Mails. Antworte ihm am besten direkt per"
-" Telefon oder WhatsApp."
-msgstr ""
-"Réponses du client aux e-mails de Tourchef. Le mieux est de lui répondre "
-"directement par téléphone ou WhatsApp."
+msgid "Noch keine E-Mails vom Gast."
+msgstr "Pas encore d’e-mail du client."
 
-msgid ""
-"Gäste können nur in deinen freigegebenen Zeiträumen anfragen, ausser an "
-"gesperrten, im Kalender belegten oder mit Terminen belegten Tagen."
-msgstr ""
-"Les clients peuvent faire une demande uniquement dans tes périodes ouvertes,"
-" sauf les jours bloqués, occupés dans le calendrier ou réservés par des "
-"dates publiées."
+msgid "Anrufen"
+msgstr "Appeler"
 
-msgid ""
-"Gäste können an allen Tagen anfragen, ausser an gesperrten, im Kalender "
-"belegten oder mit Terminen belegten Tagen. Sobald du Zeiträume freigibst, "
-"sind nur noch diese buchbar."
-msgstr ""
-"Les clients peuvent faire une demande tous les jours, sauf les jours "
-"bloqués, occupés dans le calendrier ou réservés par des dates publiées. Dès "
-"que tu ouvres des périodes, seules celles-ci sont réservables."
+msgid "Notizen ansehen"
+msgstr "Voir les notes"
+
+msgid "Notiz schreiben"
+msgstr "Écrire une note"
+
+msgid "Gäste können nur in deinen freigegebenen Zeiträumen anfragen, ausser an gesperrten, im Kalender belegten oder mit Terminen belegten Tagen."
+msgstr "Les clients peuvent faire une demande uniquement dans tes périodes ouvertes, sauf les jours bloqués, occupés dans le calendrier ou réservés par des dates publiées."
+
+msgid "Gäste können an allen Tagen anfragen, ausser an gesperrten, im Kalender belegten oder mit Terminen belegten Tagen. Sobald du Zeiträume freigibst, sind nur noch diese buchbar."
+msgstr "Les clients peuvent faire une demande tous les jours, sauf les jours bloqués, occupés dans le calendrier ou réservés par des dates publiées. Dès que tu ouvres des périodes, seules celles-ci sont réservables."
 
 msgid "Zeitraum sperren"
 msgstr "Bloquer une période"
@@ -3284,12 +3246,8 @@ msgstr "Aucun blocage."
 msgid "Zeitraum freigeben"
 msgstr "Ouvrir une période"
 
-msgid ""
-"Optional. Sobald ein Zeitraum freigegeben ist, können Gäste nur noch darin "
-"anfragen."
-msgstr ""
-"Facultatif. Dès qu’une période est ouverte, les clients ne peuvent faire une"
-" demande que dans celle-ci."
+msgid "Optional. Sobald ein Zeitraum freigegeben ist, können Gäste nur noch darin anfragen."
+msgstr "Facultatif. Dès qu’une période est ouverte, les clients ne peuvent faire une demande que dans celle-ci."
 
 msgid "Freigeben"
 msgstr "Ouvrir"
@@ -3303,16 +3261,8 @@ msgstr "Aucune ouverture."
 msgid "Für Anbieter freigeben"
 msgstr "Ouvrir pour des prestataires"
 
-msgid ""
-"Gib Zeiträume gezielt für einen Anbieter frei (z. B. eine Bergschule) und "
-"schick ihm den Link. Der Anbieter sieht nur diese Zeiträume und kann dir "
-"dort direkt eine Tour eintragen; du bestätigst sie unter «Kalender › Externe"
-" Anbieter». Gäste können diese Tage weiterhin anfragen."
-msgstr ""
-"Ouvre des périodes pour un prestataire précis (p. ex. une école d’alpinisme)"
-" et envoie-lui le lien. Le prestataire ne voit que ces périodes et peut y "
-"inscrire directement une course ; tu la confirmes sous « Calendrier › "
-"Prestataires externes ». Les clients peuvent toujours demander ces jours."
+msgid "Gib Zeiträume gezielt für einen Anbieter frei (z. B. eine Bergschule) und schick ihm den Link. Der Anbieter sieht nur diese Zeiträume und kann dir dort direkt eine Tour eintragen; du bestätigst sie unter «Kalender › Externe Anbieter». Gäste können diese Tage weiterhin anfragen."
+msgstr "Ouvre des périodes pour un prestataire précis (p. ex. une école d’alpinisme) et envoie-lui le lien. Le prestataire ne voit que ces périodes et peut y inscrire directement une course ; tu la confirmes sous « Calendrier › Prestataires externes ». Les clients peuvent toujours demander ces jours."
 
 msgid "entfernen"
 msgstr "supprimer"
@@ -3332,24 +3282,11 @@ msgstr "Calendrier externe"
 msgid "Wichtig:"
 msgstr "Important :"
 
-msgid ""
-"Es sperren nur Termine, die in deinem Kalender als «beschäftigt» markiert "
-"sind. In Google Kalender sind ganztägige Termine standardmässig «verfügbar»:"
-" im Termin «Verfügbar» auf «Beschäftigt» umstellen – oder unten «Auch "
-"verfügbare Termine sperren» aktivieren."
-msgstr ""
-"Seuls les événements marqués « occupé » dans ton agenda bloquent des jours. "
-"Dans Google Agenda, les événements d’une journée entière sont « disponible »"
-" par défaut : dans l’événement, passe de « Disponible » à « Occupé » – ou "
-"active ci-dessous « Bloquer aussi les événements disponibles »."
+msgid "Es sperren nur Termine, die in deinem Kalender als «beschäftigt» markiert sind. In Google Kalender sind ganztägige Termine standardmässig «verfügbar»: im Termin «Verfügbar» auf «Beschäftigt» umstellen – oder unten «Auch verfügbare Termine sperren» aktivieren."
+msgstr "Seuls les événements marqués « occupé » dans ton agenda bloquent des jours. Dans Google Agenda, les événements d’une journée entière sont « disponible » par défaut : dans l’événement, passe de « Disponible » à « Occupé » – ou active ci-dessous « Bloquer aussi les événements disponibles »."
 
-msgid ""
-"Neue Termine erscheinen mit Verzögerung: Tourchef gleicht stündlich ab, "
-"Google aktualisiert die iCal-Adresse selbst teils erst nach einigen Stunden."
-msgstr ""
-"Les nouveaux événements apparaissent avec un délai : Tourchef synchronise "
-"toutes les heures, et Google ne met parfois à jour son adresse iCal qu’après"
-" quelques heures."
+msgid "Neue Termine erscheinen mit Verzögerung: Tourchef gleicht stündlich ab, Google aktualisiert die iCal-Adresse selbst teils erst nach einigen Stunden."
+msgstr "Les nouveaux événements apparaissent avec un délai : Tourchef synchronise toutes les heures, et Google ne met parfois à jour son adresse iCal qu’après quelques heures."
 
 msgid "Speichern & abgleichen"
 msgstr "Enregistrer et synchroniser"
@@ -3373,11 +3310,20 @@ msgstr "Toutes les demandes"
 msgid "Was"
 msgstr "Quoi"
 
+msgid "Tour benennen"
+msgstr "Nommer la course"
+
+msgid "benennen"
+msgstr "renommer"
+
 #, python-format
 msgid "%(n)s Person"
 msgid_plural "%(n)s Personen"
 msgstr[0] "%(n)s personne"
 msgstr[1] "%(n)s personnes"
+
+msgid "Anfrage des Gastes"
+msgstr "Demande du client"
 
 msgid "Wann"
 msgstr "Quand"
@@ -3404,12 +3350,8 @@ msgstr "Envoyer la proposition au client"
 msgid "Ablehnen"
 msgstr "Refuser"
 
-msgid ""
-"Der Gast erhält eine Absage mit deiner Nachricht. Passt dir ein anderes "
-"Datum, schreib es hier hinein – der Gast kann dann neu anfragen."
-msgstr ""
-"Le client reçoit un refus avec ton message. Si une autre date te convient, "
-"écris-la ici – le client pourra refaire une demande."
+msgid "Der Gast erhält eine Absage mit deiner Nachricht. Passt dir ein anderes Datum, schreib es hier hinein – der Gast kann dann neu anfragen."
+msgstr "Le client reçoit un refus avec ton message. Si une autre date te convient, écris-la ici – le client pourra refaire une demande."
 
 msgid "Absage senden"
 msgstr "Envoyer le refus"
@@ -3418,13 +3360,8 @@ msgid "Pendent"
 msgstr "En attente"
 
 #, python-format
-msgid ""
-"Dein Vorschlag ist beim Gast. Sagt er bis %(day)s definitiv zu, ist die Tour"
-" bestätigt. Die Tage sind bis dahin provisorisch reserviert."
-msgstr ""
-"Ta proposition est chez le client. S'il confirme définitivement d'ici le "
-"%(day)s, la course est confirmée. D'ici là, les jours sont réservés "
-"provisoirement."
+msgid "Dein Vorschlag ist beim Gast. Sagt er bis %(day)s definitiv zu, ist die Tour bestätigt. Die Tage sind bis dahin provisorisch reserviert."
+msgstr "Ta proposition est chez le client. S'il confirme définitivement d'ici le %(day)s, la course est confirmée. D'ici là, les jours sont réservés provisoirement."
 
 msgid "Vorschlag anpassen"
 msgstr "Modifier la proposition"
@@ -3439,91 +3376,56 @@ msgstr "Retirer"
 msgid "Ersatzdatum vorgeschlagen. Der Gast antwortet bis %(day)s."
 msgstr "Date de remplacement proposée. Le client répond d’ici le %(day)s."
 
-msgid "Fotoalbum öffnen"
-msgstr "Ouvrir l'album photo"
-
-#, python-format
-msgid ""
-"%(n)s Foto im Album. Teile es mit den Gästen und behalte die besten für "
-"deine Bildbibliothek."
-msgid_plural ""
-"%(n)s Fotos im Album. Teile es mit den Gästen und behalte die besten für "
-"deine Bildbibliothek."
-msgstr[0] ""
-"%(n)s photo dans l'album. Partage-le avec les clients et garde les "
-"meilleures pour ta photothèque."
-msgstr[1] ""
-"%(n)s photos dans l'album. Partage-le avec les clients et garde les "
-"meilleures pour ta photothèque."
-
 msgid "Buchung ändern"
 msgstr "Modifier la réservation"
 
-msgid ""
-"Datum, Gruppengrösse oder Preis anpassen, z. B. nach einem neuen Datum oder "
-"wenn jemand abspringt oder dazukommt. Die Änderung wird protokolliert und "
-"der Gast erhält eine E-Mail."
-msgstr ""
-"Modifier la date, la taille du groupe ou le prix, p. ex. pour une nouvelle "
-"date ou si quelqu'un se désiste ou se joint. La modification est enregistrée"
-" et le client reçoit un e-mail."
+msgid "Vorgeschlagen: neue Gruppengrösse mit deinem Tagesansatz dafür (Einstellungen). Prüfe den Preis und speichere – erst dann erhält der Gast eine E-Mail."
+msgstr "Proposé : la nouvelle taille du groupe avec ton tarif journalier correspondant (paramètres). Vérifie le prix et enregistre – le client ne reçoit un e-mail qu’à ce moment-là."
+
+msgid "Datum, Gruppengrösse oder Preis anpassen, z. B. nach einem neuen Datum oder wenn jemand abspringt oder dazukommt. Die Änderung wird protokolliert und der Gast erhält eine E-Mail."
+msgstr "Modifier la date, la taille du groupe ou le prix, p. ex. pour une nouvelle date ou si quelqu'un se désiste ou se joint. La modification est enregistrée et le client reçoit un e-mail."
 
 msgid "Änderung speichern"
 msgstr "Enregistrer la modification"
 
-msgid "Teilnehmende hinzufügen"
-msgstr "Ajouter des participants"
+msgid "vorhanden"
+msgstr "existantes"
 
-msgid ""
-"Kommt jemand dazu, schick dem Gast diesen Link zum Weiterleiten: Die Person "
-"trägt ihre Angaben selbst ein und erscheint dann oben in der Liste."
-msgstr ""
-"Quelqu'un se joint au groupe ? Envoie ce lien au client pour qu'il le "
-"transmette : la personne saisit ses informations et apparaît ensuite dans la"
-" liste ci-dessus."
+msgid "Zu einzelnen Personen"
+msgstr "Sur certaines personnes"
 
-msgid "Oder selbst eintragen, z. B. nach einem Anruf:"
-msgstr "Ou ajoute-la toi-même, p. ex. après un appel :"
-
-msgid "Hinzufügen"
-msgstr "Ajouter"
+msgid "Ändern unter «Teilnehmende» bei der Person."
+msgstr "Modifier sous « Participants » chez la personne."
 
 msgid "Notizen speichern"
 msgstr "Enregistrer les notes"
 
-msgid "Kulanz: mehr zurückzahlen"
-msgstr "Geste commercial : rembourser davantage"
+msgid "Tourenblatt"
+msgstr "Fiche de course"
+
+msgid "Alles auf einem Blatt: Tour, Datum, Treffpunkt, Teilnehmerliste mit allen Angaben und deine Notizen."
+msgstr "Tout sur une feuille : course, date, point de rendez-vous, liste des participants avec toutes les informations et tes notes."
+
+msgid "Tourenblatt als PDF exportieren"
+msgstr "Exporter la fiche de course en PDF"
+
+msgid "Fotoalbum öffnen"
+msgstr "Ouvrir l'album photo"
 
 #, python-format
-msgid ""
-"Du kannst zusätzlich bis CHF %(max)s zurückzahlen. Der Betrag wird von "
-"deinem Stripe-Konto abgezogen."
-msgstr ""
-"Tu peux rembourser en plus jusqu’à CHF %(max)s. Le montant est débité de ton"
-" compte Stripe."
-
-msgid "Zurückzahlen"
-msgstr "Rembourser"
+msgid "%(n)s Foto im Album. Teile es mit den Gästen und behalte die besten für deine Bildbibliothek."
+msgid_plural "%(n)s Fotos im Album. Teile es mit den Gästen und behalte die besten für deine Bildbibliothek."
+msgstr[0] "%(n)s photo dans l'album. Partage-le avec les clients et garde les meilleures pour ta photothèque."
+msgstr[1] "%(n)s photos dans l'album. Partage-le avec les clients et garde les meilleures pour ta photothèque."
 
 msgid "Tour absagen"
 msgstr "Annuler la course"
 
-msgid ""
-"Tour wirklich absagen? Der Gast wird informiert. Das lässt sich nicht "
-"rückgängig machen."
-msgstr ""
-"Vraiment annuler la course ? Le participant sera informé. Cette action est "
-"irréversible."
+msgid "Tour wirklich absagen? Der Gast wird informiert. Das lässt sich nicht rückgängig machen."
+msgstr "Vraiment annuler la course ? Le participant sera informé. Cette action est irréversible."
 
-msgid ""
-"Für den Gast kostenlos. Ein neues Datum stellst du unter «Buchung ändern» "
-"ein."
-msgstr ""
-"Gratuit pour le client. Pour une nouvelle date, utilise « Modifier la "
-"réservation »."
-
-msgid "Abrechnen"
-msgstr "Facturer"
+msgid "Für den Gast kostenlos. Ein neues Datum stellst du unter «Buchung ändern» ein."
+msgstr "Gratuit pour le client. Pour une nouvelle date, utilise « Modifier la réservation »."
 
 msgid "Preis und Bedingungen"
 msgstr "Prix et conditions"
@@ -3542,32 +3444,28 @@ msgid "Bedingungen"
 msgstr "Conditions"
 
 #, python-format
-msgid ""
-"akzeptiert %(day)s (Storno: bis %(free)s Tage 0 %%, bis %(partial)s Tage "
-"%(percent)s %%)"
-msgstr ""
-"acceptées le %(day)s (annulation : jusqu’à %(free)s jours 0 %%, jusqu’à "
-"%(partial)s jours %(percent)s %%)"
+msgid "akzeptiert %(day)s (Storno: bis %(free)s Tage 0 %%, bis %(partial)s Tage %(percent)s %%)"
+msgstr "acceptées le %(day)s (annulation : jusqu’à %(free)s jours 0 %%, jusqu’à %(partial)s jours %(percent)s %%)"
 
-msgid ""
-"Passe Tage und Preis an den effektiven Verlauf an (Tag mehr oder weniger, "
-"Abbruch) und trage die effektiven Spesen ein. Der Gast bekommt die Rechnung "
-"per E-Mail."
-msgstr ""
-"Adapte les jours et le prix au déroulement réel (un jour de plus ou de "
-"moins, abandon) et saisis les frais effectifs. Le client reçoit la facture "
-"par e-mail."
+msgid "Passe Tage und Preis an den effektiven Verlauf an (Tag mehr oder weniger, Abbruch) und trage die effektiven Spesen ein. Der Gast bekommt die Rechnung per E-Mail."
+msgstr "Adapte les jours et le prix au déroulement réel (un jour de plus ou de moins, abandon) et saisis les frais effectifs. Le client reçoit la facture par e-mail."
 
 msgid "Abrechnung auslösen"
 msgstr "Établir le décompte"
 
 #, python-format
-msgid ""
-"Wird nach der Tour freigeschaltet, ab dem letzten Tourentag (%(day)s). "
-"Bricht ihr früher ab, passe zuerst unter «Buchung ändern» das Enddatum an."
-msgstr ""
-"Débloqué après la course, dès le dernier jour (%(day)s). Si vous arrêtez "
-"plus tôt, modifie d'abord la date de fin sous « Modifier la réservation »."
+msgid "Möglich ab dem Tourentag (%(day)s) – z. B. direkt auf der Heimfahrt im Zug."
+msgstr "Possible dès le jour de la course (%(day)s) – p. ex. directement dans le train du retour."
+
+msgid "Kulanz: mehr zurückzahlen"
+msgstr "Geste commercial : rembourser davantage"
+
+#, python-format
+msgid "Du kannst zusätzlich bis CHF %(max)s zurückzahlen. Der Betrag wird von deinem Stripe-Konto abgezogen."
+msgstr "Tu peux rembourser en plus jusqu’à CHF %(max)s. Le montant est débité de ton compte Stripe."
+
+msgid "Zurückzahlen"
+msgstr "Rembourser"
 
 msgid "Rechnung"
 msgstr "Facture"
@@ -3582,15 +3480,15 @@ msgstr "Corriger la facture"
 msgid "Zahlung erhalten"
 msgstr "Paiement reçu"
 
-msgid ""
-"«Zahlung erhalten» nur bei Überweisung oder Barzahlung. Online-Zahlungen "
-"werden automatisch erfasst."
-msgstr ""
-"« Paiement reçu » seulement pour un virement ou un paiement en espèces. Les "
-"paiements en ligne sont saisis automatiquement."
+msgid "«Zahlung erhalten» nur bei Überweisung oder Barzahlung. Online-Zahlungen werden automatisch erfasst."
+msgstr "« Paiement reçu » seulement pour un virement ou un paiement en espèces. Les paiements en ligne sont saisis automatiquement."
 
 msgid "Verlauf"
 msgstr "Historique"
+
+#, python-format
+msgid "Ursprüngliche Anfrage des Gastes, %(day)s"
+msgstr "Demande d’origine du client, %(day)s"
 
 msgid "Drucken / als PDF speichern"
 msgstr "Imprimer / enregistrer en PDF"
@@ -3669,12 +3567,8 @@ msgid "Durchführung bestätigen"
 msgstr "Confirmer la réalisation"
 
 #, python-format
-msgid ""
-"Ohne Entscheid bis %(day)s wird der Termin automatisch abgesagt und alle "
-"erhalten ihr Geld zurück."
-msgstr ""
-"Sans décision d’ici le %(day)s, la date est annulée automatiquement et tout "
-"le monde est remboursé."
+msgid "Ohne Entscheid bis %(day)s wird der Termin automatisch abgesagt und alle erhalten ihr Geld zurück."
+msgstr "Sans décision d’ici le %(day)s, la date est annulée automatiquement et tout le monde est remboursé."
 
 msgid "Findet statt – alle Angemeldeten wurden informiert."
 msgstr "A lieu – tous les inscrits ont été informés."
@@ -3684,9 +3578,6 @@ msgstr "Contact"
 
 msgid "Erfahrung"
 msgstr "Expérience"
-
-msgid "Zahlung"
-msgstr "Paiement"
 
 msgid "Nachrichten"
 msgstr "Messages"
@@ -3714,18 +3605,10 @@ msgid "Nachricht an alle Angemeldeten"
 msgstr "Message à tous les inscrits"
 
 #, python-format
-msgid ""
-"Geht per E-Mail an %(n)s angemeldete Person. Antworten erscheinen bei der "
-"jeweiligen Person im Verlauf."
-msgid_plural ""
-"Geht per E-Mail an %(n)s angemeldete Personen. Jede bekommt sie einzeln, "
-"Antworten erscheinen bei der jeweiligen Person im Verlauf."
-msgstr[0] ""
-"Envoyé par e-mail à %(n)s personne inscrite. Les réponses apparaissent dans "
-"l'historique de la personne."
-msgstr[1] ""
-"Envoyé par e-mail à %(n)s personnes inscrites. Chacune le reçoit séparément,"
-" les réponses apparaissent dans l'historique de chaque personne."
+msgid "Geht per E-Mail an %(n)s angemeldete Person. Antworten erscheinen bei der jeweiligen Person im Verlauf."
+msgid_plural "Geht per E-Mail an %(n)s angemeldete Personen. Jede bekommt sie einzeln, Antworten erscheinen bei der jeweiligen Person im Verlauf."
+msgstr[0] "Envoyé par e-mail à %(n)s personne inscrite. Les réponses apparaissent dans l'historique de la personne."
+msgstr[1] "Envoyé par e-mail à %(n)s personnes inscrites. Chacune le reçoit séparément, les réponses apparaissent dans l'historique de chaque personne."
 
 msgid "An alle senden"
 msgstr "Envoyer à tous"
@@ -3743,32 +3626,20 @@ msgstr "informé le %(day)s"
 msgid "Wetter: Ersatzdatum anbieten"
 msgstr "Météo : proposer une date de remplacement"
 
-msgid ""
-"Alle Angemeldeten sagen zu oder stornieren kostenlos mit voller Rückzahlung."
-" Wer nicht innert Frist antwortet, wird kostenlos storniert."
-msgstr ""
-"Tous les inscrits acceptent ou annulent gratuitement avec remboursement "
-"total. Qui ne répond pas dans le délai est annulé gratuitement."
+msgid "Alle Angemeldeten sagen zu oder stornieren kostenlos mit voller Rückzahlung. Wer nicht innert Frist antwortet, wird kostenlos storniert."
+msgstr "Tous les inscrits acceptent ou annulent gratuitement avec remboursement total. Qui ne répond pas dans le délai est annulé gratuitement."
 
 msgid "Ersatzdatum senden"
 msgstr "Envoyer la date de remplacement"
 
-msgid ""
-"Termin wirklich absagen? Alle Angemeldeten werden informiert und erhalten "
-"ihr Geld zurück. Das lässt sich nicht rückgängig machen."
-msgstr ""
-"Vraiment annuler la date ? Tous les inscrits seront informés et remboursés. "
-"Cette action est irréversible."
+msgid "Termin wirklich absagen? Alle Angemeldeten werden informiert und erhalten ihr Geld zurück. Das lässt sich nicht rückgängig machen."
+msgstr "Vraiment annuler la date ? Tous les inscrits seront informés et remboursés. Cette action est irréversible."
 
 msgid "Termin absagen"
 msgstr "Annuler la date"
 
-msgid ""
-"Alle Angemeldeten erhalten den vollen Betrag automatisch zurück und werden "
-"per E-Mail informiert."
-msgstr ""
-"Tous les inscrits sont remboursés automatiquement du montant total et "
-"informés par e-mail."
+msgid "Alle Angemeldeten erhalten den vollen Betrag automatisch zurück und werden per E-Mail informiert."
+msgstr "Tous les inscrits sont remboursés automatiquement du montant total et informés par e-mail."
 
 msgid "Termin bearbeiten"
 msgstr "Modifier la date"
@@ -3777,34 +3648,24 @@ msgstr "Modifier la date"
 msgid "Ausschreiben: %(title)s"
 msgstr "Publier : %(title)s"
 
-msgid ""
-"Verbinde zuerst Stripe in den Einstellungen – ohne Online-Zahlung können "
-"sich Gäste nicht anmelden."
-msgstr ""
-"Connecte d’abord Stripe dans les paramètres – sans paiement en ligne, les "
-"clients ne peuvent pas s’inscrire."
+msgid "Verbinde zuerst Stripe in den Einstellungen – ohne Online-Zahlung können sich Gäste nicht anmelden."
+msgstr "Connecte d’abord Stripe dans les paramètres – sans paiement en ligne, les clients ne peuvent pas s’inscrire."
 
 msgid "Entwurf gespeichert"
 msgstr "Brouillon enregistré"
 
 msgid "Entwurf konnte nicht gespeichert werden. Bitte prüfe die Verbindung."
-msgstr ""
-"Le brouillon n'a pas pu être enregistré. Merci de vérifier la connexion."
+msgstr "Le brouillon n'a pas pu être enregistré. Merci de vérifier la connexion."
 
 #, python-format
 msgid "Entwurf vom %(day)s geladen. Wird beim Tippen automatisch gespeichert."
-msgstr ""
-"Brouillon du %(day)s chargé. Enregistré automatiquement pendant la saisie."
+msgstr "Brouillon du %(day)s chargé. Enregistré automatiquement pendant la saisie."
 
 msgid "Wird beim Tippen automatisch als Entwurf gespeichert."
 msgstr "Enregistré automatiquement comme brouillon pendant la saisie."
 
-msgid ""
-"Sobald du veröffentlichst, sind diese Tage für Anfragen gesperrt. Gäste "
-"melden sich an und bezahlen sofort."
-msgstr ""
-"Dès que tu publies, ces jours sont bloqués pour les demandes. Les clients "
-"s’inscrivent et paient tout de suite."
+msgid "Sobald du veröffentlichst, sind diese Tage für Anfragen gesperrt. Gäste melden sich an und bezahlen sofort."
+msgstr "Dès que tu publies, ces jours sont bloqués pour les demandes. Les clients s’inscrivent et paient tout de suite."
 
 msgid "Veröffentlichen"
 msgstr "Publier"
@@ -3813,13 +3674,8 @@ msgid "Termine"
 msgstr "Dates"
 
 #, python-format
-msgid ""
-"Gäste bezahlen Termine bei der Anmeldung mit Karte oder TWINT. Verbinde "
-"dafür zuerst <a href=\"%(settings_url)s\">Stripe in den Einstellungen</a>."
-msgstr ""
-"Les clients paient les dates lors de l’inscription par carte ou TWINT. Pour "
-"cela, connecte d’abord <a href=\"%(settings_url)s\">Stripe dans les "
-"paramètres</a>."
+msgid "Gäste bezahlen Termine bei der Anmeldung mit Karte oder TWINT. Verbinde dafür zuerst <a href=\"%(settings_url)s\">Stripe in den Einstellungen</a>."
+msgstr "Les clients paient les dates lors de l’inscription par carte ou TWINT. Pour cela, connecte d’abord <a href=\"%(settings_url)s\">Stripe dans les paramètres</a>."
 
 msgid "Kommende"
 msgstr "À venir"
@@ -3836,25 +3692,14 @@ msgstr "Aucune pour l’instant."
 msgid "Einnahmen exportieren"
 msgstr "Exporter les recettes"
 
-msgid ""
-"Alle Zahlungen im Zeitraum mit Spesen, Rückzahlungen und MWST – für deine "
-"Buchhaltung. Ohne Telefonnummern und Notfallkontakte."
-msgstr ""
-"Tous les paiements de la période avec frais, remboursements et TVA – pour ta"
-" comptabilité. Sans numéros de téléphone ni contacts d’urgence."
+msgid "Alle Zahlungen im Zeitraum mit Spesen, Rückzahlungen und MWST – für deine Buchhaltung. Ohne Telefonnummern und Notfallkontakte."
+msgstr "Tous les paiements de la période avec frais, remboursements et TVA – pour ta comptabilité. Sans numéros de téléphone ni contacts d’urgence."
 
 msgid "Herunterladen"
 msgstr "Télécharger"
 
-msgid ""
-"Touren, die du für andere Anbieter führst (z. B. eine Bergschule). Sie "
-"erscheinen in deinem Kalender. Mit Link zeigen wir sie Gästen im "
-"Buchungskalender, gebucht wird beim Anbieter."
-msgstr ""
-"Courses que tu guides pour d’autres prestataires (p. ex. une école "
-"d’alpinisme). Elles apparaissent dans ton calendrier. Avec un lien, nous les"
-" montrons aux clients dans le calendrier de réservation ; la réservation se "
-"fait chez le prestataire."
+msgid "Touren, die du für andere Anbieter führst (z. B. eine Bergschule). Sie erscheinen in deinem Kalender. Mit Link zeigen wir sie Gästen im Buchungskalender, gebucht wird beim Anbieter."
+msgstr "Courses que tu guides pour d’autres prestataires (p. ex. une école d’alpinisme). Elles apparaissent dans ton calendrier. Avec un lien, nous les montrons aux clients dans le calendrier de réservation ; la réservation se fait chez le prestataire."
 
 msgid "Angebote von Anbietern – bitte beantworten"
 msgstr "Offres de prestataires – merci de répondre"
@@ -3862,16 +3707,8 @@ msgstr "Offres de prestataires – merci de répondre"
 msgid "Tour eintragen"
 msgstr "Inscrire une course"
 
-msgid ""
-"Link einfügen und «Eintragen» – Titel, Anbieter und Datum holen wir von der "
-"Seite. Fotos des Anbieters übernehmen wir nicht (Urheberrecht): Lade ein "
-"eigenes Bild hoch oder wähle eines aus deiner Bibliothek. Sonst zeigen wir "
-"das Logo des Anbieters."
-msgstr ""
-"Colle le lien et clique sur «Ajouter» – titre, prestataire et date sont "
-"repris de la page. Nous ne reprenons pas les photos du prestataire (droit "
-"d'auteur) : téléverse ta propre image ou choisis-en une dans ta "
-"bibliothèque. Sinon nous affichons le logo du prestataire."
+msgid "Link einfügen und «Eintragen» – Titel, Anbieter und Datum holen wir von der Seite. Fotos des Anbieters übernehmen wir nicht (Urheberrecht): Lade ein eigenes Bild hoch oder wähle eines aus deiner Bibliothek. Sonst zeigen wir das Logo des Anbieters."
+msgstr "Colle le lien et clique sur «Ajouter» – titre, prestataire et date sont repris de la page. Nous ne reprenons pas les photos du prestataire (droit d'auteur) : téléverse ta propre image ou choisis-en une dans ta bibliothèque. Sinon nous affichons le logo du prestataire."
 
 msgid "Auf der Seite stehen mehrere Termine. Welchen führst du?"
 msgstr "La page contient plusieurs dates. Laquelle guides-tu ?"
@@ -3879,11 +3716,8 @@ msgstr "La page contient plusieurs dates. Laquelle guides-tu ?"
 msgid "Manuelle Eingabe"
 msgstr "Saisie manuelle"
 
-msgid ""
-"Nur nötig, wenn der Link fehlt oder etwas nicht richtig übernommen wurde."
-msgstr ""
-"Seulement nécessaire s'il n'y a pas de lien ou si quelque chose n'a pas été "
-"repris correctement."
+msgid "Nur nötig, wenn der Link fehlt oder etwas nicht richtig übernommen wurde."
+msgstr "Seulement nécessaire s'il n'y a pas de lien ou si quelque chose n'a pas été repris correctement."
 
 msgid "Eintragen"
 msgstr "Enregistrer"
@@ -3903,53 +3737,77 @@ msgstr "Montrer aux clients"
 msgid "Keine externen Touren."
 msgstr "Aucune course externe."
 
-msgid ""
-"Anbieter können dir Touren auch direkt eintragen: Lege unter «Kalender › "
-"Verfügbarkeit» einen Anbieter an und schick ihm den Link."
-msgstr ""
-"Les prestataires peuvent aussi t’inscrire directement des courses : crée un "
-"prestataire sous « Calendrier › Disponibilité » et envoie-lui le lien."
+msgid "Anbieter können dir Touren auch direkt eintragen: Lege unter «Kalender › Verfügbarkeit» einen Anbieter an und schick ihm den Link."
+msgstr "Les prestataires peuvent aussi t’inscrire directement des courses : crée un prestataire sous « Calendrier › Disponibilité » et envoie-lui le lien."
 
-msgid ""
-"Alle, die bei dir gebucht haben (bestätigte Touren und bezahlte "
-"Anmeldungen). Reine Anfragen kommen nicht in die Kartei. Die Angaben für die"
-" Tourenplanung trägt der Gast selbst ein – einmal, danach sind sie bei jeder"
-" Tour ausgefüllt."
-msgstr ""
-"Toutes les personnes qui ont réservé chez toi (courses confirmées et "
-"inscriptions payées). Les simples demandes n'entrent pas dans le fichier. "
-"Les clients saisissent eux-mêmes les informations de planification – une "
-"fois ; ensuite elles sont remplies pour chaque course."
+#, python-format
+msgid "%(n)s Gast"
+msgid_plural "%(n)s Gäste"
+msgstr[0] "%(n)s client"
+msgstr[1] "%(n)s clients"
 
-msgid "Name oder E-Mail"
-msgstr "Nom ou e-mail"
+msgid "Alle, die bei dir gebucht haben (bestätigte Touren und bezahlte Anmeldungen). Reine Anfragen kommen nicht in die Kartei. Die Angaben für die Tourenplanung trägt der Gast selbst ein – einmal, danach sind sie bei jeder Tour ausgefüllt."
+msgstr "Toutes les personnes qui ont réservé chez toi (courses confirmées et inscriptions payées). Les simples demandes n'entrent pas dans le fichier. Les clients saisissent eux-mêmes les informations de planification – une fois ; ensuite elles sont remplies pour chaque course."
+
+msgid "Gäste anschreiben"
+msgstr "Écrire aux clients"
+
+#, python-format
+msgid "%(n)s Gast möchte informiert werden"
+msgid_plural "%(n)s Gäste möchten informiert werden"
+msgstr[0] "%(n)s client souhaite être informé"
+msgstr[1] "%(n)s clients souhaitent être informés"
+
+msgid "Gäste kreuzen bei der Buchung an, ob sie über neue Touren und Spontantouren informiert werden wollen. Schreibst du eine Tour aus, erhalten sie automatisch eine E-Mail. Hier schreibst du ihnen zusätzlich selbst, z. B. für eine Spontantour."
+msgstr "Lors de la réservation, les clients cochent s’ils veulent être informés des nouvelles courses et sorties spontanées. Quand tu publies une course, ils reçoivent automatiquement un e-mail. Ici, tu peux aussi leur écrire toi-même, p. ex. pour une sortie spontanée."
+
+#, python-format
+msgid "Jetzt an %(n)s Gast senden?"
+msgid_plural "Jetzt an %(n)s Gäste senden?"
+msgstr[0] "Envoyer maintenant à %(n)s client ?"
+msgstr[1] "Envoyer maintenant à %(n)s clients ?"
+
+#, python-format
+msgid "An %(n)s Gast senden"
+msgid_plural "An %(n)s Gäste senden"
+msgstr[0] "Envoyer à %(n)s client"
+msgstr[1] "Envoyer à %(n)s clients"
+
+msgid "Noch niemand hat sich dafür angemeldet."
+msgstr "Personne ne s’est encore inscrit."
+
+msgid "Name, E-Mail oder Tour"
+msgstr "Nom, e-mail ou course"
 
 msgid "Suchen"
 msgstr "Rechercher"
 
+msgid "Alle zeigen"
+msgstr "Tout afficher"
+
+msgid "Möchte über neue Touren informiert werden"
+msgstr "Souhaite être informé·e des nouvelles courses"
+
+msgid "News"
+msgstr "News"
+
+#, python-format
+msgid "%(n)s Tour"
+msgid_plural "%(n)s Touren"
+msgstr[0] "%(n)s course"
+msgstr[1] "%(n)s courses"
+
+msgid "zuletzt"
+msgstr "dernière"
+
 msgid "Touren"
 msgstr "Courses"
-
-msgid "Angaben"
-msgstr "Informations"
 
 msgid "kommend"
 msgstr "à venir"
 
-msgid "Allergien"
-msgstr "Allergies"
-
-msgid "Gegenrecht"
-msgstr "réciprocité"
-
-#, python-format
-msgid "Auto, %(n)s Platz"
-msgid_plural "Auto, %(n)s Plätze"
-msgstr[0] "voiture, %(n)s place"
-msgstr[1] "voiture, %(n)s places"
-
-msgid "noch keine"
-msgstr "pas encore"
+msgid "Keine gespeicherten Angaben (der Gast hat sie nicht für weitere Touren freigegeben)."
+msgstr "Aucune information enregistrée (le client ne les a pas autorisées pour d’autres courses)."
 
 msgid "Niemand gefunden."
 msgstr "Personne trouvé."
@@ -3988,50 +3846,29 @@ msgstr "facultatif"
 msgid "To Do"
 msgstr "À faire"
 
+#, python-format
+msgid "%(n)s offen"
+msgid_plural "%(n)s offen"
+msgstr[0] "%(n)s ouverte"
+msgstr[1] "%(n)s ouvertes"
+
 msgid "Alles erledigt."
 msgstr "Tout est fait."
 
-msgid "Anfragen beantworten"
-msgstr "Répondre aux demandes"
+msgid "Wegklicken – nicht erledigen"
+msgstr "Écarter – ne pas faire"
 
-msgid "Durchführung entscheiden"
-msgstr "Décider si la course a lieu"
-
-msgid ""
-"Touren, die vorbei sind. Öffne die Buchung und klicke auf «Abrechnung "
-"auslösen»."
-msgstr ""
-"Courses terminées. Ouvre la réservation et clique sur « Établir le décompte "
-"»."
-
-msgid ""
-"Lade die Fotos der Tour hoch und teile das Album mit den Gästen. Die besten "
-"behältst du – so wächst deine Bildbibliothek mit jeder Tour."
-msgstr ""
-"Téléverse les photos de la course et partage l'album avec tes clients. Garde"
-" les meilleures – ta photothèque grandit à chaque course."
-
-msgid "Angebote von Anbietern"
-msgstr "Offres de prestataires"
-
-#, python-format
-msgid "Ein Anbieter hat dir eine Tour angeboten."
-msgid_plural "Anbieter haben dir %(n)s Touren angeboten."
-msgstr[0] "Un prestataire t’a proposé une course."
-msgstr[1] "Des prestataires t’ont proposé %(n)s courses."
-
-msgid "Jetzt beantworten"
-msgstr "Répondre maintenant"
+msgid "Mit × entfernst du eine Pendenz, die du nicht erledigen willst (z. B. keine Fotos von dieser Tour)."
+msgstr "Avec × tu retires une tâche que tu ne veux pas faire (p. ex. pas de photos de cette course)."
 
 msgid "Kommende Touren"
 msgstr "Courses à venir"
 
-msgid ""
-"Alles, was ansteht: bestätigte Anfragen, deine ausgeschriebenen Touren und "
-"Touren für externe Anbieter."
-msgstr ""
-"Tout ce qui arrive : demandes confirmées, tes courses publiées et courses "
-"pour des prestataires externes."
+#, python-format
+msgid "%(n)s weitere Tour anzeigen"
+msgid_plural "%(n)s weitere Touren anzeigen"
+msgstr[0] "Afficher %(n)s course de plus"
+msgstr[1] "Afficher %(n)s courses de plus"
 
 msgid "Nichts geplant."
 msgstr "Rien de prévu."
@@ -4039,24 +3876,14 @@ msgstr "Rien de prévu."
 msgid "Warten auf den Gast"
 msgstr "En attente du client"
 
-msgid ""
-"Pendent: Vorschläge, denen der Gast noch zusagen muss, Ersatzdaten und "
-"offene Rechnungen."
-msgstr ""
-"En attente : propositions que le client doit encore accepter, dates de "
-"remplacement et factures ouvertes."
+msgid "Vorschläge, Ersatzdaten, offene Rechnungen"
+msgstr "Propositions, dates de remplacement, factures ouvertes"
 
 msgid "Nichts offen."
 msgstr "Rien en attente."
 
 msgid "Vergangene und abgesagte Termine"
 msgstr "Dates passées et annulées"
-
-#, python-format
-msgid "%(n)s weiterer anzeigen"
-msgid_plural "%(n)s weitere anzeigen"
-msgstr[0] "Afficher %(n)s de plus"
-msgstr[1] "Afficher %(n)s de plus"
 
 msgid "Noch nichts abgeschlossen."
 msgstr "Rien de terminé pour l’instant."
@@ -4078,19 +3905,14 @@ msgstr "Adapter si nécessaire – le calculateur ci-dessous t’aide."
 msgid "Im Angebot geschätzt: CHF %(expenses)s."
 msgstr "Estimé dans l’offre : CHF %(expenses)s."
 
-msgid ""
-"Leere Zeilen werden ignoriert. Für mehr Zeilen speichern und «Rechnung "
-"korrigieren» wählen."
-msgstr ""
-"Les lignes vides sont ignorées. Pour plus de lignes, enregistre puis choisis"
-" « Corriger la facture »."
+msgid "Leere Zeilen werden ignoriert. Für mehr Zeilen speichern und «Rechnung korrigieren» wählen."
+msgstr "Les lignes vides sont ignorées. Pour plus de lignes, enregistre puis choisis « Corriger la facture »."
 
 #, python-format
 msgid "Beträge inklusive %(rate)s %% MWST; die Rechnung weist sie aus."
 msgstr "Montants TVA %(rate)s %% incluse ; la facture l’indique."
 
-msgid ""
-"Der Gast erhält eine E-Mail mit der Rechnung und einem Link zur Zahlung."
+msgid "Der Gast erhält eine E-Mail mit der Rechnung und einem Link zur Zahlung."
 msgstr "Le client reçoit un e-mail avec la facture et un lien pour payer."
 
 msgid "Korrigierte Rechnung senden"
@@ -4102,23 +3924,11 @@ msgstr "Envoyer la facture"
 msgid "Bildbibliothek"
 msgstr "Bibliothèque d'images"
 
-msgid ""
-"Dein Bildarchiv. Gib jedem Bild Tourenart, Region und eine eigene Bemerkung,"
-" markiere die besten als Highlight – so findest du es wieder, wenn du eine "
-"Tour ausschreibst. Tourchef stellt zusätzlich Bilder für die meisten "
-"Tourenarten zur Verfügung."
-msgstr ""
-"Ton archive d’images. Donne à chaque image un type de course, une région et "
-"une remarque, et marque les meilleures comme coup de cœur – ainsi tu la "
-"retrouves quand tu publies une course. Tourchef fournit aussi des images "
-"pour la plupart des types de course."
+msgid "Dein Bildarchiv. Gib jedem Bild Tourenart, Region und eine eigene Bemerkung, markiere die besten als Highlight – so findest du es wieder, wenn du eine Tour ausschreibst. Tourchef stellt zusätzlich Bilder für die meisten Tourenarten zur Verfügung."
+msgstr "Ton archive d’images. Donne à chaque image un type de course, une région et une remarque, et marque les meilleures comme coup de cœur – ainsi tu la retrouves quand tu publies une course. Tourchef fournit aussi des images pour la plupart des types de course."
 
-msgid ""
-"Tipp: Teile die Fotos einer Tour über das Fotoalbum der Buchung. Was du dort"
-" behältst, landet automatisch hier."
-msgstr ""
-"Astuce : partage les photos d'une course via l'album de la réservation. Ce "
-"que tu y gardes arrive ici automatiquement."
+msgid "Tipp: Teile die Fotos einer Tour über das Fotoalbum der Buchung. Was du dort behältst, landet automatisch hier."
+msgstr "Astuce : partage les photos d'une course via l'album de la réservation. Ce que tu y gardes arrive ici automatiquement."
 
 msgid "Bilder hochladen"
 msgstr "Télécharger des images"
@@ -4126,14 +3936,8 @@ msgstr "Télécharger des images"
 msgid "Bilder auswählen"
 msgstr "Choisir des images"
 
-msgid ""
-"Mehrere Bilder auf einmal möglich (JPG, PNG, WebP, HEIC vom iPhone), je "
-"höchstens 8 MB. Sie werden verkleinert, Standortdaten werden entfernt. Neue "
-"Bilder landen zuerst in der Zwischenablage."
-msgstr ""
-"Plusieurs images à la fois (JPG, PNG, WebP, HEIC d’iPhone), 8 Mo max. "
-"chacune. Elles sont réduites et les données de localisation supprimées. Les "
-"nouvelles images arrivent d’abord dans le presse-papiers."
+msgid "Mehrere Bilder auf einmal möglich (JPG, PNG, WebP, HEIC vom iPhone), je höchstens 8 MB. Sie werden verkleinert, Standortdaten werden entfernt. Neue Bilder landen zuerst in der Zwischenablage."
+msgstr "Plusieurs images à la fois (JPG, PNG, WebP, HEIC d’iPhone), 8 Mo max. chacune. Elles sont réduites et les données de localisation supprimées. Les nouvelles images arrivent d’abord dans le presse-papiers."
 
 #, python-format
 msgid "%%(done)s Bild(er) hochgeladen."
@@ -4145,14 +3949,8 @@ msgstr "Encore sans image propre :"
 msgid "Zwischenablage – bitte zuordnen"
 msgstr "Presse-papiers – à attribuer"
 
-msgid ""
-"Neu hochgeladene Bilder. Sobald ein Bild eine Tourenart hat, kommt es ins "
-"Archiv. Region, Highlight und eine eigene Bemerkung helfen beim "
-"Wiederfinden."
-msgstr ""
-"Images nouvellement téléversées. Dès qu’une image a un type de course, elle "
-"passe dans l’archive. Région, coup de cœur et une remarque t’aident à la "
-"retrouver."
+msgid "Neu hochgeladene Bilder. Sobald ein Bild eine Tourenart hat, kommt es ins Archiv. Region, Highlight und eine eigene Bemerkung helfen beim Wiederfinden."
+msgstr "Images nouvellement téléversées. Dès qu’une image a un type de course, elle passe dans l’archive. Région, coup de cœur et une remarque t’aident à la retrouver."
 
 msgid "Archiv durchsuchen"
 msgstr "Rechercher dans l’archive"
@@ -4199,24 +3997,14 @@ msgstr "Annulations"
 msgid "Noch keine Bergführer."
 msgstr "Pas encore de guides."
 
-msgid ""
-"Anfragen: alle Anfragen für eigene Touren. Buchungen: davon bestätigt, "
-"abgerechnet oder bezahlt. Anmeldungen: bezahlte Anmeldungen für Termine. "
-"Stornos: von Gast oder Bergführer storniert."
-msgstr ""
-"Demandes : toutes les demandes de courses personnelles. Réservations : parmi"
-" elles, confirmées, facturées ou payées. Inscriptions : inscriptions payées "
-"à des dates publiées. Annulations : annulées par le client ou le guide."
+msgid "Anfragen: alle Anfragen für eigene Touren. Buchungen: davon bestätigt, abgerechnet oder bezahlt. Anmeldungen: bezahlte Anmeldungen für Termine. Stornos: von Gast oder Bergführer storniert."
+msgstr "Demandes : toutes les demandes de courses personnelles. Réservations : parmi elles, confirmées, facturées ou payées. Inscriptions : inscriptions payées à des dates publiées. Annulations : annulées par le client ou le guide."
 
 msgid "Widget auf deiner Website"
 msgstr "Widget sur ton site web"
 
-msgid ""
-"Füge diesen Code in deine Website ein (WordPress, Wix, Webflow: Element "
-"«HTML» bzw. «Code einbetten»)."
-msgstr ""
-"Insère ce code dans ton site (WordPress, Wix, Webflow : élément « HTML » ou "
-"« Intégrer du code »)."
+msgid "Füge diesen Code in deine Website ein (WordPress, Wix, Webflow: Element «HTML» bzw. «Code einbetten»)."
+msgstr "Insère ce code dans ton site (WordPress, Wix, Webflow : élément « HTML » ou « Intégrer du code »)."
 
 msgid "Code kopieren"
 msgstr "Copier le code"
@@ -4224,12 +4012,8 @@ msgstr "Copier le code"
 msgid "Widget-Vorschau öffnen"
 msgstr "Ouvrir l’aperçu du widget"
 
-msgid ""
-"Das Widget erscheint in der Sprache des Browsers (DE, FR, IT, EN). Für eine "
-"feste Sprache ergänze z. B. <code>data-lang=\"fr\"</code>."
-msgstr ""
-"Le widget s’affiche dans la langue du navigateur (DE, FR, IT, EN). Pour une "
-"langue fixe, ajoute p. ex. <code>data-lang=\"fr\"</code>."
+msgid "Das Widget erscheint in der Sprache des Browsers (DE, FR, IT, EN). Für eine feste Sprache ergänze z. B. <code>data-lang=\"fr\"</code>."
+msgstr "Le widget s’affiche dans la langue du navigateur (DE, FR, IT, EN). Pour une langue fixe, ajoute p. ex. <code>data-lang=\"fr\"</code>."
 
 msgid "Falls deine Website keine Scripts erlaubt, verwende ein iFrame:"
 msgstr "Si ton site n’autorise pas les scripts, utilise un iFrame :"
@@ -4237,22 +4021,11 @@ msgstr "Si ton site n’autorise pas les scripts, utilise un iFrame :"
 msgid "Online-Zahlungen"
 msgstr "Paiements en ligne"
 
-msgid ""
-"Stripe ist verbunden. Gäste zahlen Termine bei der Anmeldung und deine "
-"Rechnungen nach der Tour mit Karte oder TWINT; das Geld geht direkt auf dein"
-" Konto. Gebühren für Rückzahlungen trägt Tourchef."
-msgstr ""
-"Stripe est connecté. Les clients paient les dates lors de l’inscription et "
-"tes factures après la course, par carte ou TWINT ; l’argent arrive "
-"directement sur ton compte. Tourchef prend en charge les frais des "
-"remboursements."
+msgid "Stripe ist verbunden. Gäste zahlen Termine bei der Anmeldung und deine Rechnungen nach der Tour mit Karte oder TWINT; das Geld geht direkt auf dein Konto. Gebühren für Rückzahlungen trägt Tourchef."
+msgstr "Stripe est connecté. Les clients paient les dates lors de l’inscription et tes factures après la course, par carte ou TWINT ; l’argent arrive directement sur ton compte. Tourchef prend en charge les frais des remboursements."
 
-msgid ""
-"Verbinde dein Stripe-Konto. Ohne Stripe kannst du keine Termine "
-"ausschreiben; Rechnungen bezahlen Gäste dann per Überweisung."
-msgstr ""
-"Connecte ton compte Stripe. Sans Stripe, tu ne peux pas publier de dates ; "
-"les clients paient alors les factures par virement."
+msgid "Verbinde dein Stripe-Konto. Ohne Stripe kannst du keine Termine ausschreiben; Rechnungen bezahlen Gäste dann per Überweisung."
+msgstr "Connecte ton compte Stripe. Sans Stripe, tu ne peux pas publier de dates ; les clients paient alors les factures par virement."
 
 msgid "Stripe-Einrichtung fortsetzen"
 msgstr "Poursuivre la configuration Stripe"
@@ -4261,8 +4034,7 @@ msgid "Mit Stripe verbinden"
 msgstr "Connecter Stripe"
 
 msgid "Online-Zahlungen sind auf dieser Plattform noch nicht aktiviert."
-msgstr ""
-"Les paiements en ligne ne sont pas encore activés sur cette plateforme."
+msgstr "Les paiements en ligne ne sont pas encore activés sur cette plateforme."
 
 msgid "Profil, Preise, Bedingungen"
 msgstr "Profil, prix, conditions"
@@ -4270,19 +4042,25 @@ msgstr "Profil, prix, conditions"
 msgid "Tagesansatz nach Gruppengrösse"
 msgstr "Tarif journalier selon la taille du groupe"
 
-#, python-format
-msgid ""
-"Der Tagesansatz oben (CHF %(rate)s) gilt ab 1 Person. Lege hier weitere "
-"Stufen fest, z. B. ab 5 Personen CHF 850, ab 7 Personen CHF 950. Gäste sehen"
-" den Richtpreis ihrer Gruppengrösse im Widget."
-msgstr ""
-"Le tarif journalier ci-dessus (CHF %(rate)s) s’applique dès 1 personne. "
-"Définis ici d’autres paliers, p. ex. dès 5 personnes CHF 850, dès 7 "
-"personnes CHF 950. Les clients voient le prix indicatif de leur groupe dans "
-"le widget."
+msgid "Lege deinen Tagesansatz für jede Gruppengrösse fest. Leer = gleich wie die Zeile darüber. Grössere Gruppen nimmst du mit «eigene Gruppengrösse» an. Gäste sehen den Richtpreis ihrer Gruppengrösse im Widget."
+msgstr "Fixe ton tarif journalier pour chaque taille de groupe. Vide = comme la ligne du dessus. Tu acceptes des groupes plus grands avec « taille de groupe personnalisée ». Les clients voient le prix indicatif de leur taille de groupe dans le widget."
 
-msgid "löschen"
-msgstr "supprimer"
+msgid "Gruppengrösse"
+msgstr "Taille du groupe"
+
+msgid "1 Person"
+msgstr "1 personne"
+
+#, python-format
+msgid "%(n)s Personen"
+msgstr "%(n)s personnes"
+
+#, python-format
+msgid "leer: CHF %(rate)s"
+msgstr "vide : CHF %(rate)s"
+
+msgid "Eigene Gruppengrösse: ab"
+msgstr "Taille de groupe personnalisée : dès"
 
 msgid "So sehen Gäste deine Bedingungen"
 msgstr "Voir tes conditions comme les clients"
@@ -4305,14 +4083,8 @@ msgstr "Configurer"
 msgid "Daten eines Gastes löschen"
 msgstr "Supprimer les données d’un client"
 
-msgid ""
-"Verlangt ein Gast die Löschung seiner Daten, löschst du hier Telefon, "
-"Notfallkontakt und Erfahrung aus allen seinen Buchungen. Name, E-Mail, "
-"Buchungen und Rechnungen bleiben (Aufbewahrungspflicht)."
-msgstr ""
-"Si un client demande la suppression de ses données, supprime ici téléphone, "
-"contact d’urgence et expérience de toutes ses réservations. Nom, e-mail, "
-"réservations et factures sont conservés (obligation de conservation)."
+msgid "Verlangt ein Gast die Löschung seiner Daten, löschst du hier Telefon, Notfallkontakt und Erfahrung aus allen seinen Buchungen. Name, E-Mail, Buchungen und Rechnungen bleiben (Aufbewahrungspflicht)."
+msgstr "Si un client demande la suppression de ses données, supprime ici téléphone, contact d’urgence et expérience de toutes ses réservations. Nom, e-mail, réservations et factures sont conservés (obligation de conservation)."
 
 msgid "Daten löschen"
 msgstr "Supprimer les données"
@@ -4326,12 +4098,8 @@ msgstr "Nouveau modèle"
 msgid "Neue Tour ausschreiben"
 msgstr "Publier une nouvelle course"
 
-msgid ""
-"Hake beim Ausschreiben «Als Vorlage speichern» an, dann schreibst du die "
-"gleiche Tour später mit einem Klick wieder aus."
-msgstr ""
-"Coche « Enregistrer comme modèle » lors de la publication, et tu pourras "
-"republier la même course plus tard en un clic."
+msgid "Hake beim Ausschreiben «Als Vorlage speichern» an, dann schreibst du die gleiche Tour später mit einem Klick wieder aus."
+msgstr "Coche « Enregistrer comme modèle » lors de la publication, et tu pourras republier la même course plus tard en un clic."
 
 msgid "Deine Vorlagen"
 msgstr "Tes modèles"
@@ -4365,22 +4133,12 @@ msgid "Für eine weitere Person ausfüllen"
 msgstr "Remplir pour une autre personne"
 
 #, python-format
-msgid ""
-"Du kommst mit %(guest)s auf diese Tour. Damit %(name)s planen kann (Hütte, "
-"Anreise, Verpflegung), trag bitte deine eigenen Angaben ein. Nur %(name)s "
-"sieht sie."
-msgstr ""
-"Tu participes à cette course avec %(guest)s. Pour que %(name)s puisse "
-"planifier (cabane, trajet, repas), merci de saisir tes propres informations."
-" Seul·e %(name)s les voit."
+msgid "Du kommst mit %(guest)s auf diese Tour. Damit %(name)s planen kann (Hütte, Anreise, Verpflegung), trag bitte deine eigenen Angaben ein. Nur %(name)s sieht sie."
+msgstr "Tu participes à cette course avec %(guest)s. Pour que %(name)s puisse planifier (cabane, trajet, repas), merci de saisir tes propres informations. Seul·e %(name)s les voit."
 
 #, python-format
-msgid ""
-"Mit dem Häkchen bewahrt %(name)s deine Angaben für weitere Touren mit dir "
-"auf. Ohne Häkchen gelten sie nur für diese Tour."
-msgstr ""
-"Avec la coche, %(name)s conserve tes informations pour d’autres courses avec"
-" toi. Sans coche, elles ne valent que pour cette course."
+msgid "Mit dem Häkchen bewahrt %(name)s deine Angaben für weitere Touren mit dir auf. Ohne Häkchen gelten sie nur für diese Tour."
+msgstr "Avec la coche, %(name)s conserve tes informations pour d’autres courses avec toi. Sans coche, elles ne valent que pour cette course."
 
 msgid "Angaben senden"
 msgstr "Envoyer les informations"
@@ -4419,59 +4177,32 @@ msgid "Nachricht von %(name)s"
 msgstr "Message de %(name)s"
 
 #, python-format
-msgid ""
-"Deine Anfrage wartet auf die Antwort von %(name)s. Du erhältst eine E-Mail."
+msgid "Deine Anfrage wartet auf die Antwort von %(name)s. Du erhältst eine E-Mail."
 msgstr "Ta demande attend la réponse de %(name)s. Tu recevras un e-mail."
 
 msgid "Bitte bestätigen"
 msgstr "Merci de confirmer"
 
 #, python-format
-msgid ""
-"%(name)s hat deine Anfrage angenommen und schlägt dir die Daten und den "
-"Preis oben vor."
-msgstr ""
-"%(name)s a accepté ta demande et te propose les dates et le prix ci-dessus."
+msgid "%(name)s hat deine Anfrage angenommen und schlägt dir die Daten und den Preis oben vor."
+msgstr "%(name)s a accepté ta demande et te propose les dates et le prix ci-dessus."
 
-msgid ""
-"Bezahlt wird erst nach der Tour. Abgerechnet wird nach effektivem Aufwand: "
-"Seid ihr einen Tag mehr oder weniger unterwegs oder müsst abbrechen, ändert "
-"sich der Betrag. Dazu kommen die effektiven Spesen (Hütte, Bahn, Reise). Bis"
-" dahin wird nichts belastet."
-msgstr ""
-"Le paiement n'a lieu qu'après la course. La facture suit l'effort réel : un "
-"jour de plus ou de moins ou un abandon change le montant. Les frais "
-"effectifs (cabane, remontées, voyage) s'y ajoutent. Rien n'est débité d'ici "
-"là."
+msgid "Bezahlt wird erst nach der Tour. Abgerechnet wird nach effektivem Aufwand: Seid ihr einen Tag mehr oder weniger unterwegs oder müsst abbrechen, ändert sich der Betrag. Dazu kommen die effektiven Spesen (Hütte, Bahn, Reise). Bis dahin wird nichts belastet."
+msgstr "Le paiement n'a lieu qu'après la course. La facture suit l'effort réel : un jour de plus ou de moins ou un abandon change le montant. Les frais effectifs (cabane, remontées, voyage) s'y ajoutent. Rien n'est débité d'ici là."
 
 msgid "Zusagen"
 msgstr "Accepter"
 
-msgid "Ersatzdatum"
-msgstr "Date de remplacement"
+#, python-format
+msgid "%(name)s musste die Tour wegen Wetter oder Verhältnissen verschieben und schlägt das Datum oben vor."
+msgstr "%(name)s a dû déplacer la course en raison de la météo ou des conditions et propose la date ci-dessus."
 
 #, python-format
-msgid ""
-"%(name)s musste die Tour wegen Wetter oder Verhältnissen verschieben und "
-"schlägt das Datum oben vor."
-msgstr ""
-"%(name)s a dû déplacer la course en raison de la météo ou des conditions et "
-"propose la date ci-dessus."
+msgid "Bereits angefallene Kosten, die du bei einer Absage trägst: CHF %(costs)s (%(note)s)."
+msgstr "Frais déjà engagés que tu supportes en cas de refus : CHF %(costs)s (%(note)s)."
 
-#, python-format
-msgid ""
-"Bereits angefallene Kosten, die du bei einer Absage trägst: CHF %(costs)s "
-"(%(note)s)."
-msgstr ""
-"Frais déjà engagés que tu supportes en cas de refus : CHF %(costs)s "
-"(%(note)s)."
-
-msgid ""
-"Passt es nicht oder antwortest du nicht bis zur Frist, wird die Buchung "
-"kostenlos storniert."
-msgstr ""
-"Si cela ne convient pas ou si tu ne réponds pas dans le délai, la "
-"réservation est annulée gratuitement."
+msgid "Passt es nicht oder antwortest du nicht bis zur Frist, wird die Buchung kostenlos storniert."
+msgstr "Si cela ne convient pas ou si tu ne réponds pas dans le délai, la réservation est annulée gratuitement."
 
 msgid "Du erhältst dann den vollen Betrag zurück."
 msgstr "Tu es alors remboursé·e du montant total."
@@ -4496,8 +4227,7 @@ msgstr "Course confirmée, les jours sont réservés pour toi."
 
 #, python-format
 msgid "%(name)s braucht noch weitere Angaben für die Tourenplanung."
-msgstr ""
-"%(name)s a encore besoin de quelques informations pour la planification."
+msgstr "%(name)s a encore besoin de quelques informations pour la planification."
 
 msgid "Dann ist deine Anmeldung komplett."
 msgstr "Ton inscription sera alors complète."
@@ -4508,26 +4238,14 @@ msgstr "Ta réservation sera alors complète."
 msgid "Jetzt Angaben eintragen"
 msgstr "Saisir les informations maintenant"
 
-msgid ""
-"Bestätigt – die Tage sind für dich reserviert. Nach der Tour erhältst du die"
-" Rechnung per E-Mail."
-msgstr ""
-"Confirmé – les jours te sont réservés. Après la course, tu recevras la "
-"facture par e-mail."
+msgid "Bestätigt – die Tage sind für dich reserviert. Nach der Tour erhältst du die Rechnung per E-Mail."
+msgstr "Confirmé – les jours te sont réservés. Après la course, tu recevras la facture par e-mail."
 
-msgid ""
-"Danke! Deine Zahlung ist eingegangen, du bist angemeldet. Die Bestätigung "
-"kommt per E-Mail."
-msgstr ""
-"Merci ! Ton paiement est arrivé, tu es inscrit·e. La confirmation arrive par"
-" e-mail."
+msgid "Danke! Deine Zahlung ist eingegangen, du bist angemeldet. Die Bestätigung kommt per E-Mail."
+msgstr "Merci ! Ton paiement est arrivé, tu es inscrit·e. La confirmation arrive par e-mail."
 
-msgid ""
-"Deine Zahlung wird verarbeitet. Diese Seite zeigt «Bezahlt», sobald sie "
-"bestätigt ist."
-msgstr ""
-"Ton paiement est en cours de traitement. Cette page affichera « Payée » dès "
-"qu’il sera confirmé."
+msgid "Deine Zahlung wird verarbeitet. Diese Seite zeigt «Bezahlt», sobald sie bestätigt ist."
+msgstr "Ton paiement est en cours de traitement. Cette page affichera « Payée » dès qu’il sera confirmé."
 
 msgid "Angaben eintragen"
 msgstr "Saisir les informations"
@@ -4536,53 +4254,39 @@ msgid "Definitiv zusagen"
 msgstr "Confirmer définitivement"
 
 #, python-format
-msgid ""
-"Damit %(name)s die Tour planen kann (Hütte, Anreise, Verpflegung). Nur "
-"%(name)s sieht diese Angaben. Erst mit «Definitiv zusagen» ist die Tour "
-"gebucht."
-msgstr ""
-"Pour que %(name)s puisse planifier la course (cabane, trajet, repas). Seul·e"
-" %(name)s voit ces informations. La course n'est réservée qu'avec « "
-"Confirmer définitivement »."
+msgid "Damit %(name)s die Tour planen kann (Hütte, Anreise, Verpflegung). Nur %(name)s sieht diese Angaben. Erst mit «Definitiv zusagen» ist die Tour gebucht."
+msgstr "Pour que %(name)s puisse planifier la course (cabane, trajet, repas). Seul·e %(name)s voit ces informations. La course n'est réservée qu'avec « Confirmer définitivement »."
 
-msgid ""
-"Deine Mitreisenden tragen ihre Angaben danach selbst ein: Du erhältst einen "
-"Link zum Weiterleiten."
-msgstr ""
-"Tes compagnons saisiront ensuite leurs propres informations : tu recevras un"
-" lien à leur transmettre."
+#, python-format
+msgid "Wichtig: deine Mitreisende Person"
+msgid_plural "Wichtig: deine %(n)s Mitreisenden"
+msgstr[0] "Important : ton compagnon de course"
+msgstr[1] "Important : tes %(n)s compagnons de course"
+
+#, python-format
+msgid "%(name)s braucht von allen Teilnehmenden die eigenen Angaben (Notfallkontakt, Erfahrung, Allergien …). Leite diesen Link deinen Mitreisenden weiter, z. B. per WhatsApp. Jede Person trägt ihre Angaben selbst ein, eine Rechnungsadresse brauchen sie nicht – die Rechnung geht an dich."
+msgstr "%(name)s a besoin des informations de chaque participant (contact d’urgence, expérience, allergies …). Transmets ce lien à tes compagnons, p. ex. par WhatsApp. Chaque personne saisit ses propres informations ; pas besoin d’adresse de facturation – la facture t’est adressée."
 
 #, python-format
 msgid "%(name)s hat deine Angaben erhalten."
 msgstr "%(name)s a reçu tes informations."
 
 #, python-format
-msgid ""
-"Damit %(name)s die Tour planen kann (Hütte, Anreise, Verpflegung). Nur "
-"%(name)s sieht diese Angaben."
-msgstr ""
-"Pour que %(name)s puisse planifier la course (cabane, voyage, repas). Seul·e"
-" %(name)s voit ces informations."
+msgid "Damit %(name)s die Tour planen kann (Hütte, Anreise, Verpflegung). Nur %(name)s sieht diese Angaben."
+msgstr "Pour que %(name)s puisse planifier la course (cabane, voyage, repas). Seul·e %(name)s voit ces informations."
 
 msgid "Angaben ansehen oder ändern"
 msgstr "Voir ou modifier les informations"
 
 msgid "Fotos der Tour in voller Qualität herunterladen und eigene dazulegen."
-msgstr ""
-"Télécharge les photos de la course en pleine qualité et ajoute les tiennes."
+msgstr "Télécharge les photos de la course en pleine qualité et ajoute les tiennes."
 
 msgid "Deine Mitreisenden"
 msgstr "Tes compagnons"
 
 #, python-format
-msgid ""
-"%(name)s braucht die Angaben aller Teilnehmenden. Leite diesen Link deinen "
-"Mitreisenden weiter, z. B. per WhatsApp. Jede Person trägt ihre eigenen "
-"Angaben ein."
-msgstr ""
-"%(name)s a besoin des informations de tous les participants. Transmets ce "
-"lien à tes compagnons, p. ex. par WhatsApp. Chacun saisit ses propres "
-"informations."
+msgid "%(name)s braucht die Angaben aller Teilnehmenden. Leite diesen Link deinen Mitreisenden weiter, z. B. per WhatsApp. Jede Person trägt ihre eigenen Angaben ein."
+msgstr "%(name)s a besoin des informations de tous les participants. Transmets ce lien à tes compagnons, p. ex. par WhatsApp. Chacun saisit ses propres informations."
 
 msgid "Kopieren"
 msgstr "Copier"
@@ -4597,12 +4301,8 @@ msgstr[1] "%(n)s personnes ont déjà saisi leurs informations"
 msgid "Von %(name)s, %(day)s"
 msgstr "De %(name)s, %(day)s"
 
-msgid ""
-"Danke! Deine Zahlung wird verarbeitet. Diese Seite zeigt «Bezahlt», sobald "
-"sie bestätigt ist."
-msgstr ""
-"Merci ! Ton paiement est en cours de traitement. Cette page affichera « "
-"Payée » dès qu’il sera confirmé."
+msgid "Danke! Deine Zahlung wird verarbeitet. Diese Seite zeigt «Bezahlt», sobald sie bestätigt ist."
+msgstr "Merci ! Ton paiement est en cours de traitement. Cette page affichera « Payée » dès qu’il sera confirmé."
 
 #, python-format
 msgid "CHF %(amount)s online bezahlen"
@@ -4637,12 +4337,8 @@ msgid "Stornieren"
 msgstr "Annuler"
 
 #, python-format
-msgid ""
-"Wenn du jetzt stornierst, betragen die Storno-Kosten gemäss Bedingungen "
-"%(percent)s %% (CHF %(fee)s)."
-msgstr ""
-"Si tu annules maintenant, les frais d’annulation selon les conditions "
-"s’élèvent à %(percent)s %% (CHF %(fee)s)."
+msgid "Wenn du jetzt stornierst, betragen die Storno-Kosten gemäss Bedingungen %(percent)s %% (CHF %(fee)s)."
+msgstr "Si tu annules maintenant, les frais d’annulation selon les conditions s’élèvent à %(percent)s %% (CHF %(fee)s)."
 
 #, python-format
 msgid "Du erhältst CHF %(refund)s automatisch zurück."
@@ -4663,12 +4359,21 @@ msgstr "Annuler définitivement"
 msgid "Bedingungen anzeigen"
 msgstr "Afficher les conditions"
 
-msgid ""
-"Entwurf – vor der ersten echten Gastbuchung prüfen und vor dem Ausbau nach "
-"Mai 2027 juristisch prüfen lassen."
-msgstr ""
-"Projet – à vérifier avant la première vraie réservation et à faire contrôler"
-" juridiquement avant l’extension après mai 2027."
+msgid "Du bist abgemeldet und erhältst keine Tourenangebote mehr."
+msgstr "Tu es désabonné·e et ne recevras plus d’offres de courses."
+
+#, python-format
+msgid "Keine E-Mails mehr über neue Touren von %(name)s erhalten?"
+msgstr "Ne plus recevoir d’e-mails sur les nouvelles courses de %(name)s ?"
+
+msgid "Ja, abmelden"
+msgstr "Oui, me désabonner"
+
+msgid "Diese Adresse ist bereits abgemeldet."
+msgstr "Cette adresse est déjà désabonnée."
+
+msgid "Entwurf – vor der ersten echten Gastbuchung prüfen und vor dem Ausbau nach Mai 2027 juristisch prüfen lassen."
+msgstr "Projet – à vérifier avant la première vraie réservation et à faire contrôler juridiquement avant l’extension après mai 2027."
 
 #, python-format
 msgid "%(n)s Platz frei"
@@ -4697,12 +4402,8 @@ msgstr "Toutes les offres de %(name)s"
 msgid "Die Zahlung wurde abgebrochen. Deine Plätze sind nicht reserviert."
 msgstr "Le paiement a été interrompu. Tes places ne sont pas réservées."
 
-msgid ""
-"Du bist auf der Warteliste. Wird ein Platz frei, erhältst du eine E-Mail – "
-"wer zuerst bucht, erhält ihn."
-msgstr ""
-"Tu es sur la liste d’attente. Si une place se libère, tu reçois un e-mail – "
-"la première personne qui réserve l’obtient."
+msgid "Du bist auf der Warteliste. Wird ein Platz frei, erhältst du eine E-Mail – wer zuerst bucht, erhält ihn."
+msgstr "Tu es sur la liste d’attente. Si une place se libère, tu reçois un e-mail – la première personne qui réserve l’obtient."
 
 msgid "Dieser Termin ist abgesagt."
 msgstr "Cette date est annulée."
@@ -4728,39 +4429,30 @@ msgid "Freie Plätze"
 msgstr "Places libres"
 
 #, python-format
-msgid ""
-"%(name)s entscheidet bis %(day)s, ob die Tour stattfindet. Fällt sie aus, "
-"erhältst du den vollen Betrag zurück."
-msgstr ""
-"%(name)s décide d’ici le %(day)s si la course a lieu. Si elle n’a pas lieu, "
-"tu es remboursé·e du montant total."
+msgid "%(name)s entscheidet bis %(day)s, ob die Tour stattfindet. Fällt sie aus, erhältst du den vollen Betrag zurück."
+msgstr "%(name)s décide d’ici le %(day)s si la course a lieu. Si elle n’a pas lieu, tu es remboursé·e du montant total."
 
 msgctxt "signup"
 msgid "Anmelden"
 msgstr "S’inscrire"
+
+#, python-format
+msgid "Damit %(name)s die Tour planen kann (Hütte, Anreise, Verpflegung). Nur %(name)s sieht diese Angaben. Danach ist alles erledigt."
+msgstr "Pour que %(name)s puisse planifier la course (cabane, trajet, repas). Seul·e %(name)s voit ces informations. Ensuite, tout est réglé."
+
+msgid "Kommen weitere Personen mit, erhältst du nach der Zahlung einen Link: Damit trägt jede Person ihre eigenen Angaben ein."
+msgstr "Si d’autres personnes viennent, tu recevras un lien après le paiement : chacune y saisit ses propres informations."
 
 #, python-brace-format
 msgid "Total: CHF {total}"
 msgstr "Total : CHF {total}"
 
 #, python-format
-msgid ""
-"Ich akzeptiere die <a href=\"%(terms_url)s\" target=\"_blank\" "
-"rel=\"noopener\">Bedingungen</a> (inkl. Storno) und habe die <a "
-"href=\"%(privacy_url)s\" target=\"_blank\" "
-"rel=\"noopener\">Datenschutzerklärung</a> gelesen."
-msgstr ""
-"J’accepte les <a href=\"%(terms_url)s\" target=\"_blank\" "
-"rel=\"noopener\">conditions</a> (annulation comprise) et j’ai lu la <a "
-"href=\"%(privacy_url)s\" target=\"_blank\" rel=\"noopener\">déclaration de "
-"protection des données</a>."
+msgid "Ich akzeptiere die <a href=\"%(terms_url)s\" target=\"_blank\" rel=\"noopener\">Bedingungen</a> (inkl. Storno) und habe die <a href=\"%(privacy_url)s\" target=\"_blank\" rel=\"noopener\">Datenschutzerklärung</a> gelesen."
+msgstr "J’accepte les <a href=\"%(terms_url)s\" target=\"_blank\" rel=\"noopener\">conditions</a> (annulation comprise) et j’ai lu la <a href=\"%(privacy_url)s\" target=\"_blank\" rel=\"noopener\">déclaration de protection des données</a>."
 
-msgid ""
-"Die Anmeldung ist verbindlich. Du bezahlst jetzt mit Karte oder TWINT; die "
-"Plätze sind reserviert, sobald die Zahlung durch ist."
-msgstr ""
-"L’inscription est ferme. Tu paies maintenant par carte ou TWINT ; les places"
-" sont réservées dès que le paiement est passé."
+msgid "Die Anmeldung ist verbindlich. Du bezahlst jetzt mit Karte oder TWINT; die Plätze sind reserviert, sobald die Zahlung durch ist."
+msgstr "L’inscription est ferme. Tu paies maintenant par carte ou TWINT ; les places sont réservées dès que le paiement est passé."
 
 msgid "Weiter zur Zahlung"
 msgstr "Continuer vers le paiement"
@@ -4768,23 +4460,14 @@ msgstr "Continuer vers le paiement"
 msgid "Ausgebucht – auf die Warteliste"
 msgstr "Complet – sur la liste d’attente"
 
-msgid ""
-"Wird ein Platz frei, erhalten alle auf der Warteliste gleichzeitig eine "
-"E-Mail. Wer zuerst bucht und bezahlt, erhält den Platz."
-msgstr ""
-"Si une place se libère, toutes les personnes sur la liste d’attente "
-"reçoivent un e-mail en même temps. La première qui réserve et paie obtient "
-"la place."
+msgid "Wird ein Platz frei, erhalten alle auf der Warteliste gleichzeitig eine E-Mail. Wer zuerst bucht und bezahlt, erhält den Platz."
+msgstr "Si une place se libère, toutes les personnes sur la liste d’attente reçoivent un e-mail en même temps. La première qui réserve et paie obtient la place."
 
 msgid "Auf die Warteliste"
 msgstr "Sur la liste d’attente"
 
-msgid ""
-"Online-Anmeldungen sind gerade nicht möglich. Bitte kontaktiere den "
-"Bergführer direkt."
-msgstr ""
-"Les inscriptions en ligne ne sont pas possibles pour le moment. Contacte "
-"directement le guide."
+msgid "Online-Anmeldungen sind gerade nicht möglich. Bitte kontaktiere den Bergführer direkt."
+msgstr "Les inscriptions en ligne ne sont pas possibles pour le moment. Contacte directement le guide."
 
 #, python-format
 msgid "Verfügbarkeit – %(name)s"
@@ -4795,22 +4478,12 @@ msgid "Verfügbarkeit von %(name)s"
 msgstr "Disponibilité de %(name)s"
 
 #, python-format
-msgid ""
-"%(name)s hat diese Zeiträume für %(partner)s freigegeben. Trag hier eine "
-"Tour ein: Die Tage sind sofort vorläufig reserviert, %(name)s bestätigt per "
-"E-Mail."
-msgstr ""
-"%(name)s a ouvert ces périodes pour %(partner)s. Inscris ici une course : "
-"les jours sont aussitôt réservés provisoirement, %(name)s confirme par "
-"e-mail."
+msgid "%(name)s hat diese Zeiträume für %(partner)s freigegeben. Trag hier eine Tour ein: Die Tage sind sofort vorläufig reserviert, %(name)s bestätigt per E-Mail."
+msgstr "%(name)s a ouvert ces périodes pour %(partner)s. Inscris ici une course : les jours sont aussitôt réservés provisoirement, %(name)s confirme par e-mail."
 
 #, python-format
-msgid ""
-"Danke! Dein Angebot ist bei %(name)s. Du erhältst eine E-Mail, sobald es "
-"bestätigt oder abgelehnt ist."
-msgstr ""
-"Merci ! Ton offre est chez %(name)s. Tu recevras un e-mail dès qu’elle sera "
-"confirmée ou refusée."
+msgid "Danke! Dein Angebot ist bei %(name)s. Du erhältst eine E-Mail, sobald es bestätigt oder abgelehnt ist."
+msgstr "Merci ! Ton offre est chez %(name)s. Tu recevras un e-mail dès qu’elle sera confirmée ou refusée."
 
 msgid "belegt"
 msgstr "occupé"
@@ -4831,30 +4504,20 @@ msgid "Danke für deine Anfrage!"
 msgstr "Merci pour ta demande !"
 
 #, python-format
-msgid ""
-"Deine Anfrage für den <strong>%(day)s</strong> ist bei %(name)s eingegangen."
-msgstr ""
-"Ta demande pour le <strong>%(day)s</strong> est bien arrivée chez %(name)s."
+msgid "Deine Anfrage für den <strong>%(day)s</strong> ist bei %(name)s eingegangen."
+msgstr "Ta demande pour le <strong>%(day)s</strong> est bien arrivée chez %(name)s."
 
 #, python-format
-msgid ""
-"Deine Anfrage für <strong>%(first)s – %(last)s</strong> ist bei %(name)s "
-"eingegangen."
-msgstr ""
-"Ta demande pour <strong>%(first)s – %(last)s</strong> est bien arrivée chez "
-"%(name)s."
+msgid "Deine Anfrage für <strong>%(first)s – %(last)s</strong> ist bei %(name)s eingegangen."
+msgstr "Ta demande pour <strong>%(first)s – %(last)s</strong> est bien arrivée chez %(name)s."
 
 #, python-format
 msgid "Deine Anfrage ist bei %(name)s eingegangen."
 msgstr "Ta demande est bien arrivée chez %(name)s."
 
 #, python-format
-msgid ""
-"Du erhältst eine Bestätigung per E-Mail. %(name)s bestätigt die Tour oder "
-"macht dir einen Vorschlag. Die Rechnung bekommst du nach der Tour."
-msgstr ""
-"Tu recevras une confirmation par e-mail. %(name)s confirme la course ou te "
-"fait une proposition. Tu reçois la facture après la course."
+msgid "Du erhältst eine Bestätigung per E-Mail. %(name)s bestätigt die Tour oder macht dir einen Vorschlag. Die Rechnung bekommst du nach der Tour."
+msgstr "Tu recevras une confirmation par e-mail. %(name)s confirme la course ou te fait une proposition. Tu reçois la facture après la course."
 
 msgid "Zurück zum Kalender"
 msgstr "Retour au calendrier"
@@ -4875,126 +4538,57 @@ msgstr "Annulation pour cause de météo ou de conditions, ou par le guide"
 msgid "Prozent des Tourenpreises. Stichtag ist der Tag, an dem du stornierst."
 msgstr "Pourcentage du prix de la course. Le jour où tu annules fait foi."
 
-msgid ""
-"Vorlage von Tourchef, angelehnt an die Grundsätze des Schweizer "
-"Bergführerverbands (SBV)."
-msgstr ""
-"Modèle de Tourchef, inspiré des principes de l’Association suisse des guides"
-" de montagne (ASGM)."
+msgid "Vorlage von Tourchef, angelehnt an die Grundsätze des Schweizer Bergführerverbands (SBV)."
+msgstr "Modèle de Tourchef, inspiré des principes de l’Association suisse des guides de montagne (ASGM)."
 
 msgid "1. Vertragspartner"
 msgstr "1. Partenaire contractuel"
 
 #, python-format
-msgid ""
-"Dein Vertragspartner ist %(name)s. Tourchef stellt nur das Buchungswerkzeug "
-"zur Verfügung und ist nicht Partei des Vertrags."
-msgstr ""
-"Ton partenaire contractuel est %(name)s. Tourchef ne fournit que l’outil de "
-"réservation et n’est pas partie au contrat."
+msgid "Dein Vertragspartner ist %(name)s. Tourchef stellt nur das Buchungswerkzeug zur Verfügung und ist nicht Partei des Vertrags."
+msgstr "Ton partenaire contractuel est %(name)s. Tourchef ne fournit que l’outil de réservation et n’est pas partie au contrat."
 
 msgid "2. Anfrage und Vertragsabschluss"
 msgstr "2. Demande et conclusion du contrat"
 
-msgid ""
-"Eine Anfrage für eine eigene Tour ist unverbindlich. Der Vertrag kommt "
-"zustande, wenn der Bergführer die Anfrage bestätigt oder du sein Angebot "
-"annimmst. Die Anmeldung für einen ausgeschriebenen Termin ist mit der "
-"erfolgreichen Zahlung verbindlich."
-msgstr ""
-"Une demande pour une course personnelle est sans engagement. Le contrat est "
-"conclu lorsque le guide confirme la demande ou que tu acceptes son offre. "
-"L’inscription à une date publiée est ferme dès que le paiement a abouti."
+msgid "Eine Anfrage für eine eigene Tour ist unverbindlich. Der Vertrag kommt zustande, wenn der Bergführer die Anfrage bestätigt oder du sein Angebot annimmst. Die Anmeldung für einen ausgeschriebenen Termin ist mit der erfolgreichen Zahlung verbindlich."
+msgstr "Une demande pour une course personnelle est sans engagement. Le contrat est conclu lorsque le guide confirme la demande ou que tu acceptes son offre. L’inscription à une date publiée est ferme dès que le paiement a abouti."
 
 msgid "3. Preise und Zahlung"
 msgstr "3. Prix et paiement"
 
-msgid ""
-"Bei Touren auf Anfrage gilt der bestätigte Preis für die Führung. Spesen wie"
-" Reise, Hütte, Bahn und Verpflegung des Bergführers kommen dazu und werden "
-"nach der Tour abgerechnet; geschätzte Spesen im Angebot sind unverbindlich. "
-"Bei ausgeschriebenen Terminen gilt der Preis pro Person; er wird bei der "
-"Anmeldung mit Karte oder TWINT bezahlt."
-msgstr ""
-"Pour les courses sur demande, le prix confirmé de l’accompagnement "
-"s’applique. Les frais tels que voyage, cabane, remontées et repas du guide "
-"s’y ajoutent et sont facturés après la course ; les frais estimés dans "
-"l’offre sont sans engagement. Pour les dates publiées, le prix par personne "
-"s’applique ; il est payé lors de l’inscription par carte ou TWINT."
+msgid "Bei Touren auf Anfrage gilt der bestätigte Preis für die Führung. Spesen wie Reise, Hütte, Bahn und Verpflegung des Bergführers kommen dazu und werden nach der Tour abgerechnet; geschätzte Spesen im Angebot sind unverbindlich. Bei ausgeschriebenen Terminen gilt der Preis pro Person; er wird bei der Anmeldung mit Karte oder TWINT bezahlt."
+msgstr "Pour les courses sur demande, le prix confirmé de l’accompagnement s’applique. Les frais tels que voyage, cabane, remontées et repas du guide s’y ajoutent et sont facturés après la course ; les frais estimés dans l’offre sont sans engagement. Pour les dates publiées, le prix par personne s’applique ; il est payé lors de l’inscription par carte ou TWINT."
 
 msgid "4. Stornierung durch dich"
 msgstr "4. Annulation de ta part"
 
-msgid ""
-"Es gelten die Storno-Kosten oben. Bereits bezahlte Beträge abzüglich der "
-"Storno-Kosten erhältst du automatisch zurück. Du kannst jederzeit über den "
-"Link in deiner Bestätigung stornieren."
-msgstr ""
-"Les frais d’annulation ci-dessus s’appliquent. Les montants déjà payés, "
-"moins les frais d’annulation, te sont remboursés automatiquement. Tu peux "
-"annuler à tout moment via le lien de ta confirmation."
+msgid "Es gelten die Storno-Kosten oben. Bereits bezahlte Beträge abzüglich der Storno-Kosten erhältst du automatisch zurück. Du kannst jederzeit über den Link in deiner Bestätigung stornieren."
+msgstr "Les frais d’annulation ci-dessus s’appliquent. Les montants déjà payés, moins les frais d’annulation, te sont remboursés automatiquement. Tu peux annuler à tout moment via le lien de ta confirmation."
 
 msgid "5. Absage oder Verschiebung durch den Bergführer"
 msgstr "5. Annulation ou report par le guide"
 
-msgid ""
-"Die Sicherheit geht vor. Lassen Wetter oder Verhältnisse die Tour nicht zu, "
-"kann der Bergführer sie absagen oder ein Ersatzdatum vorschlagen. Passt dir "
-"das Ersatzdatum nicht, wird die Buchung kostenlos storniert; Bezahltes "
-"erhältst du vollständig zurück. Bei Touren auf Anfrage trägst du Kosten, die"
-" bereits angefallen sind und die der Bergführer bei der Verschiebung "
-"ausweist (z. B. eine verfallene Hüttenanzahlung). Wird bei einem "
-"ausgeschriebenen Termin die Mindestzahl nicht erreicht, kann der Bergführer "
-"ihn bis zur Entscheid-Frist absagen; du erhältst den vollen Betrag zurück."
-msgstr ""
-"La sécurité passe avant tout. Si la météo ou les conditions ne permettent "
-"pas la course, le guide peut l’annuler ou proposer une date de remplacement."
-" Si la date de remplacement ne te convient pas, la réservation est annulée "
-"gratuitement ; ce que tu as payé t’est intégralement remboursé. Pour les "
-"courses sur demande, tu supportes les frais déjà engagés que le guide "
-"indique lors du report (p. ex. un acompte de cabane perdu). Si le nombre "
-"minimal n’est pas atteint pour une date publiée, le guide peut l’annuler "
-"jusqu’au délai de décision ; tu es remboursé·e du montant total."
+msgid "Die Sicherheit geht vor. Lassen Wetter oder Verhältnisse die Tour nicht zu, kann der Bergführer sie absagen oder ein Ersatzdatum vorschlagen. Passt dir das Ersatzdatum nicht, wird die Buchung kostenlos storniert; Bezahltes erhältst du vollständig zurück. Bei Touren auf Anfrage trägst du Kosten, die bereits angefallen sind und die der Bergführer bei der Verschiebung ausweist (z. B. eine verfallene Hüttenanzahlung). Wird bei einem ausgeschriebenen Termin die Mindestzahl nicht erreicht, kann der Bergführer ihn bis zur Entscheid-Frist absagen; du erhältst den vollen Betrag zurück."
+msgstr "La sécurité passe avant tout. Si la météo ou les conditions ne permettent pas la course, le guide peut l’annuler ou proposer une date de remplacement. Si la date de remplacement ne te convient pas, la réservation est annulée gratuitement ; ce que tu as payé t’est intégralement remboursé. Pour les courses sur demande, tu supportes les frais déjà engagés que le guide indique lors du report (p. ex. un acompte de cabane perdu). Si le nombre minimal n’est pas atteint pour une date publiée, le guide peut l’annuler jusqu’au délai de décision ; tu es remboursé·e du montant total."
 
 msgid "6. Anforderungen und Gesundheit"
 msgstr "6. Exigences et santé"
 
-msgid ""
-"Du gibst deine Erfahrung und Kondition wahrheitsgemäss an und informierst "
-"den Bergführer über gesundheitliche Einschränkungen. Der Bergführer darf "
-"Teilnehmende ausschliessen oder eine Tour abbrechen oder ändern, wenn die "
-"Sicherheit es verlangt; ein Anspruch auf Rückzahlung besteht dann nicht, "
-"sofern der Grund bei dir liegt."
-msgstr ""
-"Tu indiques ton expérience et ta condition physique de manière véridique et "
-"informes le guide de toute restriction de santé. Le guide peut exclure des "
-"participants, interrompre ou modifier une course si la sécurité l’exige ; "
-"aucun remboursement n’est dû lorsque la raison vient de toi."
+msgid "Du gibst deine Erfahrung und Kondition wahrheitsgemäss an und informierst den Bergführer über gesundheitliche Einschränkungen. Der Bergführer darf Teilnehmende ausschliessen oder eine Tour abbrechen oder ändern, wenn die Sicherheit es verlangt; ein Anspruch auf Rückzahlung besteht dann nicht, sofern der Grund bei dir liegt."
+msgstr "Tu indiques ton expérience et ta condition physique de manière véridique et informes le guide de toute restriction de santé. Le guide peut exclure des participants, interrompre ou modifier une course si la sécurité l’exige ; aucun remboursement n’est dû lorsque la raison vient de toi."
 
 msgid "7. Versicherung und Haftung"
 msgstr "7. Assurance et responsabilité"
 
-msgid ""
-"Bergsport ist mit Risiken verbunden. Eine Unfall-, Rettungs- und "
-"Annullationsversicherung ist Sache der Teilnehmenden. Der Bergführer haftet "
-"im Rahmen des Gesetzes und seiner Berufshaftpflicht; die Haftung für leichte"
-" Fahrlässigkeit ist ausgeschlossen, soweit gesetzlich zulässig."
-msgstr ""
-"Les sports de montagne comportent des risques. Une assurance accidents, "
-"sauvetage et annulation incombe aux participants. Le guide répond dans le "
-"cadre de la loi et de son assurance responsabilité civile professionnelle ; "
-"la responsabilité pour négligence légère est exclue dans la mesure permise "
-"par la loi."
+msgid "Bergsport ist mit Risiken verbunden. Eine Unfall-, Rettungs- und Annullationsversicherung ist Sache der Teilnehmenden. Der Bergführer haftet im Rahmen des Gesetzes und seiner Berufshaftpflicht; die Haftung für leichte Fahrlässigkeit ist ausgeschlossen, soweit gesetzlich zulässig."
+msgstr "Les sports de montagne comportent des risques. Une assurance accidents, sauvetage et annulation incombe aux participants. Le guide répond dans le cadre de la loi et de son assurance responsabilité civile professionnelle ; la responsabilité pour négligence légère est exclue dans la mesure permise par la loi."
 
 msgid "8. Anwendbares Recht"
 msgstr "8. Droit applicable"
 
-msgid ""
-"Es gilt Schweizer Recht. Gerichtsstand ist der Geschäftssitz des "
-"Bergführers, soweit das Gesetz nichts anderes zwingend vorschreibt."
-msgstr ""
-"Le droit suisse s’applique. Le for est au siège du guide, sauf disposition "
-"légale impérative contraire."
+msgid "Es gilt Schweizer Recht. Gerichtsstand ist der Geschäftssitz des Bergführers, soweit das Gesetz nichts anderes zwingend vorschreibt."
+msgstr "Le droit suisse s’applique. Le for est au siège du guide, sauf disposition légale impérative contraire."
 
 msgid "Entwurf – vor dem Einsatz juristisch prüfen lassen."
 msgstr "Projet – à faire contrôler juridiquement avant utilisation."
@@ -5012,14 +4606,8 @@ msgid "Angebote anklicken und buchen."
 msgstr "Clique sur une offre pour réserver."
 
 #, python-format
-msgid ""
-"Oder eigene Tour anfragen: Wähle den ersten und den letzten Tag (höchstens "
-"%(max)s Tage). Für eine Tagestour reicht ein Klick. %(name)s bestätigt die "
-"Tour oder macht dir einen Vorschlag."
-msgstr ""
-"Ou demande ta propre course : choisis le premier et le dernier jour (au "
-"maximum %(max)s jours). Pour une course d’un jour, un clic suffit. %(name)s "
-"confirme la course ou te fait une proposition."
+msgid "Oder eigene Tour anfragen: Wähle den ersten und den letzten Tag (höchstens %(max)s Tage). Für eine Tagestour reicht ein Klick. %(name)s bestätigt die Tour oder macht dir einen Vorschlag."
+msgstr "Ou demande ta propre course : choisis le premier et le dernier jour (au maximum %(max)s jours). Pour une course d’un jour, un clic suffit. %(name)s confirme la course ou te fait une proposition."
 
 #, python-format
 msgid "Verfügbare Tage %(month_label)s"
@@ -5052,10 +4640,8 @@ msgstr "dès %(lo)s personnes"
 msgid "CHF %(rate)s pro Tag"
 msgstr "CHF %(rate)s par jour"
 
-msgid ""
-"Zuzüglich Spesen (z. B. Hütte, Bahn, Reise). Abgerechnet wird nach der Tour."
-msgstr ""
-"Plus les frais (p. ex. cabane, remontées, voyage). Facturé après la course."
+msgid "Zuzüglich Spesen (z. B. Hütte, Bahn, Reise). Abgerechnet wird nach der Tour."
+msgstr "Plus les frais (p. ex. cabane, remontées, voyage). Facturé après la course."
 
 #, python-format
 msgid "Anfrage für %(day)s"
@@ -5077,185 +4663,22 @@ msgid "Richtpreis für {n} Pers.: CHF {rate} pro Tag"
 msgstr "Prix indicatif pour {n} pers. : CHF {rate} par jour"
 
 #, python-brace-format
-msgid ""
-"Richtpreis für {n} Pers.: CHF {rate} pro Tag × {days} Tage = CHF {total} + "
-"Spesen"
-msgstr ""
-"Prix indicatif pour {n} pers. : CHF {rate} par jour × {days} jours = CHF "
-"{total} + frais"
+msgid "Richtpreis für {n} Pers.: CHF {rate} pro Tag × {days} Tage = CHF {total} + Spesen"
+msgstr "Prix indicatif pour {n} pers. : CHF {rate} par jour × {days} jours = CHF {total} + frais"
 
 #, python-brace-format
 msgid "Richtpreis für {n} Pers.: CHF {rate} + Spesen"
 msgstr "Prix indicatif pour {n} pers. : CHF {rate} + frais"
 
 #, python-format
-msgid ""
-"Ich akzeptiere die <a href=\"%(terms_url)s\" target=\"_blank\" "
-"rel=\"noopener\">Bedingungen</a> und habe die <a href=\"%(privacy_url)s\" "
-"target=\"_blank\" rel=\"noopener\">Datenschutzerklärung</a> gelesen."
-msgstr ""
-"J’accepte les <a href=\"%(terms_url)s\" target=\"_blank\" "
-"rel=\"noopener\">conditions</a> et j’ai lu la <a href=\"%(privacy_url)s\" "
-"target=\"_blank\" rel=\"noopener\">déclaration de protection des "
-"données</a>."
+msgid "Ich akzeptiere die <a href=\"%(terms_url)s\" target=\"_blank\" rel=\"noopener\">Bedingungen</a> und habe die <a href=\"%(privacy_url)s\" target=\"_blank\" rel=\"noopener\">Datenschutzerklärung</a> gelesen."
+msgstr "J’accepte les <a href=\"%(terms_url)s\" target=\"_blank\" rel=\"noopener\">conditions</a> et j’ai lu la <a href=\"%(privacy_url)s\" target=\"_blank\" rel=\"noopener\">déclaration de protection des données</a>."
 
-msgid ""
-"Die Anfrage ist unverbindlich, bis du die Bestätigung erhältst. Bezahlt wird"
-" nach der Tour."
-msgstr ""
-"La demande est sans engagement jusqu’à ce que tu reçoives la confirmation. "
-"Le paiement se fait après la course."
+msgid "Die Anfrage ist unverbindlich, bis du die Bestätigung erhältst. Bezahlt wird nach der Tour."
+msgstr "La demande est sans engagement jusqu’à ce que tu reçoives la confirmation. Le paiement se fait après la course."
 
 msgid "Anfrage senden"
 msgstr "Envoyer la demande"
 
 msgid "Alle Angebote"
 msgstr "Toutes les offres"
-
-#, python-brace-format
-#~ msgid ""
-#~ "Hallo {guest}\n"
-#~ "\n"
-#~ "Danke! Deine Tour ist bestätigt:\n"
-#~ "\n"
-#~ "{summary}\n"
-#~ "\n"
-#~ "{payment_terms}\n"
-#~ "\n"
-#~ "Für die Planung braucht {guide} noch ein paar Angaben (Rechnungsadresse, Notfallkontakt, Ernährung, Alpenverein, Abo, Auto). Bitte trag sie hier ein:\n"
-#~ "{details_link}"
-#~ msgstr ""
-#~ "Bonjour {guest}\n"
-#~ "\n"
-#~ "Merci ! Ta course est confirmée :\n"
-#~ "\n"
-#~ "{summary}\n"
-#~ "\n"
-#~ "{payment_terms}\n"
-#~ "\n"
-#~ "Pour la planification, {guide} a besoin de quelques informations (adresse de facturation, contact d'urgence, alimentation, club alpin, abonnement, voiture). Merci de les saisir ici :\n"
-#~ "{details_link}"
-
-#~ msgid "Aus deinen Stufen nach Gruppengrösse."
-#~ msgstr "Selon tes paliers par taille de groupe."
-
-#~ msgid "Leer lassen: Tagesansatz × Tage. Oder einen eigenen Preis eintragen."
-#~ msgstr "Laisser vide : tarif journalier × jours. Ou saisir ton propre prix."
-
-#~ msgid ""
-#~ "Danke! Deine Tour ist bestätigt. Es fehlen nur noch deine Angaben für die "
-#~ "Tourenplanung."
-#~ msgstr ""
-#~ "Merci ! Ta course est confirmée. Il ne manque plus que tes informations pour"
-#~ " la planification."
-
-#~ msgid ""
-#~ "Rechnungsadresse, Notfallkontakt, Ernährung, Allergien, Alpenverein "
-#~ "(Gegenrecht), GA/Halbtax und Auto: Der Gast trägt das auf seiner "
-#~ "Buchungsseite ein. Fehlt es nach einem Tag noch, erinnert Tourchef den Gast "
-#~ "einmal per E-Mail."
-#~ msgstr ""
-#~ "Adresse de facturation, contact d’urgence, alimentation, allergies, club "
-#~ "alpin (droit de réciprocité), AG/demi-tarif et voiture : le client les "
-#~ "saisit sur sa page de réservation. S’il manque encore quelque chose après un"
-#~ " jour, Tourchef le lui rappelle une fois par e-mail."
-
-#~ msgid ""
-#~ "Noch keine Nachrichten. Der Gast erhält deine Nachricht per E-Mail und "
-#~ "antwortet einfach darauf. Die Antwort erscheint hier."
-#~ msgstr ""
-#~ "Pas encore de messages. Le participant reçoit ton message par e-mail et y "
-#~ "répond simplement. La réponse apparaît ici."
-
-#, python-format
-#~ msgid "An %(name)s senden"
-#~ msgstr "Envoyer à %(name)s"
-
-#~ msgid "WhatsApp öffnen"
-#~ msgstr "Ouvrir WhatsApp"
-
-#~ msgid ""
-#~ "Per E-Mail gesendete Nachrichten und die Antworten bleiben hier im Verlauf. "
-#~ "WhatsApp-Nachrichten erscheinen nicht im Verlauf."
-#~ msgstr ""
-#~ "Les messages envoyés par e-mail et leurs réponses restent ici dans "
-#~ "l'historique. Les messages WhatsApp n'y apparaissent pas."
-
-#~ msgid "Wetter: Ersatzdatum vorschlagen"
-#~ msgstr "Météo : proposer une date de remplacement"
-
-#~ msgid ""
-#~ "Der Gast sagt zu oder storniert kostenlos. Antwortet er nicht innert Frist, "
-#~ "gilt die Buchung als storniert."
-#~ msgstr ""
-#~ "Le client accepte ou annule gratuitement. S’il ne répond pas dans le délai, "
-#~ "la réservation est considérée comme annulée."
-
-#~ msgid "Tour ohne Ersatzdatum absagen"
-#~ msgstr "Annuler la course sans date de remplacement"
-
-#~ msgid "Für den Gast kostenlos."
-#~ msgstr "Gratuit pour le client."
-
-#~ msgid "Keine offenen Anfragen."
-#~ msgstr "Aucune demande ouverte."
-
-#~ msgid "Bewertung"
-#~ msgstr "Note"
-
-#~ msgid "Name, z. B. Piz Palü Nordwand"
-#~ msgstr "Nom, p. ex. Piz Palü face nord"
-
-#~ msgid "Ort, z. B. Diavolezza"
-#~ msgstr "Lieu, p. ex. Diavolezza"
-
-#~ msgid "Name, Ort, Bemerkung …"
-#~ msgstr "Nom, lieu, remarque …"
-
-#~ msgid "Jede Bewertung"
-#~ msgstr "Toutes les notes"
-
-#, python-format
-#~ msgid "ab %(stars)s"
-#~ msgstr "%(stars)s ou plus"
-
-#~ msgid "Deine Nachricht"
-#~ msgstr "Ton message"
-
-#~ msgid "Name und Telefon einer Person, die wir im Notfall erreichen."
-#~ msgstr "Nom et téléphone d'une personne à joindre en cas d'urgence."
-
-#~ msgid "Bezeichnung"
-#~ msgstr "Désignation"
-
-#~ msgid "Mitgliedernummer"
-#~ msgstr "Numéro de membre"
-
-#~ msgid "Zu viele Nachrichten. Bitte versuche es später erneut."
-#~ msgstr "Trop de messages. Merci de réessayer plus tard."
-
-#~ msgid "Nachricht gesendet."
-#~ msgstr "Message envoyé."
-
-#~ msgid "Danke! Deine Angaben sind gespeichert."
-#~ msgstr "Merci ! Tes informations sont enregistrées."
-
-#~ msgid ""
-#~ "Wähle für jedes Bild die Tourenart und schreib optional eine kurze "
-#~ "Beschreibung. Dann «Speichern» – oder «Löschen»."
-#~ msgstr ""
-#~ "Choisis le type de course pour chaque image et ajoute éventuellement une "
-#~ "courte description. Puis «Enregistrer» – ou «Supprimer»."
-
-#, python-format
-#~ msgid "Nachrichten mit %(name)s"
-#~ msgstr "Messages avec %(name)s"
-
-#~ msgid "Du kannst auch einfach auf eine E-Mail deines Bergführers antworten."
-#~ msgstr "Tu peux aussi simplement répondre à un e-mail de ton guide."
-
-#~ msgid "Zurückbezahlt CHF"
-#~ msgstr "Remboursé CHF"
-
-#~ msgid "Netto CHF"
-#~ msgstr "Net CHF"

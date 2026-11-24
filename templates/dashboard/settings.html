@@ -32,20 +32,24 @@
 
 <form method="post" class="card">{% csrf_token %}
   <h2>{% translate "Profil, Preise, Bedingungen" %}</h2>
-  {% include "_form.html" %}
+  {% include "_form.html" with skip="day_rate" %}
 
-  <h3>{% translate "Tagesansatz nach Gruppengrösse" %}</h3>
-  <p class="small muted">{% blocktranslate with rate=user.day_rate|floatformat:"-2" trimmed %}Der Tagesansatz oben (CHF {{ rate }}) gilt ab 1 Person. Lege hier weitere Stufen fest, z. B. ab 5 Personen CHF 850, ab 7 Personen CHF 950. Gäste sehen den Richtpreis ihrer Gruppengrösse im Widget.{% endblocktranslate %}</p>
-  {{ tiers.management_form }}
-  {% if tiers.non_form_errors %}<div class="alert error">{{ tiers.non_form_errors }}</div>{% endif %}
-  {% for f in tiers %}
-  <div class="expense-row tier-row">
-    {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
-    <div class="field{% if f.min_participants.errors %} has-error{% endif %}"><label for="{{ f.min_participants.id_for_label }}">{{ f.min_participants.label }}</label>{{ f.min_participants }}{{ f.min_participants.errors }}</div>
-    <div class="field{% if f.day_rate.errors %} has-error{% endif %}"><label for="{{ f.day_rate.id_for_label }}">{{ f.day_rate.label }}</label>{{ f.day_rate }}{{ f.day_rate.errors }}</div>
-    {% if f.instance.pk %}<label class="check small">{{ f.DELETE }} {% translate "löschen" %}</label>{% endif %}
-  </div>
-  {% endfor %}
+  <h3 id="tarife">{% translate "Tagesansatz nach Gruppengrösse" %}</h3>
+  <p class="small muted">{% translate "Lege deinen Tagesansatz für jede Gruppengrösse fest. Leer = gleich wie die Zeile darüber. Grössere Gruppen nimmst du mit «eigene Gruppengrösse» an. Gäste sehen den Richtpreis ihrer Gruppengrösse im Widget." %}</p>
+  {% if tiers.non_field_errors %}<div class="alert error">{{ tiers.non_field_errors }}</div>{% endif %}
+  <div class="table-wrap"><table class="rate-table">
+    <thead><tr><th>{% translate "Gruppengrösse" %}</th><th>{% translate "Tagesansatz (CHF)" %}</th></tr></thead>
+    <tbody>
+      <tr class="{% if form.day_rate.errors %}has-error{% endif %}"><td><label for="{{ form.day_rate.id_for_label }}">{% translate "1 Person" %}</label></td><td>{{ form.day_rate }}{{ form.day_rate.errors }}</td></tr>
+      {% for n, field, same_as in tiers.rows %}
+      <tr class="{% if field.errors %}has-error{% endif %}"><td><label for="{{ field.id_for_label }}">{% blocktranslate trimmed %}{{ n }} Personen{% endblocktranslate %}</label></td>
+        <td>{{ field }}{% if not field.value %}<small class="help">{% blocktranslate with rate=same_as|floatformat:"-2" trimmed %}leer: CHF {{ rate }}{% endblocktranslate %}</small>{% endif %}{{ field.errors }}</td></tr>
+      {% endfor %}
+      {% for size, rate in tiers.extra_rows %}
+      <tr class="{% if size.errors or rate.errors %}has-error{% endif %}"><td><label class="small" for="{{ size.id_for_label }}">{% translate "Eigene Gruppengrösse: ab" %}</label> {{ size }} {% translate "Pers." %}{{ size.errors }}</td><td>{{ rate }}{{ rate.errors }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table></div>
   <p class="small"><a href="{% url 'widget:terms' user.slug %}" target="_blank" rel="noopener">{% translate "So sehen Gäste deine Bedingungen" %}</a></p>
   <button class="btn" type="submit">{% translate "Speichern" %}</button>
 </form>

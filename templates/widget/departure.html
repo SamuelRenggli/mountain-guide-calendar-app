@@ -56,6 +56,10 @@
       {{ field }}{{ field.errors }}
     </div>
   {% endif %}{% endfor %}
+  <h3>{% translate "Angaben für die Tourenplanung" %}</h3>
+  <p class="small muted">{% blocktranslate with name=guide.display_name trimmed %}Damit {{ name }} die Tour planen kann (Hütte, Anreise, Verpflegung). Nur {{ name }} sieht diese Angaben. Danach ist alles erledigt.{% endblocktranslate %}</p>
+  {% include "_form.html" with form=details_form %}
+  <p class="small muted">{% translate "Kommen weitere Personen mit, erhältst du nach der Zahlung einen Link: Damit trägt jede Person ihre eigenen Angaben ein." %}</p>
   <p class="small" data-seat-total data-price="{{ departure.price_per_person|stringformat:'s' }}" data-template="{% translate 'Total: CHF {total}' %}"></p>
   <div class="field{% if form.accept_terms.errors %} has-error{% endif %}">
     <label class="check">{{ form.accept_terms }}

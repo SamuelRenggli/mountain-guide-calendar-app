@@ -91,9 +91,20 @@
   </ol>
   <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Damit {{ name }} die Tour planen kann (Hütte, Anreise, Verpflegung). Nur {{ name }} sieht diese Angaben. Erst mit «Definitiv zusagen» ist die Tour gebucht.{% endblocktranslate %}</p>
   <form method="post" action="{% url 'guest:details' booking.token %}">{% csrf_token %}
-    {% include "_form.html" with form=details_form %}
+    {% include "_form.html" with form=details_form skip="forward_link" %}
     <p class="small muted">{% blocktranslate with name=booking.guide.display_name trimmed %}Mit dem Häkchen bewahrt {{ name }} deine Angaben für weitere Touren mit dir auf. Ohne Häkchen gelten sie nur für diese Tour.{% endblocktranslate %}</p>
-    {% if booking.participants > 1 %}<p class="small muted">{% translate "Deine Mitreisenden tragen ihre Angaben danach selbst ein: Du erhältst einen Link zum Weiterleiten." %}</p>{% endif %}
+    {% if details_form.forward_link %}
+    <div class="forward-box" id="mitreisende">
+      <h3>{% blocktranslate count n=booking.participants|add:"-1" trimmed %}Wichtig: deine Mitreisende Person{% plural %}Wichtig: deine {{ n }} Mitreisenden{% endblocktranslate %}</h3>
+      <p class="small">{% blocktranslate with name=booking.guide.display_name trimmed %}{{ name }} braucht von allen Teilnehmenden die eigenen Angaben (Notfallkontakt, Erfahrung, Allergien …). Leite diesen Link deinen Mitreisenden weiter, z. B. per WhatsApp. Jede Person trägt ihre Angaben selbst ein, eine Rechnungsadresse brauchen sie nicht – die Rechnung geht an dich.{% endblocktranslate %}</p>
+      <code class="embed" id="companion-link">{{ booking.companion_url }}</code>
+      <p class="row">
+        <button class="btn btn-secondary btn-small" type="button" data-copy="#companion-link">{% translate "Link kopieren" %}</button>
+        <button class="btn btn-secondary btn-small" type="button" data-share="#companion-link" data-share-title="{{ booking.title }}">{% translate "Teilen" %}</button>
+      </p>
+      {% include "_field.html" with field=details_form.forward_link %}
+    </div>
+    {% endif %}
     <div class="row">
       <button class="btn" type="submit">{% translate "Definitiv zusagen" %}</button>
       <a class="btn btn-secondary" href="{% url 'guest:detail' booking.token %}">{% translate "Zurück" %}</a>

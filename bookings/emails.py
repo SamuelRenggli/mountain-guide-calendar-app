@@ -11,7 +11,7 @@ import logging
 from decimal import Decimal
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.utils import timezone, translation
 from django.utils.translation import gettext_lazy as _
 
@@ -125,6 +125,17 @@ MESSAGES = {
           "Anforderungen:\n{requirements}\n\nAusrüstung:\n{equipment}\n\nInbegriffen:\n{included}\n\nNicht inbegriffen:\n{not_included}\n\n"
           "Bergführer: {guide}, Telefon {guide_phone}, {guide_email}\n\n{receipt}\n\n"
           "Deine Anmeldung, Stornieren und Bedingungen:\n{guest_link}"),
+    ),
+    "new_tour": (
+        _("Neue Tour von {guide}: {tour}"),
+        _("Hallo {guest}\n\n{guide} hat eine neue Tour ausgeschrieben:\n\n{tour}\n{dates}\n{price}\n\n"
+          "Alle Infos und Anmeldung:\n{departure_url}\n\nDu erhältst diese E-Mail, weil du über neue Touren von {guide} "
+          "informiert werden wolltest. Abmelden: {unsubscribe_url}"),
+    ),
+    "newsletter": (
+        _("{subject}"),
+        _("Hallo {guest}\n\n{body}\n\n{guide}\n\nDu erhältst diese E-Mail, weil du über neue Touren von {guide} "
+          "informiert werden wolltest. Abmelden: {unsubscribe_url}"),
     ),
     "album_shared": (
         _("Fotos von «{tour}»"),
@@ -412,12 +423,15 @@ def _context(b) -> dict:
     return ctx
 
 
-def _deliver(key, lang, to, ctx):
+def _deliver(key, lang, to, ctx, reply_to=""):
+    """reply_to: where a reply goes. For guests the booking's reply address, so whatever a guest answers to any
+    Tourchef email lands in the booking's messages on the dashboard (and is forwarded to the guide)."""
     with translation.override(lang if lang in dict(settings.LANGUAGES) else settings.LANGUAGE_CODE):
         subject, body = MESSAGES[key]
         try:
             text = body.format(**ctx).strip() + "\n\n--\n" + FOOTER.format(**ctx)
-            send_mail(subject.format(**ctx), text, settings.DEFAULT_FROM_EMAIL, [to])
+            EmailMessage(subject.format(**ctx), text, settings.DEFAULT_FROM_EMAIL, [to],
+                         reply_to=[reply_to] if reply_to else None).send()
         except Exception:
             logger.exception("Email %s failed", key)
 
@@ -426,7 +440,12 @@ def _send(key, b, *, to_guest: bool, **extra):
     lang = b.language if to_guest else b.guide.language
     with translation.override(lang):
         ctx = {**_context(b), **extra}
-    _deliver(key, lang, b.guest_email if to_guest else b.guide.email, ctx)
+    if to_guest:
+        from .messaging import reply_address
+
+        _deliver(key, lang, b.guest_email, ctx, reply_to=reply_address(b) or b.guide.email)
+    else:
+        _deliver(key, lang, b.guide.email, ctx)
 
 
 # --- Requests ---
@@ -586,7 +605,7 @@ def decision_reminder(d):
 def waitlist_seat_free(entry):
     d = entry.departure
     ctx = {"guest": entry.name, "tour": d.title, "start": f"{d.start_date:%d.%m.%Y}", **_departure_context(d)}
-    _deliver("waitlist_seat_free", entry.language, entry.email, ctx)
+    _deliver("waitlist_seat_free", entry.language, entry.email, ctx, reply_to=d.guide.email)
 
 
 def goodwill_refund(b, amount):
@@ -633,6 +652,33 @@ def album_shared(album) -> int:
     for name, email, lang in album.guests():
         if email.lower() in sent:
             continue
-        _deliver("album_shared", lang, email, {**ctx, "guest": name})
+        _deliver("album_shared", lang, email, {**ctx, "guest": name}, reply_to=album.guide.email)
         sent.add(email.lower())
     return len(sent)
+
+
+# --- Guests who want to hear about new tours ---
+
+
+def _to_subscribers(key, guide, ctx) -> int:
+    count = 0
+    for sub in guide.subscribers.all():
+        _deliver(key, sub.language, sub.email, {**ctx, "guest": sub.name or sub.email,
+                                                "unsubscribe_url": sub.unsubscribe_url,
+                                                "privacy_url": f"{settings.SITE_URL}/rechtliches/datenschutz/"},
+                 reply_to=guide.email)
+        count += 1
+    return count
+
+
+def new_tour_announced(d) -> int:
+    """A newly advertised tour, to every guest who asked to hear about new tours."""
+    dates = f"{d.start_date:%d.%m.%Y}" + (f" – {d.end_date:%d.%m.%Y}" if d.end_date != d.start_date else "")
+    return _to_subscribers("new_tour", d.guide, {"guide": d.guide.display_name, "tour": d.title, "dates": dates,
+                                                  "price": f"CHF {d.price_per_person:.2f} p. P.",
+                                                  "departure_url": d.public_url})
+
+
+def newsletter(guide, subject: str, body: str) -> int:
+    subject = " ".join(subject.split())[:150]  # one line: it goes into the email header
+    return _to_subscribers("newsletter", guide, {"guide": guide.display_name, "subject": subject, "body": body})

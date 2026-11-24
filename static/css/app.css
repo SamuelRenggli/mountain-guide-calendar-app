@@ -252,20 +252,57 @@ input[type=datetime-local], input[type=time] { width: 100%; padding: .55rem .65r
   .expense-row, .tier-row { grid-template-columns: 1fr; }
 }
 
-/* Notifications top right */
+/* Notifications top right: a bell with a red count; the panel lists the latest, unread ones tinted (like LinkedIn) */
 .notifications { position: relative; }
-.notifications summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: .4rem; padding: .25rem .5rem;
-  border-radius: 999px; color: var(--muted); }
+.notifications summary { list-style: none; cursor: pointer; display: flex; align-items: center; padding: .3rem; border-radius: 999px;
+  color: var(--muted); position: relative; }
 .notifications summary::-webkit-details-marker { display: none; }
-.notifications.has-unread summary { background: var(--requested); color: var(--text); font-weight: 600; }
-.notif-text { max-width: 22rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .9rem; }
-.notif-count { background: var(--danger); color: #fff; border-radius: 999px; font-size: .75rem; padding: 0 .45rem; }
-.notif-panel { position: absolute; right: 0; top: calc(100% + .4rem); width: min(22rem, 90vw); background: var(--surface);
-  border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.12); padding: .75rem; z-index: 50; }
-.notif-panel ul { list-style: none; margin: 0 0 .5rem; padding: 0; }
-.notif-panel li a { display: block; padding: .45rem .3rem; border-bottom: 1px solid var(--border); text-decoration: none; color: var(--text); }
+.notifications summary:hover, .notifications[open] summary { background: var(--bg); color: var(--text); }
+.notifications.has-unread summary { color: var(--text); }
+.notif-count { position: absolute; top: -.1rem; right: -.25rem; min-width: 1.1rem; height: 1.1rem; padding: 0 .3rem; display: flex;
+  align-items: center; justify-content: center; background: var(--danger); color: #fff; border-radius: 999px; font-size: .7rem;
+  font-weight: 700; line-height: 1; border: 2px solid var(--surface); }
+.notif-panel { position: absolute; right: 0; top: calc(100% + .4rem); width: min(24rem, calc(100vw - 1.5rem)); background: var(--surface);
+  border: 1px solid var(--border); border-radius: var(--radius); box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 50;
+  max-height: 70vh; overflow-y: auto; }
+.notif-head { display: flex; justify-content: space-between; align-items: center; gap: .5rem; padding: .7rem .9rem;
+  border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--surface); }
+.notif-panel > p { padding: .9rem; margin: 0; }
+.notif-panel ul { list-style: none; margin: 0; padding: 0; }
+.notif-panel li a { display: flex; gap: .7rem; align-items: flex-start; padding: .7rem .9rem; border-bottom: 1px solid var(--border);
+  text-decoration: none; color: var(--text); }
+.notif-panel li:last-child a { border-bottom: 0; }
+.notif-panel li.unread a { background: #eef5f1; }
 .notif-panel li a:hover { background: var(--bg); }
-@media (max-width: 640px) { .notif-text { max-width: 9rem; } }
+.notif-icon { flex: 0 0 2.1rem; height: 2.1rem; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-size: .8rem; font-weight: 700; background: var(--bg); color: var(--muted); }
+.notif-icon.tone-good { background: var(--free); color: var(--free-text); }
+.notif-icon.tone-bad { background: #fdecea; color: var(--danger); }
+.notif-body { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.notif-line { font-size: .9rem; }
+.notif-panel li.unread .notif-line { font-weight: 600; }
+.notif-dot { flex: 0 0 .55rem; height: .55rem; margin-top: .45rem; border-radius: 50%; background: var(--primary); }
+@media (max-width: 640px) { .notif-panel { position: fixed; left: .75rem; right: .75rem; top: 3.2rem; width: auto; } }
+
+/* Lists of things to do: one line each, × clicks an item away */
+.count-dot { display: inline-flex; align-items: center; justify-content: center; min-width: 1.35rem; height: 1.35rem; padding: 0 .35rem;
+  border-radius: 999px; background: var(--danger); color: #fff; font-size: .75rem; font-weight: 700; vertical-align: middle; }
+.count-muted { display: inline-flex; min-width: 1.35rem; justify-content: center; padding: 0 .4rem; border-radius: 999px;
+  background: var(--bg); color: var(--muted); font-size: .8rem; }
+.item-list { list-style: none; margin: 0 0 .5rem; padding: 0; }
+.item-list li { display: flex; align-items: center; gap: .5rem; border-top: 1px solid var(--border); }
+.item-list li:first-child { border-top: 0; }
+.item-main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: .6rem 0; text-decoration: none; color: var(--text); }
+.item-main:hover strong { text-decoration: underline; }
+.item-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.item-label.urgent { color: var(--danger); font-weight: 600; }
+.icon-button { background: none; border: 1px solid transparent; border-radius: 50%; width: 2rem; height: 2rem; font-size: 1.2rem;
+  line-height: 1; cursor: pointer; color: var(--muted); }
+.icon-button:hover { border-color: var(--border); color: var(--text); background: var(--bg); }
+.note-link { color: var(--muted); display: inline-flex; padding: .2rem; border-radius: 6px; }
+.note-link:hover { background: var(--bg); color: var(--text); }
+.note-link.has-notes { color: var(--primary); }
+.visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* Notices top right (form errors, error messages) */
 .toast-area { position: fixed; top: .75rem; right: .75rem; z-index: 100; display: flex; flex-direction: column; gap: .5rem;
@@ -379,3 +416,42 @@ input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer
   body { background: #fff; }
   .card { border: 0; box-shadow: none; padding: 0; }
 }
+/* Participants: list or table, switched without script */
+.view-toggle { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; margin-bottom: .75rem; }
+.view-toggle input { position: absolute; opacity: 0; pointer-events: none; }
+.view-toggle label { padding: .25rem .8rem; font-size: .85rem; cursor: pointer; color: var(--muted); }
+.view-toggle input:checked + label { background: var(--primary); color: #fff; }
+.view-toggle input:focus-visible + label { outline: 2px solid var(--primary); outline-offset: -2px; }
+.view-table { display: none; }
+.fold-card:has(#people-view-table:checked) .view-list { display: none; }
+.fold-card:has(#people-view-table:checked) .view-table { display: block; }
+.people-table td, .people-table th { vertical-align: top; }
+.person-note { font-size: .8rem; color: var(--primary-dark); background: var(--free); border-radius: 999px; padding: 0 .5rem; }
+.person-note-form { margin: .5rem 0; }
+.person-note-form label { display: block; color: var(--muted); }
+.person-note-form .row input { flex: 1; min-width: 10rem; }
+/* The tour's name, editable; the guest's original request stays visible */
+details.title-edit > summary { list-style: none; cursor: pointer; }
+details.title-edit > summary::-webkit-details-marker { display: none; }
+.edit-hint { font-size: .8rem; color: var(--primary); white-space: nowrap; }
+details.title-edit[open] > summary { margin-bottom: .5rem; }
+.original-label { margin-top: .5rem !important; }
+.original-request { background: var(--bg); border-left: 3px solid var(--border); padding: .5rem .75rem; margin-bottom: 1rem; }
+.original-request p { margin: 0; }
+.forward-box { border: 2px solid var(--primary); border-radius: var(--radius); padding: .75rem 1rem; margin: 1rem 0; background: #f3f8f5; }
+.forward-box h3 { margin: 0 0 .4rem; font-size: 1rem; }
+.rate-table td { vertical-align: middle; }
+.rate-table td:first-child { white-space: nowrap; }
+.rate-table input[type=number] { max-width: 9rem; }
+.rate-table td:first-child input[type=number] { width: 4.5rem; display: inline-block; }
+.rate-table .has-error input { border-color: var(--danger); }
+/* Guest file: one fold per guest */
+.guest-list { padding: 0 1.25rem; }
+details.guest { border-top: 1px solid var(--border); }
+details.guest:first-child { border-top: 0; }
+details.guest > summary { list-style: none; cursor: pointer; display: flex; justify-content: space-between; align-items: center;
+  gap: .25rem 1rem; flex-wrap: wrap; padding: .75rem 0; }
+details.guest > summary::-webkit-details-marker { display: none; }
+details.guest > summary .guest-name::before { content: "▸ "; color: var(--muted); }
+details.guest[open] > summary .guest-name::before { content: "▾ "; }
+.guest-body { padding: 0 0 1rem 1rem; }

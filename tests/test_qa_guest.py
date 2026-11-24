@@ -35,7 +35,7 @@ def widget_post(client, guide, start, end=None, **extra):
 
 def signup_post(client, departure, **extra):
     data = {"seats": 2, "guest_name": "Neu", "guest_email": "neu@example.com", "guest_phone_0": "41",
-            "guest_phone_1": "079 123 45 67", "emergency_contact": "Mama 079 2", "experience": "Allalin",
+            "guest_phone_1": "079 123 45 67", "angaben-emergency_name": "Mama", "angaben-emergency_phone_0": "41", "angaben-emergency_phone_1": "079 222 22 22", "angaben-experience": "Allalin",
             "language": "de", "accept_terms": "on", "website": "", "ts": aged_token()}
     data.update(extra)
     return client.post(reverse("widget:departure_signup", args=[departure.public_id]), data)

@@ -1,0 +1,22 @@
+{% load i18n %}<div class="table-wrap"><table class="people-table">
+  <thead><tr>
+    <th>{% translate "Name" %}</th><th>{% translate "Telefon" %}</th><th>{% translate "Notfallkontakt" %}</th>
+    <th>{% translate "Erfahrung / Können" %}</th><th>{% translate "Ernährung, Allergien" %}</th><th>{% translate "Alpenverein" %}</th>
+    <th>{% translate "ÖV-Abo" %}</th><th>{% translate "Auto" %}</th><th>{% translate "Notiz" %}</th>
+  </tr></thead>
+  <tbody>
+  {% for p in people %}{% with pr=p.profile %}
+    <tr>
+      <td><strong>{{ p.name }}</strong>{% if p.booker %} <span class="small muted">({% translate "bucht" %})</span>{% endif %}</td>
+      <td class="small">{% if p.phone %}<a href="tel:{{ p.phone|cut:' ' }}">{{ p.phone }}</a>{% else %}–{% endif %}</td>
+      <td class="small">{{ pr.emergency_contact|default:"–" }}</td>
+      <td class="small pre">{% firstof pr.experience p.experience "–" %}</td>
+      <td class="small">{{ pr.get_diet_display|default:"–" }}{% if pr.allergies %}<br><strong>{{ pr.allergies }}</strong>{% endif %}</td>
+      <td class="small">{% if pr.club and pr.club != "none" %}{{ pr.club }}{% if pr.has_reciprocal_rights %} ✓{% endif %}{% else %}–{% endif %}</td>
+      <td class="small">{{ pr.get_travel_card_display|default:"–" }}</td>
+      <td class="small">{% if pr.car_seats is None or not pr %}–{% elif pr.car_seats == 0 %}{% translate "ja, voll" %}{% else %}+{{ pr.car_seats }}{% endif %}</td>
+      <td class="small">{{ p.note|default:"" }}</td>
+    </tr>
+  {% endwith %}{% endfor %}
+  </tbody>
+</table></div>

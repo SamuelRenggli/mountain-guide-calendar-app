@@ -138,15 +138,15 @@ def test_guest_profile_never_reaches_someone_booking_with_victims_email(client, 
     assert "Geheimweg 7" not in html and "079 999 99 99" not in html and "HIV-Medikamente" not in html
 
     # What this guest enters is shown back to them on this booking; without the tick the guide's file stays as it was.
-    data = {"angaben-billing_address": "Fake 1", "angaben-emergency_name": "Angreifer",
-            "angaben-emergency_phone_0": "41", "angaben-emergency_phone_1": "79 000 00 01", "angaben-allergies": ""}
+    data = {"angaben-emergency_name": "Angreifer", "angaben-experience": "keine",
+            "angaben-emergency_phone_0": "41", "angaben-emergency_phone_1": "79 000 00 01", "angaben-allergies": "Fake 1"}
     client.post(reverse("guest:details", args=[booking.token]), data)
     html = client.get(reverse("guest:detail", args=[booking.token])).content.decode()
-    assert "Fake 1" in html and "Geheimweg 7" not in html
-    assert GuestProfile.objects.get(email="opfer@example.com").billing_address == "Geheimweg 7, 3000 Bern"
+    assert "Fake 1" in html and "Geheimweg 7" not in html and "HIV-Medikamente" not in html
+    assert GuestProfile.objects.get(email="opfer@example.com").allergies == "HIV-Medikamente"
     # with the tick the file takes the latest details for this address
     client.post(reverse("guest:details", args=[booking.token]), {**data, "angaben-keep": "on"})
-    assert GuestProfile.objects.get(email="opfer@example.com").billing_address == "Fake 1"
+    assert GuestProfile.objects.get(email="opfer@example.com").allergies == "Fake 1"
 
 
 # --- Two-factor really enforced ----------------------------------------------------------------------

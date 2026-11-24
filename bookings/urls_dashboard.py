@@ -6,9 +6,11 @@ app_name = "dashboard"
 
 urlpatterns = [
     path("", v.home, name="home"),
+    path("pendenz/wegklicken/", v.todo_dismiss, name="todo_dismiss"),
     path("buchungen/<int:pk>/", v.booking_detail, name="booking"),
     path("buchungen/<int:pk>/abrechnen/", v.invoice, name="invoice"),
     path("buchungen/<int:pk>/drucken/", v.booking_print, name="booking_print"),
+    path("buchungen/<int:pk>/tourenblatt.pdf", v.booking_sheet, name="booking_sheet"),
     path("buchungen/<int:pk>/nachricht/", v.booking_message, name="booking_message"),
     path("buchungen/<int:pk>/nachricht/<int:message_pk>/<slug:name>/", v.booking_message_action,
          name="booking_message_action"),
@@ -17,6 +19,7 @@ urlpatterns = [
     path("termine/neu/", v.departure_new, name="departure_new"),
     path("termine/<int:pk>/", v.departure_detail, name="departure"),
     path("termine/<int:pk>/bearbeiten/", v.departure_edit, name="departure_edit"),
+    path("termine/<int:pk>/tourenblatt.pdf", v.departure_sheet, name="departure_sheet"),
     path("termine/<int:pk>/<slug:name>/", v.departure_action, name="departure_action"),
     path("vorlagen/", v.tours, name="tours"),
     path("vorlagen/neu/", v.tour_edit, name="tour_new"),

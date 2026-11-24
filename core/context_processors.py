@@ -47,7 +47,7 @@ def nav(request):
 
 
 def notifications(request) -> dict:
-    """Top right in the dashboard: "Du hast eine neue Buchung" and friends, until the guide opens them."""
-    unread = list(request.user.notifications.filter(read_at__isnull=True).select_related("booking")[:8])
-    return {"notifications": unread, "notification_count": request.user.notifications.filter(
-        read_at__isnull=True).count() if len(unread) == 8 else len(unread)}
+    """The bell top right: the latest notifications, unread ones highlighted (like LinkedIn), with the unread count."""
+    latest = list(request.user.notifications.select_related("booking", "booking__tour", "booking__departure")[:12])
+    return {"notifications": latest,
+            "notification_count": request.user.notifications.filter(read_at__isnull=True).count()}

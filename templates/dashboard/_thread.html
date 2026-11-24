@@ -1,14 +1,15 @@
-{% load i18n %}<details class="card fold-card" id="nachrichten">
-  <summary><h2>{% translate "E-Mail-Antworten" %}</h2></summary>
+{% load i18n %}<details class="card fold-card" id="nachrichten"{% if thread %}{% for m in thread %}{% if m.from_guest and not m.read_at %} open{% endif %}{% endfor %}{% endif %}>
+  <summary><h2>{% translate "E-Mails vom Gast" %}</h2>{% if thread %}<span class="count-muted">{{ thread|length }}</span>{% endif %}</summary>
+  <p class="small muted">{% translate "Antwortet der Gast auf eine E-Mail von Tourchef (Bestätigung, Rechnung, Erinnerung …), landet seine Antwort hier – und du bekommst sie zusätzlich per E-Mail. So geht nichts verloren. Absprachen machst du am besten direkt per Telefon oder WhatsApp." %}</p>
   {% if thread %}
   <ol class="thread">
     {% for m in thread %}
     <li class="msg {% if m.from_guest %}msg-in{% else %}msg-out{% endif %}{% if m.needs_review %} msg-review{% endif %}">
-      <div class="msg-meta small muted">{% if m.from_guest %}{{ booking.guest_name }}{% else %}{% translate "Du" %}{% endif %} · {{ m.created_at|date:"d.m.Y H:i" }}</div>
+      <div class="msg-meta small muted">{% if m.from_guest %}{% if m.needs_review %}{{ m.sender_email }}{% else %}{{ booking.guest_name }}{% endif %}{% else %}{% translate "Du" %}{% endif %} · {{ m.created_at|date:"d.m.Y H:i" }}</div>
       <div class="pre">{{ m.body }}</div>
       {% if m.needs_review %}
       <div class="msg-review-box small">
-        {% blocktranslate with sender=m.sender_email trimmed %}Diese Antwort kam von {{ sender }}, nicht von der Adresse des Gastes. Der Gast sieht sie nicht.{% endblocktranslate %}
+        {% blocktranslate with sender=m.sender_email trimmed %}Diese Antwort kam von {{ sender }}, nicht von der Adresse des Gastes (z. B. von einer mitreisenden Person). Der Gast sieht sie nicht.{% endblocktranslate %}
         <div class="row">
           <form method="post" action="{% url 'dashboard:booking_message_action' booking.pk m.pk 'freigeben' %}" class="inline">{% csrf_token %}<button class="btn btn-small btn-secondary" type="submit">{% translate "Gehört dazu" %}</button></form>
           <form method="post" action="{% url 'dashboard:booking_message_action' booking.pk m.pk 'loeschen' %}" class="inline">{% csrf_token %}<button class="btn btn-small btn-danger" type="submit">{% translate "Löschen" %}</button></form>
@@ -18,6 +19,11 @@
     </li>
     {% endfor %}
   </ol>
+  {% else %}<p class="empty">{% translate "Noch keine E-Mails vom Gast." %}</p>{% endif %}
+  {% if booking.guest_phone %}
+  <p class="row">
+    <a class="btn btn-secondary btn-small" href="tel:{{ booking.guest_phone|cut:' ' }}">{% translate "Anrufen" %}</a>
+    {% if whatsapp %}<a class="btn btn-secondary btn-small" href="https://wa.me/{{ whatsapp }}" target="_blank" rel="noopener">WhatsApp</a>{% endif %}
+  </p>
   {% endif %}
-  <p class="small muted">{% translate "Antworten des Gastes auf Tourchef-E-Mails. Antworte ihm am besten direkt per Telefon oder WhatsApp." %}</p>
 </details>

@@ -15,89 +15,60 @@
 </div>
 {% endif %}
 
-<section class="card todo">
-  <h2>{% translate "To Do" %}</h2>
-  {% if not needs_action and not decisions and not to_invoice and not partner_offers and not photo_albums %}<p class="empty">{% translate "Alles erledigt." %}</p>{% endif %}
-  {% if needs_action %}
-  <h3>{% translate "Anfragen beantworten" %}</h3>
-  {% include "dashboard/_booking_table.html" with bookings=needs_action show_deadline=True %}
-  {% endif %}
-  {% if decisions %}
-  <h3>{% translate "Durchführung entscheiden" %}</h3>
-  <div class="table-wrap"><table>
-    <thead><tr><th>{% translate "Entscheid bis" %}</th><th>{% translate "Tour" %}</th><th>{% translate "Datum" %}</th></tr></thead>
-    <tbody>
-    {% for e in decisions %}
-      <tr><td><a href="{{ e.url }}">{{ e.day|date:"D d.m.Y" }}</a></td><td>{{ e.title }}<br><span class="small muted">{{ e.who }}</span></td><td>{{ e.start|date:"d.m.Y" }}</td></tr>
+<details class="card fold-card" id="todo">
+  <summary><h2>{% translate "To Do" %}{% if todos %} <span class="count-dot" aria-label="{% blocktranslate count n=todos|length trimmed %}{{ n }} offen{% plural %}{{ n }} offen{% endblocktranslate %}">{{ todos|length }}</span>{% endif %}</h2>
+    {% if not todos %}<span class="small muted">{% translate "Alles erledigt." %}</span>{% endif %}</summary>
+  {% if todos %}
+  <ul class="item-list">
+    {% for t in todos %}
+    <li>
+      <a class="item-main" href="{{ t.url }}">
+        <span class="item-label{% if t.urgent %} urgent{% endif %}">{{ t.label }}</span>
+        <strong>{{ t.title }}</strong>
+        <span class="small muted">{{ t.day|date:"D d.m.Y" }}{% if t.who %} · {{ t.who }}{% endif %}{% if t.until %} · {% blocktranslate with day=t.until|date:"d.m." trimmed %}bis {{ day }}{% endblocktranslate %}{% endif %}</span>
+      </a>
+      {% if t.key %}
+      <form method="post" action="{% url 'dashboard:todo_dismiss' %}" class="inline">{% csrf_token %}
+        <input type="hidden" name="key" value="{{ t.key }}">
+        <button class="icon-button" type="submit" title="{% translate 'Wegklicken – nicht erledigen' %}" aria-label="{% translate 'Wegklicken – nicht erledigen' %}">×</button>
+      </form>
+      {% endif %}
+    </li>
     {% endfor %}
-    </tbody>
-  </table></div>
-  {% endif %}
-  {% if to_invoice %}
-  <h3>{% translate "Abrechnen" %}</h3>
-  <p class="small muted">{% translate "Touren, die vorbei sind. Öffne die Buchung und klicke auf «Abrechnung auslösen»." %}</p>
-  {% include "dashboard/_booking_table.html" with bookings=to_invoice %}
-  {% endif %}
-  {% if photo_albums %}
-  <h3>{% translate "Fotos hochladen" %}</h3>
-  <p class="small muted">{% translate "Lade die Fotos der Tour hoch und teile das Album mit den Gästen. Die besten behältst du – so wächst deine Bildbibliothek mit jeder Tour." %}</p>
-  <ul>{% for a in photo_albums %}<li><a href="{{ a.path }}">{{ a.title }}</a> <span class="small muted">{{ a.start_date|date:"d.m.Y" }}</span></li>{% endfor %}</ul>
-  {% endif %}
-  {% if partner_offers %}
-  <h3>{% translate "Angebote von Anbietern" %}</h3>
-  <p>{% blocktranslate count n=partner_offers|length trimmed %}Ein Anbieter hat dir eine Tour angeboten.{% plural %}Anbieter haben dir {{ n }} Touren angeboten.{% endblocktranslate %}
-  <a href="{% url 'dashboard:external_tours' %}">{% translate "Jetzt beantworten" %}</a></p>
-  {% endif %}
-</section>
+  </ul>
+  <p class="small muted">{% translate "Mit × entfernst du eine Pendenz, die du nicht erledigen willst (z. B. keine Fotos von dieser Tour)." %}</p>
+  {% else %}<p class="empty">{% translate "Alles erledigt." %}</p>{% endif %}
+</details>
 
 <section class="card">
   <h2>{% translate "Kommende Touren" %}</h2>
-  <p class="small muted">{% translate "Alles, was ansteht: bestätigte Anfragen, deine ausgeschriebenen Touren und Touren für externe Anbieter." %}</p>
   {% if upcoming %}
-  <div class="table-wrap"><table>
-    <thead><tr><th>{% translate "Datum" %}</th><th>{% translate "Tour" %}</th><th>{% translate "Art" %}</th><th>{% translate "Status" %}</th></tr></thead>
-    <tbody>
-    {% for e in upcoming %}
-      <tr>
-        <td><a href="{{ e.url }}"{% if e.external %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ e.start|date:"D d.m.Y" }}</a>{% if e.end != e.start %}<br><span class="small muted">{% blocktranslate with day=e.end|date:"d.m.Y" trimmed %}bis {{ day }}{% endblocktranslate %}</span>{% endif %}</td>
-        <td>{{ e.title }}{% if e.who %}<br><span class="small muted">{{ e.who }}</span>{% endif %}</td>
-        <td class="small">{{ e.kind }}</td>
-        <td><span class="badge {{ e.badge }}">{{ e.status }}</span></td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table></div>
+  {% include "dashboard/_upcoming_table.html" with entries=upcoming|slice:":3" %}
+  {% if upcoming|length > 3 %}
+  <details class="fold more">
+    <summary class="btn btn-secondary btn-small">{% blocktranslate count n=upcoming|length|add:"-3" trimmed %}{{ n }} weitere Tour anzeigen{% plural %}{{ n }} weitere Touren anzeigen{% endblocktranslate %}</summary>
+    {% include "dashboard/_upcoming_table.html" with entries=upcoming|slice:"3:" %}
+  </details>
+  {% endif %}
   {% else %}<p class="empty">{% translate "Nichts geplant." %}</p>{% endif %}
 </section>
 
-<section class="card">
-  <h2>{% translate "Warten auf den Gast" %}</h2>
-  <p class="small muted">{% translate "Pendent: Vorschläge, denen der Gast noch zusagen muss, Ersatzdaten und offene Rechnungen." %}</p>
+<details class="card fold-card">
+  <summary><h2>{% translate "Warten auf den Gast" %}{% if waiting_for_guest %} <span class="count-dot">{{ waiting_for_guest|length }}</span>{% endif %}</h2>
+    <span class="small muted">{% translate "Vorschläge, Ersatzdaten, offene Rechnungen" %}</span></summary>
   {% translate "Nichts offen." as empty %}
   {% include "dashboard/_booking_table.html" with bookings=waiting_for_guest empty=empty show_deadline=True %}
-</section>
+</details>
 
-<section class="card">
-  <h2>{% translate "Vergangene und abgesagte Termine" %}</h2>
+<details class="card fold-card">
+  <summary><h2>{% translate "Vergangene und abgesagte Termine" %}</h2>{% if past_departures %}<span class="count-muted">{{ past_departures|length }}</span>{% endif %}</summary>
   {% translate "Noch keine." as empty %}
-  {% include "dashboard/_departure_table.html" with departures=past_departures|slice:":3" empty=empty %}
-  {% if past_departures|length > 3 %}
-  <details class="fold more">
-    <summary class="btn btn-secondary btn-small">{% blocktranslate count n=past_departures|length|add:"-3" trimmed %}{{ n }} weiterer anzeigen{% plural %}{{ n }} weitere anzeigen{% endblocktranslate %}</summary>
-    {% include "dashboard/_departure_table.html" with departures=past_departures|slice:"3:" %}
-  </details>
-  {% endif %}
-</section>
+  {% include "dashboard/_departure_table.html" with departures=past_departures empty=empty %}
+</details>
 
-<section class="card">
-  <h2>{% translate "Verlauf" %}</h2>
+<details class="card fold-card">
+  <summary><h2>{% translate "Verlauf" %}</h2>{% if history %}<span class="count-muted">{{ history|length }}</span>{% endif %}</summary>
   {% translate "Noch nichts abgeschlossen." as empty %}
-  {% include "dashboard/_booking_table.html" with bookings=history|slice:":3" empty=empty %}
-  {% if history|length > 3 %}
-  <details class="fold more">
-    <summary class="btn btn-secondary btn-small">{% blocktranslate count n=history|length|add:"-3" trimmed %}{{ n }} weiterer anzeigen{% plural %}{{ n }} weitere anzeigen{% endblocktranslate %}</summary>
-    {% include "dashboard/_booking_table.html" with bookings=history|slice:"3:" %}
-  </details>
-  {% endif %}
-</section>
+  {% include "dashboard/_booking_table.html" with bookings=history empty=empty %}
+</details>
 {% endblock %}

@@ -189,6 +189,8 @@ class Departure(TourDetails):
     )
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.OPEN, db_index=True)
     reminder_sent_at = models.DateTimeField(null=True, blank=True)
+    # The guide's own notes, never shown to guests.
+    guide_notes = models.TextField(blank=True, validators=[MaxLengthValidator(5000)])
     decided_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -430,7 +432,10 @@ class Booking(models.Model):
     guest_details = EncryptedTextField()
     details_reminder_sent_at = models.DateTimeField(null=True, blank=True)  # "guide still needs your details" sent
     language =models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default="de")  # guest's email language
-    guest_message = models.TextField(blank=True)
+    guest_message = models.TextField(blank=True)  # the original request, kept as the guest wrote it
+    # The guide's name for the tour, e.g. "Skitour Rossstock" for "irgendeine Skitour Zentralschweiz".
+    custom_title = models.CharField(_("Tour"), max_length=200, blank=True)
+    booker_note = models.CharField(max_length=200, blank=True)  # guide's note on the booking guest, e.g. "braucht Pickel"
     guide_message = models.TextField(blank=True)
     # Rough meeting point and time the guide gives with the offer (not binding; fixed later by phone/WhatsApp).
     meeting = models.CharField(max_length=200, blank=True)
@@ -491,6 +496,8 @@ class Booking(models.Model):
     def title(self) -> str:
         if self.departure_id:
             return self.departure.title
+        if self.custom_title:
+            return self.custom_title
         return self.tour.title if self.tour else str(_("Eigene Tourenidee"))
 
     @property
@@ -586,6 +593,7 @@ class Companion(models.Model):
     email = models.EmailField(_("E-Mail"), blank=True)
     phone = EncryptedTextField(_("Telefon"), max_length=30)
     details = EncryptedTextField()  # planning details as JSON, same keys as Booking.guest_details
+    guide_note = models.CharField(max_length=200, blank=True)  # the guide's note, e.g. "braucht Steigeisen"
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -761,6 +769,12 @@ class Notification(models.Model):
         REQUEST = "request", _("Neue Anfrage")
         MESSAGE = "message", _("Neue Nachricht")
         CONFIRMED = "confirmed", _("Zusage")
+        DECLINED = "declined", _("Absage des Gastes")
+        CANCELLED = "cancelled", _("Storniert")
+        PAID = "paid", _("Zahlung")
+        DETAILS = "details", _("Angaben")
+        NEW_DATE = "new_date", _("Ersatzdatum")
+        EXPIRED = "expired", _("Abgelaufen")
 
     guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notifications")
     booking = models.ForeignKey(Booking, on_delete=models.CASCADE, related_name="notifications", null=True, blank=True)
@@ -781,7 +795,74 @@ class Notification(models.Model):
             return _("Du hast eine neue Anfrage: %(guest)s") % {"guest": guest}
         if self.kind == self.Kind.CONFIRMED:
             return _("%(guest)s hat definitiv zugesagt, die Tour ist bestätigt") % {"guest": guest}
+        if self.kind == self.Kind.DECLINED:
+            return _("%(guest)s hat dein Angebot abgelehnt") % {"guest": guest}
+        if self.kind == self.Kind.CANCELLED:
+            return _("%(guest)s hat storniert") % {"guest": guest}
+        if self.kind == self.Kind.PAID:
+            return _("%(guest)s hat bezahlt") % {"guest": guest}
+        if self.kind == self.Kind.DETAILS:
+            return _("Neue Angaben für die Tour von %(guest)s") % {"guest": guest}
+        if self.kind == self.Kind.NEW_DATE:
+            return _("%(guest)s hat auf das Ersatzdatum geantwortet") % {"guest": guest}
+        if self.kind == self.Kind.EXPIRED:
+            return _("Keine Antwort von %(guest)s, die Frist ist abgelaufen") % {"guest": guest}
         return _("Neue Nachricht von %(guest)s") % {"guest": guest}
+
+    ICONS = {"booking": "＋", "request": "✉", "message": "💬", "confirmed": "✓", "declined": "✕", "cancelled": "✕",
+             "paid": "CHF", "details": "✎", "new_date": "↻", "expired": "⌛"}
+
+    @property
+    def icon(self) -> str:
+        return self.ICONS.get(self.kind, "•")
+
+    @property
+    def tone(self) -> str:
+        """Colour of the icon: good news green, bad news red, the rest neutral."""
+        if self.kind in ("booking", "confirmed", "paid"):
+            return "good"
+        if self.kind in ("declined", "cancelled", "expired"):
+            return "bad"
+        return "neutral"
+
+
+class TodoDismissal(models.Model):
+    """A to-do the guide clicked away (e.g. "upload photos" for a tour without photos). Key: see views_dashboard."""
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="todo_dismissals")
+    key = models.CharField(max_length=40)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["guide", "key"], name="one_dismissal_per_todo")]
+
+
+class Subscriber(models.Model):
+    """A guest who wants to hear about the guide's new tours (ticked when booking). Gets an email for every newly
+    advertised tour and the guide's newsletters; unsubscribes with the link in each email."""
+
+    guide = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="subscribers")
+    email = models.EmailField()
+    name = models.CharField(max_length=100, blank=True)
+    language = models.CharField(max_length=2, choices=LANGUAGE_CHOICES, default="de")
+    token = models.CharField(max_length=64, unique=True, default=new_token, editable=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name", "email"]
+        constraints = [models.UniqueConstraint(fields=["guide", "email"], name="one_subscription_per_guide_email")]
+
+    @property
+    def unsubscribe_url(self) -> str:
+        return f"{settings.SITE_URL}/abmelden/{self.token}/"
+
+    @classmethod
+    def subscribe(cls, guide, email, name="", language="de"):
+        if not email:
+            return None
+        sub, _created = cls.objects.get_or_create(guide=guide, email=email.lower(),
+                                                  defaults={"name": name[:100], "language": language})
+        return sub
 
 
 class BookingEvent(models.Model):
@@ -841,6 +922,7 @@ class GuestProfile(models.Model):
     name = models.CharField(_("Name"), max_length=100)
     billing_address = EncryptedTextField(_("Rechnungsadresse"), max_length=300)
     emergency_contact = EncryptedTextField(_("Notfallkontakt"), max_length=200)
+    experience = EncryptedTextField(_("Erfahrung / Können"), max_length=500)
     diet = models.CharField(_("Ernährung"), max_length=12, choices=Diet.choices, blank=True)
     allergies = EncryptedTextField(_("Allergien, Unverträglichkeiten, Gesundheit"), max_length=500)
     club = models.CharField(_("Alpenverein"), max_length=8, choices=Club.choices, blank=True)
@@ -870,7 +952,7 @@ class GuestProfile(models.Model):
     def for_booking(cls, booking):
         return cls.objects.filter(guide_id=booking.guide_id, email__iexact=booking.guest_email).first()
 
-    PLANNING_FIELDS = ("billing_address", "emergency_contact", "diet", "allergies", "club", "travel_card", "car_seats")
+    PLANNING_FIELDS = ("billing_address", "emergency_contact", "experience", "diet", "allergies", "club", "travel_card", "car_seats")
 
     @classmethod
     def from_details(cls, guide_id, email, name, details, updated_at=None):

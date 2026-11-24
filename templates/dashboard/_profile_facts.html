@@ -1,6 +1,7 @@
 {% load i18n %}<dl class="facts">
   {% if profile.billing_address %}<dt>{% translate "Rechnungsadresse" %}</dt><dd class="pre">{{ profile.billing_address }}</dd>{% endif %}
   <dt>{% translate "Notfallkontakt" %}</dt><dd>{{ profile.emergency_contact|default:"–" }}</dd>
+  {% if profile.experience %}<dt>{% translate "Erfahrung / Können" %}</dt><dd class="pre">{{ profile.experience }}</dd>{% endif %}
   <dt>{% translate "Ernährung" %}</dt><dd>{{ profile.get_diet_display|default:"–" }}</dd>
   <dt>{% translate "Allergien, Gesundheit" %}</dt><dd class="pre">{{ profile.allergies|default:"–" }}</dd>
   <dt>{% translate "Alpenverein" %}</dt><dd>{{ profile.get_club_display|default:"–" }}{% if profile.club and profile.club != "none" %} <span class="small muted">{% if profile.has_reciprocal_rights %}({% translate "Gegenrecht in SAC-Hütten" %}){% else %}({% translate "kein Gegenrecht" %}){% endif %}</span>{% endif %}</dd>

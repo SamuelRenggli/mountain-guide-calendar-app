@@ -64,6 +64,7 @@ def create_departure(guide, *, tour: Tour | None = None, save_as_template: bool 
             tour = Tour.objects.create(guide=guide, duration_days=(fields["end_date"] - fields["start_date"]).days + 1,
                                        **{f: fields[f] for f in Tour.DETAIL_FIELDS if f in fields})
         departure = Departure.objects.create(guide=guide, tour=tour, **fields)
+        transaction.on_commit(lambda: emails.new_tour_announced(departure))
     return departure
 
 
@@ -221,7 +222,7 @@ def refund_extra(booking: Booking, amount) -> Booking:
 
 
 def start_registration(departure: Departure, *, seats: int, guest_name: str, guest_email: str, guest_phone: str,
-                       emergency_contact: str, experience: str, language: str) -> Booking:
+                       emergency_contact: str, experience: str, language: str, guest_details: str = "") -> Booking:
     """Hold the seats while the guest pays (R-121). Concurrent signups never get more seats than are free (R-123)."""
     with transaction.atomic():
         departure = _lock(departure)
@@ -235,7 +236,7 @@ def start_registration(departure: Departure, *, seats: int, guest_name: str, gue
             guide=departure.guide, departure=departure, tour=departure.tour, start_date=departure.start_date,
             end_date=departure.end_date, participants=seats, price=money(departure.price_per_person * seats),
             guest_name=guest_name, guest_email=guest_email, guest_phone=guest_phone,
-            emergency_contact=emergency_contact, experience=experience, language=language,
+            emergency_contact=emergency_contact, experience=experience, language=language, guest_details=guest_details,
             status=S.PAYMENT_PENDING, hold_until=timezone.now() + timedelta(minutes=settings.CHECKOUT_HOLD_MINUTES),
         )
         freeze_terms(booking, departure.guide)
@@ -311,6 +312,7 @@ def guest_cancel(booking: Booking) -> Booking:
         locked = transition(locked, {S.PAID}, S.CANCELLED, Actor.GUEST,
                             f"Vom Gast storniert: {percent} % Storno-Kosten (CHF {fee}), Rückzahlung CHF {locked.amount_paid - fee}")
         _schedule_refund(locked, locked.amount_paid - fee)
+        messaging.notify(locked.guide, Notification.Kind.CANCELLED, locked)
     transaction.on_commit(lambda: emails.registration_cancelled(locked, fee=fee, percent=percent))
     transaction.on_commit(lambda: notify_waitlist(locked.departure))
     return locked
@@ -321,6 +323,7 @@ def accept_new_date(booking: Booking) -> Booking:
 
     check_answer_in_time(booking)
     booking = transition(booking, {S.RESCHEDULE_PROPOSED}, S.PAID, Actor.GUEST, "Ersatzdatum angenommen", deadline=None)
+    messaging.notify(booking.guide, Notification.Kind.NEW_DATE, booking)
     transaction.on_commit(lambda: emails.new_date_answered(booking, accepted=True))
     return booking
 
@@ -330,6 +333,8 @@ def decline_new_date(booking: Booking, actor=Actor.GUEST) -> Booking:
         booking = transition(booking, {S.RESCHEDULE_PROPOSED}, S.CANCELLED, actor, "Ersatzdatum abgelehnt – volle Rückzahlung",
                              deadline=None)
         _schedule_refund(booking, booking.refundable)
+        messaging.notify(booking.guide, Notification.Kind.NEW_DATE if actor == Actor.GUEST else Notification.Kind.EXPIRED,
+                         booking)
     transaction.on_commit(lambda: emails.new_date_answered(booking, accepted=False))
     transaction.on_commit(lambda: notify_waitlist(booking.departure))
     return booking

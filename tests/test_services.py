@@ -125,10 +125,7 @@ def test_invoice_after_tour(guide, mailoutbox, django_capture_on_commit_callback
     booking = confirm(request(guide, in_days(10)), price=750)
     with pytest.raises(services.BookingError):
         services.invoice(booking, [tour_price("750")])
-    Booking.objects.filter(pk=booking.pk).update(start_date=in_days(-2), end_date=in_days(1))
-    booking.refresh_from_db()
-    with pytest.raises(services.BookingError):
-        services.invoice(booking, [tour_price("750")])  # only after the tour
+    # from the first day of the tour on (e.g. on the way home), see test_billing_possible_on_the_tour_day_not_before
     Booking.objects.filter(pk=booking.pk).update(start_date=in_days(-2), end_date=in_days(-2))
     booking.refresh_from_db()
     with django_capture_on_commit_callbacks(execute=True):
